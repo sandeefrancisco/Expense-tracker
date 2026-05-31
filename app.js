@@ -18,6 +18,39 @@ function bankLogoUrl(name) {
   return domain ? `https://logo.clearbit.com/${domain}` : null;
 }
 
+const BANKS = [
+  { name: 'BDO' },
+  { name: 'BPI' },
+  { name: 'N26' },
+  { name: 'Commerzbank' },
+];
+
+function buildBankGrid(current) {
+  const grid = document.getElementById('bankGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  // "None" chip
+  const none = document.createElement('button');
+  none.type = 'button';
+  none.className = 'bank-chip' + (!current ? ' active' : '');
+  none.textContent = 'None';
+  none.addEventListener('click', () => { selectedBank = null; buildBankGrid(null); });
+  grid.appendChild(none);
+
+  BANKS.forEach(b => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'bank-chip' + (current === b.name ? ' active' : '');
+    const logo = bankLogoUrl(b.name);
+    chip.innerHTML = logo
+      ? `<img src="${logo}" alt="" onerror="this.style.display='none'"> ${escHtml(b.name)}`
+      : escHtml(b.name);
+    chip.addEventListener('click', () => { selectedBank = b.name; buildBankGrid(b.name); });
+    grid.appendChild(chip);
+  });
+}
+
 /* ─── Category colour palette ───────────────────────────── */
 const CATEGORY_COLORS = [
   '#7c3aed','#1d4ed8','#059669','#db2777',
@@ -37,6 +70,7 @@ let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId   = null;
 let selectedCategory  = null;
+let selectedBank      = null;
 let selectedCatColor  = CATEGORY_COLORS[0];
 let selectedCatShared = false;
 let authMode          = 'signin';
@@ -755,22 +789,15 @@ function showFormError(msg) {
   el.textContent = msg; el.classList.remove('hidden');
 }
 
-function updateBankSuggestions() {
-  const dl = document.getElementById('bankSuggestions');
-  if (!dl) return;
-  const banks = [...new Set(expenses.filter(e => e.bank).map(e => e.bank))];
-  dl.innerHTML = banks.map(b => `<option value="${escHtml(b)}">`).join('');
-}
 
 function openAddModal() {
   buildCategoryGrid();
-  updateBankSuggestions();
+  selectedBank     = null; buildBankGrid(null);
   selectedCategory = categories[0]?.id || null; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'New Allocation';
   document.getElementById('submitBtn').textContent  = 'Add Allocation';
   document.getElementById('amountInput').value = '';
   document.getElementById('descInput').value   = '';
-  document.getElementById('bankInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
@@ -784,11 +811,10 @@ function openEditModal(id) {
   selectedCategory = e.category; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'Edit Allocation';
   document.getElementById('submitBtn').textContent  = 'Save Changes';
+  selectedBank = e.bank || null; buildBankGrid(selectedBank);
   document.getElementById('amountInput').value = parseFloat(e.amount).toFixed(2);
   document.getElementById('descInput').value   = e.description;
-  document.getElementById('bankInput').value   = e.bank || '';
   document.getElementById('editId').value      = e.id;
-  updateBankSuggestions();
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
   openModal('expenseModal');
@@ -799,7 +825,7 @@ async function handleFormSubmit(ev) {
   clearFormError();
   const amount = parseAmount(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
-  const bank   = document.getElementById('bankInput').value.trim();
+  const bank   = selectedBank || null;
   const editId = document.getElementById('editId').value;
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
   if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
