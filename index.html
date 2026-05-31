@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 <body>
 
@@ -172,6 +172,7 @@
               <input type="text" id="incomeNoteInput" class="form-input" placeholder="Optional" maxlength="80" />
             </div>
           </div>
+          <div class="form-error hidden" id="incomeFormError"></div>
           <button type="submit" class="submit-btn" id="addIncomeBtn">Add Income</button>
         </form>
       </div>
@@ -235,6 +236,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
 </body>
 </html>
