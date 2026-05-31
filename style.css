@@ -186,8 +186,11 @@ body.modal-open { overflow: hidden; }
 .profile-settings-row .danger-btn { padding: 4px 12px; font-size: 12px; }
 
 .header-inner {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 20px; height: 100%; position: relative;
+}
+.header-inner #openSettings {
+  position: absolute; right: 20px;
 }
 
 .month-nav { display: flex; align-items: center; gap: 2px; }
