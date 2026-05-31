@@ -431,8 +431,8 @@ async function handleFormSubmit(ev) {
   const amount = parseFloat(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
   const editId = document.getElementById('editId').value;
-  if (!amount || amount <= 0) { document.getElementById('amountInput').focus(); return; }
-  if (!desc)                   { document.getElementById('descInput').focus();   return; }
+  if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
+  if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = editId ? 'Saving…' : 'Adding…';
@@ -581,6 +581,8 @@ function bindEvents() {
   document.getElementById('openAdd').addEventListener('click', openAddModal);
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
+  document.getElementById('amountInput').addEventListener('input', clearFormError);
+  document.getElementById('descInput').addEventListener('input', clearFormError);
 
   // Income
   document.getElementById('logIncomeBtn').addEventListener('click', openIncomeModal);
