@@ -413,6 +413,7 @@ input, textarea { user-select: text; }
   margin: 0 auto; border-radius: var(--r-sheet) var(--r-sheet) 0 0;
   padding: 10px 20px max(36px, env(safe-area-inset-bottom, 20px));
   max-height: 92%;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -448,6 +449,7 @@ input, textarea { user-select: text; }
   display: flex; align-items: center; gap: 4px;
   background: var(--tint); border: 1.5px solid var(--border);
   border-radius: var(--r-input); padding: 4px 16px; min-height: 64px;
+  overflow: hidden;
   transition: border-color var(--t), box-shadow var(--t), background var(--t);
 }
 .amount-group:focus-within { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,26,46,.08); }
@@ -455,7 +457,8 @@ input, textarea { user-select: text; }
 .currency-symbol { font-size: 24px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
 
 .amount-input {
-  flex: 1; border: none; background: transparent;
+  flex: 1; min-width: 0; width: 0;
+  border: none; background: transparent;
   font-size: 34px; font-weight: 800; font-family: 'Figtree', sans-serif;
   color: var(--ink); outline: none; letter-spacing: -1.5px; -moz-appearance: textfield;
 }
