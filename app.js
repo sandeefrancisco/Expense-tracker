@@ -503,8 +503,12 @@ function renderListView() {
 
 function buildItem(e) {
   const el = document.createElement('div');
-  el.className = 'expense-item'; el.dataset.id = e.id;
+  el.className = 'expense-item' + (e.checked ? ' checked' : '');
+  el.dataset.id = e.id;
   el.innerHTML = `
+    <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
+      ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+    </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
     </div>
@@ -518,13 +522,27 @@ function buildItem(e) {
       </button>
     </div>`;
   el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-action-btn')) return;
+    if (ev.target.closest('.item-action-btn') || ev.target.closest('.item-check-btn')) return;
     document.querySelectorAll('.expense-item').forEach(i => { if (i !== el) i.classList.remove('show-actions'); });
     el.classList.toggle('show-actions');
   });
+  el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });
   el.querySelector('.edit-action').addEventListener('click', ev => { ev.stopPropagation(); openEditModal(e.id); });
   el.querySelector('.delete-action').addEventListener('click', ev => { ev.stopPropagation(); openDeleteConfirm(e.id); });
   return el;
+}
+
+async function toggleCheck(id) {
+  const idx = expenses.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const newVal = !expenses[idx].checked;
+  expenses[idx] = { ...expenses[idx], checked: newVal };
+  renderListView();
+  try { await dbPatchExpense(id, { checked: newVal }); }
+  catch (err) {
+    expenses[idx] = { ...expenses[idx], checked: !newVal };
+    renderListView(); showToast('Error: ' + err.message);
+  }
 }
 
 /* ─── Category Grid ─────────────────────────────────────── */
@@ -604,7 +622,7 @@ async function handleFormSubmit(ev) {
     }
   } else {
     const tmp = 'tmp_' + Date.now();
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null, checked: false });
     renderAll();
     try {
       const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null });
