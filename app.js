@@ -5,44 +5,27 @@ const SUPABASE_URL      = 'https://eizhfvieozigsgolckez.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpemhmdmllb3ppZ3Nnb2xja2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTEyMDUsImV4cCI6MjA5NTc2NzIwNX0.v-qAHGR-I63RL4Ue0YH5evTwot9riE-nUuw0ACffaYA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ─── Categories ────────────────────────────────────────── */
-const SVG = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
-
-const CATEGORIES = [
-  {
-    id: 'personal', label: 'Personal', color: '#7c3aed', bg: '#f5f3ff',
-    icon: SVG(`<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>`)
-  },
-  {
-    id: 'ph', label: 'PH', color: '#b45309', bg: '#fffbeb',
-    icon: SVG(`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>`)
-  },
-  {
-    id: 'berlin_shared', label: 'Berlin · Shared', color: '#059669', bg: '#ecfdf5',
-    icon: SVG(`<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`)
-  },
-  {
-    id: 'berlin_me', label: 'Berlin · Me', color: '#1d4ed8', bg: '#eff6ff',
-    icon: SVG(`<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>`)
-  },
-  {
-    id: 'berlin_her', label: 'Berlin · Her', color: '#db2777', bg: '#fdf2f8',
-    icon: SVG(`<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>`)
-  },
+/* ─── Category colour palette ───────────────────────────── */
+const CATEGORY_COLORS = [
+  '#7c3aed','#1d4ed8','#059669','#db2777',
+  '#b45309','#dc2626','#0d9488','#ea580c',
+  '#0891b2','#475569',
 ];
 
 /* ─── State ─────────────────────────────────────────────── */
-let expenses         = [];
-let incomeEntries    = [];
-let profiles         = [];
-let currentProfileId = null;
-let completedMonths  = []; // [{profile_id, year, month}]
-let settings         = { currency: { symbol: '$', code: 'USD' } };
-let currentUser      = null;
+let expenses          = [];
+let incomeEntries     = [];
+let profiles          = [];
+let categories        = [];
+let currentProfileId  = null;
+let completedMonths   = [];
+let settings          = { currency: { symbol: '$', code: 'USD' } };
+let currentUser       = null;
 let currentYear, currentMonth;
-let pendingDeleteId  = null;
-let selectedCategory = CATEGORIES[0].id;
-let authMode         = 'signin';
+let pendingDeleteId   = null;
+let selectedCategory  = null;
+let selectedCatColor  = CATEGORY_COLORS[0];
+let authMode          = 'signin';
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -147,12 +130,13 @@ async function handleAuthSubmit(e) {
 
 /* ─── Data Loading ──────────────────────────────────────── */
 async function loadUserData() {
-  const [expRes, setRes, incRes, profRes, doneRes] = await Promise.all([
+  const [expRes, setRes, incRes, profRes, doneRes, catRes] = await Promise.all([
     sb.from('expenses').select('*').order('created_at', { ascending: false }),
     sb.from('user_settings').select('*').eq('user_id', currentUser.id).maybeSingle(),
     sb.from('monthly_income').select('*').order('created_at', { ascending: true }),
     sb.from('profiles').select('*').order('created_at', { ascending: true }),
     sb.from('completed_months').select('profile_id,year,month'),
+    sb.from('categories').select('*').order('created_at', { ascending: true }),
   ]);
 
   if (!expRes.error && expRes.data)
@@ -165,7 +149,8 @@ async function loadUserData() {
     incomeEntries = incRes.data.map(r => ({ ...r, amount: parseFloat(r.amount) }));
 
   if (!profRes.error && profRes.data) profiles = profRes.data;
-  if (!doneRes.error && doneRes.data)  completedMonths = doneRes.data;
+  if (!doneRes.error && doneRes.data) completedMonths = doneRes.data;
+  if (!catRes.error  && catRes.data)  categories = catRes.data;
 
   // Auto-create default profile for new users
   if (profiles.length === 0) {
@@ -174,13 +159,28 @@ async function loadUserData() {
     if (!error && prof) profiles = [prof];
   }
 
-  // Keep current profile if still valid, else default to first
+  // Seed default categories for new users
+  if (categories.length === 0) {
+    const seeds = [
+      { name: 'Housing',   color: '#1d4ed8' },
+      { name: 'Food',      color: '#ea580c' },
+      { name: 'Transport', color: '#059669' },
+      { name: 'Personal',  color: '#7c3aed' },
+    ];
+    const { data: rows, error } = await sb.from('categories')
+      .insert(seeds.map(s => ({ ...s, user_id: currentUser.id }))).select();
+    if (!error && rows) categories = rows;
+  }
+
   if (!currentProfileId || !profiles.find(p => p.id === currentProfileId))
     currentProfileId = profiles[0]?.id || null;
+
+  if (!selectedCategory || !categories.find(c => c.id === selectedCategory))
+    selectedCategory = categories[0]?.id || null;
 }
 
 /* ─── Helpers ───────────────────────────────────────────── */
-function getCat(id)  { return CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1]; }
+function getCat(id)  { return categories.find(c => c.id === id) || { id: 'other', name: 'Other', color: '#868e96' }; }
 function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
 function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function monthStartISO() {
@@ -460,7 +460,7 @@ function renderCategoryBars(list, total) {
       const cat = getCat(catId);
       const seg = document.createElement('div');
       seg.className = 'category-bar-segment';
-      seg.title = cat.label;
+      seg.title = cat.name;
       seg.style.cssText = `width:${(amount / total) * 100}%;background:${cat.color};opacity:0.7;`;
       el.appendChild(seg);
     });
@@ -499,8 +499,8 @@ function renderListView() {
     const header = document.createElement('div');
     header.className = 'cat-group-header';
     header.innerHTML = `
-      <div class="cat-group-icon" style="background:${cat.bg};color:${cat.color}">${cat.icon}</div>
-      <div class="cat-group-name">${cat.label}</div>
+      <span class="cat-group-dot" style="background:${cat.color}"></span>
+      <div class="cat-group-name">${escHtml(cat.name)}</div>
       <div class="cat-group-total">${fmt(total)}</div>`;
     container.appendChild(header);
 
@@ -559,18 +559,106 @@ async function toggleCheck(id) {
 function buildCategoryGrid() {
   const grid = document.getElementById('categoryGrid');
   grid.innerHTML = '';
-  CATEGORIES.forEach(cat => {
+  categories.forEach(cat => {
     const chip = document.createElement('button');
     chip.type = 'button'; chip.className = 'category-chip'; chip.dataset.id = cat.id;
-    chip.innerHTML = `<div class="chip-icon" style="color:${cat.color}">${cat.icon}</div><span class="chip-label">${cat.label}</span>`;
+    chip.innerHTML = `<span class="chip-dot" style="background:${cat.color}"></span><span class="chip-label">${escHtml(cat.name)}</span>`;
     chip.addEventListener('click', () => selectCategory(cat.id));
     grid.appendChild(chip);
   });
+  const addChip = document.createElement('button');
+  addChip.type = 'button'; addChip.className = 'category-chip cat-add-chip';
+  addChip.innerHTML = `<span class="chip-dot-add">+</span><span class="chip-label">New</span>`;
+  addChip.addEventListener('click', openAddCategoryModal);
+  grid.appendChild(addChip);
 }
 
 function selectCategory(id) {
   selectedCategory = id;
   document.querySelectorAll('.category-chip').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+}
+
+/* ─── Category Management ───────────────────────────────── */
+function openAddCategoryModal() {
+  selectedCatColor = CATEGORY_COLORS[0];
+  document.getElementById('catNameInput').value = '';
+  document.getElementById('catFormError').classList.add('hidden');
+  buildColorPicker();
+  openModal('categoryModal');
+  setTimeout(() => document.getElementById('catNameInput').focus(), 300);
+}
+
+function buildColorPicker() {
+  const picker = document.getElementById('catColorPicker');
+  picker.innerHTML = '';
+  CATEGORY_COLORS.forEach(color => {
+    const sw = document.createElement('button');
+    sw.type = 'button';
+    sw.className = 'cat-color-swatch' + (color === selectedCatColor ? ' selected' : '');
+    sw.style.background = color; sw.dataset.color = color;
+    sw.addEventListener('click', () => {
+      selectedCatColor = color;
+      document.querySelectorAll('.cat-color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === color));
+    });
+    picker.appendChild(sw);
+  });
+}
+
+async function handleAddCategory(e) {
+  e.preventDefault();
+  const name  = document.getElementById('catNameInput').value.trim();
+  const errEl = document.getElementById('catFormError');
+  if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
+
+  const tmp = 'tmp_' + Date.now();
+  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor });
+  selectedCategory = tmp;
+  closeModal('categoryModal');
+  buildCategoryGrid(); selectCategory(tmp);
+  showToast(`${name} added`);
+
+  try {
+    const { data: row, error } = await sb.from('categories')
+      .insert({ user_id: currentUser.id, name, color: selectedCatColor }).select().single();
+    if (error) throw error;
+    const idx = categories.findIndex(c => c.id === tmp);
+    if (idx !== -1) categories[idx] = row;
+    if (selectedCategory === tmp) selectedCategory = row.id;
+    buildCategoryGrid(); selectCategory(selectedCategory);
+    renderCategorySettings();
+  } catch (err) {
+    categories = categories.filter(c => c.id !== tmp);
+    if (selectedCategory === tmp) selectedCategory = categories[0]?.id || null;
+    buildCategoryGrid(); showToast('Could not save — ' + err.message);
+  }
+}
+
+async function deleteCategoryById(id) {
+  const cat = categories.find(c => c.id === id);
+  if (!cat) return;
+  if (!confirm(`Delete "${cat.name}"? Existing items will show as Other.`)) return;
+  const { error } = await sb.from('categories').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message); return; }
+  categories = categories.filter(c => c.id !== id);
+  renderCategorySettings(); renderAll();
+  showToast(`${cat.name} deleted`);
+}
+
+function renderCategorySettings() {
+  const container = document.getElementById('categoriesList');
+  if (!container) return;
+  container.innerHTML = '';
+  categories.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'profile-settings-row';
+    row.innerHTML = `
+      <span class="cat-settings-dot" style="background:${cat.color}"></span>
+      <span class="profile-settings-name">${escHtml(cat.name)}</span>
+      <button class="danger-btn cat-del-btn" data-id="${cat.id}">Delete</button>`;
+    row.querySelector('.cat-del-btn').addEventListener('click', () => deleteCategoryById(cat.id));
+    container.appendChild(row);
+  });
 }
 
 /* ─── Add / Edit Modal ──────────────────────────────────── */
@@ -581,7 +669,8 @@ function showFormError(msg) {
 }
 
 function openAddModal() {
-  selectedCategory = CATEGORIES[0].id; selectCategory(selectedCategory);
+  buildCategoryGrid();
+  selectedCategory = categories[0]?.id || null; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'New Allocation';
   document.getElementById('submitBtn').textContent  = 'Add Allocation';
   document.getElementById('amountInput').value = '';
@@ -749,7 +838,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -802,12 +891,16 @@ function bindEvents() {
   document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
 
   // Settings
-  document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); openModal('settingsModal'); });
+  document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
 
   // Profile modal
   document.getElementById('profileForm').addEventListener('submit', handleAddProfile);
   document.getElementById('cancelAddProfile').addEventListener('click', () => closeModal('profileModal'));
+
+  // Category modal
+  document.getElementById('categoryForm').addEventListener('submit', handleAddCategory);
+  document.getElementById('cancelAddCat').addEventListener('click', () => closeModal('categoryModal'));
 
   document.getElementById('currencyOptions').addEventListener('click', e => {
     const btn = e.target.closest('.currency-btn');
@@ -832,7 +925,7 @@ function bindEvents() {
   });
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 

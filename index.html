@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
@@ -219,6 +219,10 @@
             <button class="currency-btn" data-symbol="Fr" data-code="CHF">Fr CHF</button>
           </div>
         </div>
+        <div class="settings-section">
+          <div class="settings-label">Categories</div>
+          <div id="categoriesList" class="categories-list"></div>
+        </div>
         <div class="settings-section danger-zone">
           <div class="settings-label">Data</div>
           <button class="danger-btn" id="clearDataBtn">Clear all my data</button>
@@ -259,10 +263,29 @@
     </div>
   </div>
 
+  <!-- ── Add Category Modal ── -->
+  <div class="modal-backdrop hidden" id="categoryModal">
+    <div class="modal confirm-modal">
+      <h3 class="confirm-title">New Category</h3>
+      <p class="confirm-desc">Name it and pick a colour.</p>
+      <form id="categoryForm" novalidate style="width:100%;margin-top:4px;">
+        <div class="form-group">
+          <input type="text" id="catNameInput" class="form-input" placeholder="e.g. Rent, Groceries, Berlin…" maxlength="30" />
+        </div>
+        <div class="cat-color-picker" id="catColorPicker"></div>
+        <div class="form-error hidden" id="catFormError"></div>
+        <div class="confirm-actions">
+          <button type="button" class="cancel-btn" id="cancelAddCat">Cancel</button>
+          <button type="submit" class="submit-btn" id="confirmAddCat" style="flex:1;">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
