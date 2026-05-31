@@ -424,22 +424,29 @@ body.modal-open { overflow: hidden; }
 .expense-info  { flex: 1; min-width: 0; }
 .expense-desc  { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .expense-bank  { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
-.bank-logo     { width: 14px; height: 14px; border-radius: 3px; object-fit: contain; flex-shrink: 0; }
+.expense-bank .bank-logo-wrap { width: 14px; height: 14px; border-radius: 3px; font-size: 7px; }
+
+/* Shared bank logo wrapper — colored square with letter fallback */
+.bank-logo-wrap {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px; overflow: hidden; flex-shrink: 0;
+  font-size: 9px; font-weight: 800; color: #fff; line-height: 1;
+}
+.bank-logo-wrap::after { content: attr(data-initial); }
+.bank-logo-wrap img { display: block; }
+.bank-logo-wrap img[style*="display: none"] + * { /* keep after */ }
 
 /* Bank picker chips */
 .bank-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .bank-chip {
-  display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: 99px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px 7px 8px; border-radius: 99px;
   border: 1.5px solid var(--border); background: var(--tint);
   font-size: 13px; font-weight: 600; color: var(--muted);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
 }
-.bank-chip img { width: 16px; height: 16px; border-radius: 3px; object-fit: contain; }
-.bank-chip.active {
-  background: var(--ink); border-color: var(--ink); color: #fff;
-}
-.bank-chip.active img { filter: brightness(0) invert(1); }
+.bank-chip .bank-logo-wrap { width: 22px; height: 22px; border-radius: 6px; font-size: 10px; }
+.bank-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
 /* Item options bottom sheet */
 .item-options-modal { gap: 0; }

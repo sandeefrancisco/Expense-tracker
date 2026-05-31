@@ -5,32 +5,39 @@ const SUPABASE_URL      = 'https://eizhfvieozigsgolckez.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpemhmdmllb3ppZ3Nnb2xja2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTEyMDUsImV4cCI6MjA5NTc2NzIwNX0.v-qAHGR-I63RL4Ue0YH5evTwot9riE-nUuw0ACffaYA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ─── Bank logo map ─────────────────────────────────────── */
-const BANK_LOGO_DOMAINS = {
-  'bdo':         'bdo.com.ph',
-  'bpi':         'bpi.com.ph',
-  'n26':         'n26.com',
-  'commerzbank': 'commerzbank.com',
-};
-function bankLogoUrl(name) {
+/* ─── Bank definitions ──────────────────────────────────── */
+const BANKS = [
+  { name: 'BDO',         domain: 'bdo.com.ph',     color: '#003DA5' },
+  { name: 'BPI',         domain: 'bpi.com.ph',      color: '#CC0000' },
+  { name: 'N26',         domain: 'n26.com',          color: '#1A1A2E' },
+  { name: 'Commerzbank', domain: 'commerzbank.com',  color: '#FFCC00' },
+];
+
+function bankByName(name) {
   if (!name) return null;
-  const domain = BANK_LOGO_DOMAINS[name.toLowerCase().trim()];
-  return domain ? `https://logo.clearbit.com/${domain}` : null;
+  return BANKS.find(b => b.name.toLowerCase() === name.toLowerCase().trim()) || null;
 }
 
-const BANKS = [
-  { name: 'BDO' },
-  { name: 'BPI' },
-  { name: 'N26' },
-  { name: 'Commerzbank' },
-];
+function bankLogoUrl(name) {
+  const b = bankByName(name);
+  return b ? `https://www.google.com/s2/favicons?domain=${b.domain}&sz=64` : null;
+}
+
+function bankLogoHtml(name, size = 16) {
+  const b = bankByName(name);
+  if (!b) return '';
+  const isLight = b.color === '#FFCC00';
+  return `<span class="bank-logo-wrap" style="background:${b.color}" data-initial="${b.name[0]}">` +
+    `<img src="https://www.google.com/s2/favicons?domain=${b.domain}&sz=64" alt="" ` +
+    `width="${size}" height="${size}" onerror="this.style.display='none'">` +
+    `</span>`;
+}
 
 function buildBankGrid(current) {
   const grid = document.getElementById('bankGrid');
   if (!grid) return;
   grid.innerHTML = '';
 
-  // "None" chip
   const none = document.createElement('button');
   none.type = 'button';
   none.className = 'bank-chip' + (!current ? ' active' : '');
@@ -42,10 +49,7 @@ function buildBankGrid(current) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'bank-chip' + (current === b.name ? ' active' : '');
-    const logo = bankLogoUrl(b.name);
-    chip.innerHTML = logo
-      ? `<img src="${logo}" alt="" onerror="this.style.display='none'"> ${escHtml(b.name)}`
-      : escHtml(b.name);
+    chip.innerHTML = bankLogoHtml(b.name, 20) + `<span>${escHtml(b.name)}</span>`;
     chip.addEventListener('click', () => { selectedBank = b.name; buildBankGrid(b.name); });
     grid.appendChild(chip);
   });
@@ -649,7 +653,7 @@ function buildItem(e) {
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
-      ${e.bank ? `<div class="expense-bank">${(() => { const u = bankLogoUrl(e.bank); return u ? `<img class="bank-logo" src="${u}" alt="" onerror="this.style.display='none'">` : ''; })()}${escHtml(e.bank)}</div>` : ''}
+      ${e.bank ? `<div class="expense-bank">${bankLogoHtml(e.bank, 14)}${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
   el.addEventListener('click', ev => {
