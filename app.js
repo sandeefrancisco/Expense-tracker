@@ -200,40 +200,28 @@ function showToast(msg) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.add('hidden'), 200); }, 2200);
 }
 
-/* ─── DB: Allocations ───────────────────────────────────── */
-async function dbAdd(data) {
-  const { data: row, error } = await sb.from('expenses')
-    .insert({ user_id: currentUser.id, profile_id: currentProfileId, ...data }).select().single();
+/* ─── DB helpers (pure network calls, no state mutation) ── */
+async function dbSaveExpense(payload) {
+  const { data: row, error } = await sb.from('expenses').insert(payload).select().single();
   if (error) throw error;
-  expenses.unshift({ ...row, amount: parseFloat(row.amount) });
+  return row;
 }
-
-async function dbUpdate(id, data) {
-  const { error } = await sb.from('expenses').update(data).eq('id', id);
+async function dbPatchExpense(id, patch) {
+  const { error } = await sb.from('expenses').update(patch).eq('id', id);
   if (error) throw error;
-  const i = expenses.findIndex(e => e.id === id);
-  if (i !== -1) expenses[i] = { ...expenses[i], ...data, amount: parseFloat(data.amount) };
 }
-
-async function dbDelete(id) {
+async function dbRemoveExpense(id) {
   const { error } = await sb.from('expenses').delete().eq('id', id);
   if (error) throw error;
-  expenses = expenses.filter(e => e.id !== id);
 }
-
-/* ─── DB: Income ────────────────────────────────────────── */
-async function dbAddIncome(year, month, amount, source, note) {
-  const { data: row, error } = await sb.from('monthly_income')
-    .insert({ user_id: currentUser.id, profile_id: currentProfileId, year, month, amount, source: source || 'Salary', note: note || null })
-    .select().single();
+async function dbSaveIncome(payload) {
+  const { data: row, error } = await sb.from('monthly_income').insert(payload).select().single();
   if (error) throw error;
-  incomeEntries.push({ ...row, amount: parseFloat(row.amount) });
+  return row;
 }
-
-async function dbDeleteIncome(id) {
+async function dbRemoveIncome(id) {
   const { error } = await sb.from('monthly_income').delete().eq('id', id);
   if (error) throw error;
-  incomeEntries = incomeEntries.filter(r => r.id !== id);
 }
 
 /* ─── DB: Settings ──────────────────────────────────────── */
@@ -288,24 +276,31 @@ function openAddProfileModal() {
 
 async function handleAddProfile(e) {
   e.preventDefault();
-  const name = document.getElementById('profileNameInput').value.trim();
+  const name  = document.getElementById('profileNameInput').value.trim();
   const errEl = document.getElementById('profileFormError');
   if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
 
-  const btn = document.getElementById('confirmAddProfile');
-  btn.disabled = true; btn.textContent = 'Adding…';
+  const tmp = 'tmp_' + Date.now();
+  profiles.push({ id: tmp, user_id: currentUser.id, name });
+  currentProfileId = tmp;
+  closeModal('profileModal');
+  renderAll();
+  showToast(`${name} added`);
+
   try {
     const { data: prof, error } = await sb.from('profiles')
       .insert({ user_id: currentUser.id, name }).select().single();
     if (error) throw error;
-    profiles.push(prof);
-    currentProfileId = prof.id;
-    closeModal('profileModal');
-    renderAll();
-    showToast(`${prof.name} added`);
+    const idx = profiles.findIndex(p => p.id === tmp);
+    if (idx !== -1) profiles[idx] = prof;
+    if (currentProfileId === tmp) currentProfileId = prof.id;
+    renderProfileBar();
   } catch (err) {
-    errEl.textContent = err.message; errEl.classList.remove('hidden');
-  } finally { btn.disabled = false; btn.textContent = 'Add'; }
+    profiles = profiles.filter(p => p.id !== tmp);
+    if (currentProfileId === tmp) currentProfileId = profiles[0]?.id || null;
+    renderAll(); showToast('Could not save — ' + err.message);
+  }
 }
 
 async function deleteProfile(id) {
@@ -542,22 +537,35 @@ async function handleFormSubmit(ev) {
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
   if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
 
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true; btn.textContent = editId ? 'Saving…' : 'Adding…';
-  try {
-    const date = monthStartISO();
-    if (editId) {
-      await dbUpdate(editId, { amount, description: desc, category: selectedCategory, date });
+  const date = monthStartISO();
+  closeModal('expenseModal');
+
+  if (editId) {
+    const i    = expenses.findIndex(e => e.id === editId);
+    const prev = i !== -1 ? { ...expenses[i] } : null;
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, category: selectedCategory, date };
+    renderAll();
+    try {
+      await dbPatchExpense(editId, { amount, description: desc, category: selectedCategory, date });
       showToast('Updated');
-    } else {
-      await dbAdd({ amount, description: desc, category: selectedCategory, date, note: null });
-      showToast('Added');
+    } catch (err) {
+      if (prev && i !== -1) expenses[i] = prev;
+      renderAll(); showToast('Could not save — ' + err.message);
     }
-    closeModal('expenseModal'); renderAll();
-  } catch (err) {
-    showFormError(err.message);
+  } else {
+    const tmp = 'tmp_' + Date.now();
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null });
+    renderAll();
+    try {
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null });
+      const idx = expenses.findIndex(e => e.id === tmp);
+      if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+      showToast('Added');
+    } catch (err) {
+      expenses = expenses.filter(e => e.id !== tmp);
+      renderAll(); showToast('Could not save — ' + err.message);
+    }
   }
-  finally { btn.disabled = false; btn.textContent = editId ? 'Save Changes' : 'Add Allocation'; }
 }
 
 /* ─── Income Modal ──────────────────────────────────────── */
@@ -593,11 +601,12 @@ function renderIncomeList() {
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       </button>`;
     el.querySelector('.income-item-del').addEventListener('click', async () => {
-      try {
-        await dbDeleteIncome(r.id);
-        renderIncomeList(); renderSummary();
-        showToast('Income removed');
-      } catch (err) { showToast('Error: ' + err.message); }
+      const prev = [...incomeEntries];
+      incomeEntries = incomeEntries.filter(x => x.id !== r.id);
+      renderIncomeList(); renderSummary();
+      showToast('Income removed');
+      try { await dbRemoveIncome(r.id); }
+      catch (err) { incomeEntries = prev; renderIncomeList(); renderSummary(); showToast('Error: ' + err.message); }
     });
     container.appendChild(el);
   });
@@ -608,19 +617,27 @@ async function handleIncomeSubmit(e) {
   const amount = parseFloat(document.getElementById('incomeAmountInput').value);
   const source = document.getElementById('incomeSourceInput').value.trim() || 'Salary';
   const note   = document.getElementById('incomeNoteInput').value.trim();
-  if (!amount || amount <= 0) { document.getElementById('incomeAmountInput').focus(); return; }
+  const errEl  = document.getElementById('incomeFormError');
+  if (!amount || amount <= 0) { errEl.textContent = 'Enter an income amount.'; errEl.classList.remove('hidden'); return; }
+  errEl.classList.add('hidden');
 
-  const btn = document.getElementById('addIncomeBtn');
-  btn.disabled = true; btn.textContent = 'Adding…';
+  const tmp = 'tmp_' + Date.now();
+  incomeEntries.push({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: note || null });
+  document.getElementById('incomeAmountInput').value = '';
+  document.getElementById('incomeSourceInput').value = '';
+  document.getElementById('incomeNoteInput').value   = '';
+  renderIncomeList(); renderSummary();
+  showToast('Income added');
+
   try {
-    await dbAddIncome(currentYear, currentMonth, amount, source, note);
-    document.getElementById('incomeAmountInput').value = '';
-    document.getElementById('incomeSourceInput').value = '';
-    document.getElementById('incomeNoteInput').value   = '';
+    const row = await dbSaveIncome({ user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: note || null });
+    const idx = incomeEntries.findIndex(r => r.id === tmp);
+    if (idx !== -1) incomeEntries[idx] = { ...row, amount: parseFloat(row.amount) };
+  } catch (err) {
+    incomeEntries = incomeEntries.filter(r => r.id !== tmp);
     renderIncomeList(); renderSummary();
-    showToast('Income added');
-  } catch (err) { showToast('Error: ' + err.message); }
-  finally { btn.disabled = false; btn.textContent = 'Add Income'; }
+    showToast('Could not save — ' + err.message);
+  }
 }
 
 /* ─── Delete ────────────────────────────────────────────── */
@@ -628,14 +645,18 @@ function openDeleteConfirm(id) { pendingDeleteId = id; openModal('deleteModal');
 
 async function handleConfirmDelete() {
   if (!pendingDeleteId) return;
-  const btn = document.getElementById('confirmDelete');
-  btn.disabled = true; btn.textContent = 'Removing…';
-  try {
-    await dbDelete(pendingDeleteId);
-    closeModal('deleteModal'); pendingDeleteId = null; renderAll();
-    showToast('Removed');
-  } catch (err) { showToast('Error: ' + err.message); }
-  finally { btn.disabled = false; btn.textContent = 'Remove'; }
+  const id      = pendingDeleteId;
+  const deleted = expenses.find(e => e.id === id);
+  expenses      = expenses.filter(e => e.id !== id);
+  closeModal('deleteModal');
+  pendingDeleteId = null;
+  renderAll();
+  showToast('Removed');
+  try { await dbRemoveExpense(id); }
+  catch (err) {
+    if (deleted) expenses.unshift(deleted);
+    renderAll(); showToast('Could not delete — ' + err.message);
+  }
 }
 
 /* ─── Settings ──────────────────────────────────────────── */
