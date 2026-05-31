@@ -748,8 +748,9 @@ body.modal-open { overflow: hidden; }
   opacity: 0; transition: opacity 0.2s, transform 0.2s;
   pointer-events: none; box-shadow: var(--shadow-lg);
 }
-.toast.show   { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.hidden { display: none; }
+.toast.show        { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.hidden      { display: none; }
+.toast.toast-error { background: var(--error); color: #fff; }
 
 /* ─── Utils ────────────────────────────────────────────── */
 .hidden { display: none !important; }

@@ -70,6 +70,7 @@ async function init() {
       currentProfileId = null;
       completedMonths  = [];
       settings         = { currency: { symbol: '€', code: 'EUR' } };
+      localStorage.removeItem('activeProfileId');
       showAuth();
     }
   });
@@ -186,8 +187,13 @@ async function loadUserData() {
     if (!error && rows) categories = rows;
   }
 
-  if (!currentProfileId || !profiles.find(p => p.id === currentProfileId))
+  const savedProfileId = localStorage.getItem('activeProfileId');
+  if (savedProfileId && profiles.find(p => p.id === savedProfileId)) {
+    currentProfileId = savedProfileId;
+  } else {
     currentProfileId = profiles[0]?.id || null;
+    if (currentProfileId) localStorage.setItem('activeProfileId', currentProfileId);
+  }
 
   if (!selectedCategory || !categories.find(c => c.id === selectedCategory))
     selectedCategory = categories[0]?.id || null;
@@ -255,7 +261,7 @@ async function toggleMonthDone() {
       if (error) throw error;
     } catch (err) {
       completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
-      renderHeader(); renderSummary(); showToast('Error: ' + err.message);
+      renderHeader(); renderSummary(); showToast('Error: ' + err.message, true);
     }
   } else {
     completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
@@ -266,16 +272,17 @@ async function toggleMonthDone() {
       if (error) throw error;
     } catch (err) {
       completedMonths = completedMonths.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
-      renderHeader(); renderSummary(); showToast('Error: ' + err.message);
+      renderHeader(); renderSummary(); showToast('Error: ' + err.message, true);
     }
   }
 }
 
-function showToast(msg) {
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.remove('hidden'); t.classList.add('show');
-  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.add('hidden'), 200); }, 2200);
+  t.className = isError ? 'toast toast-error show' : 'toast show';
+  const delay = isError ? 4500 : 2200;
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => { t.className = 'toast hidden'; }, 300); }, delay);
 }
 
 /* ─── DB helpers (pure network calls, no state mutation) ── */
@@ -332,6 +339,7 @@ function renderProfileBar() {
     pill.textContent = p.name;
     pill.addEventListener('click', () => {
       currentProfileId = p.id;
+      localStorage.setItem('activeProfileId', p.id);
       renderProfileBar();
       renderHeader();
       renderSummary();
@@ -373,12 +381,12 @@ async function handleAddProfile(e) {
     if (error) throw error;
     const idx = profiles.findIndex(p => p.id === tmp);
     if (idx !== -1) profiles[idx] = prof;
-    if (currentProfileId === tmp) currentProfileId = prof.id;
+    if (currentProfileId === tmp) { currentProfileId = prof.id; localStorage.setItem('activeProfileId', prof.id); }
     renderProfileBar();
   } catch (err) {
     profiles = profiles.filter(p => p.id !== tmp);
-    if (currentProfileId === tmp) currentProfileId = profiles[0]?.id || null;
-    renderAll(); showToast('Could not save — ' + err.message);
+    if (currentProfileId === tmp) { currentProfileId = profiles[0]?.id || null; if (currentProfileId) localStorage.setItem('activeProfileId', currentProfileId); }
+    renderAll(); showToast('Could not save — ' + err.message, true);
   }
 }
 
@@ -388,7 +396,7 @@ async function deleteProfile(id) {
   if (profiles.length <= 1) { showToast("Can't delete the only person"); return; }
   if (!confirm(`Delete "${prof.name}" and all their allocations? This cannot be undone.`)) return;
   const { error } = await sb.from('profiles').delete().eq('id', id);
-  if (error) { showToast('Error: ' + error.message); return; }
+  if (error) { showToast('Error: ' + error.message, true); return; }
   profiles      = profiles.filter(p => p.id !== id);
   expenses      = expenses.filter(e => e.profile_id !== id);
   incomeEntries = incomeEntries.filter(r => r.profile_id !== id);
@@ -627,7 +635,7 @@ async function toggleCheck(id) {
   try { await dbPatchExpense(id, { checked: newVal }); }
   catch (err) {
     expenses[idx] = { ...expenses[idx], checked: !newVal };
-    renderListView(); showToast('Error: ' + err.message);
+    renderListView(); showToast('Error: ' + err.message, true);
   }
 }
 
@@ -709,7 +717,7 @@ async function handleAddCategory(e) {
   } catch (err) {
     categories = categories.filter(c => c.id !== tmp);
     if (selectedCategory === tmp) selectedCategory = categories[0]?.id || null;
-    buildCategoryGrid(); showToast('Could not save — ' + err.message);
+    buildCategoryGrid(); showToast('Could not save — ' + err.message, true);
   }
 }
 
@@ -718,7 +726,7 @@ async function deleteCategoryById(id) {
   if (!cat) return;
   if (!confirm(`Delete "${cat.name}"? Existing items will show as Other.`)) return;
   const { error } = await sb.from('categories').delete().eq('id', id);
-  if (error) { showToast('Error: ' + error.message); return; }
+  if (error) { showToast('Error: ' + error.message, true); return; }
   categories = categories.filter(c => c.id !== id);
   renderCategorySettings(); renderAll();
   showToast(`${cat.name} deleted`);
@@ -809,7 +817,7 @@ async function handleFormSubmit(ev) {
       showToast('Updated');
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
-      renderAll(); showToast('Could not save — ' + err.message);
+      renderAll(); showToast('Could not save — ' + err.message, true);
     }
   } else {
     const tmp = 'tmp_' + Date.now();
@@ -822,7 +830,7 @@ async function handleFormSubmit(ev) {
       showToast('Added');
     } catch (err) {
       expenses = expenses.filter(e => e.id !== tmp);
-      renderAll(); showToast('Could not save — ' + err.message);
+      renderAll(); showToast('Could not save — ' + err.message, true);
     }
   }
 }
@@ -865,7 +873,7 @@ function renderIncomeList() {
       renderIncomeList(); renderSummary();
       showToast('Income removed');
       try { await dbRemoveIncome(r.id); }
-      catch (err) { incomeEntries = prev; renderIncomeList(); renderSummary(); showToast('Error: ' + err.message); }
+      catch (err) { incomeEntries = prev; renderIncomeList(); renderSummary(); showToast('Error: ' + err.message, true); }
     });
     container.appendChild(el);
   });
@@ -895,7 +903,7 @@ async function handleIncomeSubmit(e) {
   } catch (err) {
     incomeEntries = incomeEntries.filter(r => r.id !== tmp);
     renderIncomeList(); renderSummary();
-    showToast('Could not save — ' + err.message);
+    showToast('Could not save — ' + err.message, true);
   }
 }
 
@@ -1037,7 +1045,7 @@ function bindEvents() {
       ]);
       expenses = []; incomeEntries = []; completedMonths = [];
       closeModal('settingsModal'); renderAll(); showToast('All data cleared');
-    } catch (err) { showToast('Error: ' + err.message); }
+    } catch (err) { showToast('Error: ' + err.message, true); }
   });
 
   // Backdrop clicks
