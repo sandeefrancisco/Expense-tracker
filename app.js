@@ -26,6 +26,7 @@ let expenses         = [];
 let incomeEntries    = [];
 let profiles         = [];
 let currentProfileId = null;
+let completedMonths  = []; // [{profile_id, year, month}]
 let settings         = { currency: { symbol: '$', code: 'USD' } };
 let currentUser      = null;
 let currentYear, currentMonth;
@@ -60,6 +61,7 @@ async function init() {
       incomeEntries    = [];
       profiles         = [];
       currentProfileId = null;
+      completedMonths  = [];
       settings         = { currency: { symbol: '$', code: 'USD' } };
       showAuth();
     }
@@ -135,11 +137,12 @@ async function handleAuthSubmit(e) {
 
 /* ─── Data Loading ──────────────────────────────────────── */
 async function loadUserData() {
-  const [expRes, setRes, incRes, profRes] = await Promise.all([
+  const [expRes, setRes, incRes, profRes, doneRes] = await Promise.all([
     sb.from('expenses').select('*').order('created_at', { ascending: false }),
     sb.from('user_settings').select('*').eq('user_id', currentUser.id).maybeSingle(),
     sb.from('monthly_income').select('*').order('created_at', { ascending: true }),
     sb.from('profiles').select('*').order('created_at', { ascending: true }),
+    sb.from('completed_months').select('profile_id,year,month'),
   ]);
 
   if (!expRes.error && expRes.data)
@@ -152,6 +155,7 @@ async function loadUserData() {
     incomeEntries = incRes.data.map(r => ({ ...r, amount: parseFloat(r.amount) }));
 
   if (!profRes.error && profRes.data) profiles = profRes.data;
+  if (!doneRes.error && doneRes.data)  completedMonths = doneRes.data;
 
   // Auto-create default profile for new users
   if (profiles.length === 0) {
@@ -191,6 +195,38 @@ function getMonthIncome() {
 
 function getMonthLabel(y, m) {
   return new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function isMonthDone(y, m) {
+  return completedMonths.some(c => c.profile_id === currentProfileId && c.year === y && c.month === m);
+}
+
+async function toggleMonthDone() {
+  const y = currentYear, m = currentMonth;
+  const done = isMonthDone(y, m);
+  if (done) {
+    completedMonths = completedMonths.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
+    renderHeader(); renderSummary();
+    try {
+      const { error } = await sb.from('completed_months').delete()
+        .eq('user_id', currentUser.id).eq('profile_id', currentProfileId).eq('year', y).eq('month', m);
+      if (error) throw error;
+    } catch (err) {
+      completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
+      renderHeader(); renderSummary(); showToast('Error: ' + err.message);
+    }
+  } else {
+    completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
+    renderHeader(); renderSummary();
+    try {
+      const { error } = await sb.from('completed_months')
+        .insert({ user_id: currentUser.id, profile_id: currentProfileId, year: y, month: m });
+      if (error) throw error;
+    } catch (err) {
+      completedMonths = completedMonths.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
+      renderHeader(); renderSummary(); showToast('Error: ' + err.message);
+    }
+  }
 }
 
 function showToast(msg) {
@@ -255,6 +291,7 @@ function renderProfileBar() {
     pill.addEventListener('click', () => {
       currentProfileId = p.id;
       renderProfileBar();
+      renderHeader();
       renderSummary();
       renderListView();
     });
@@ -336,7 +373,8 @@ function renderProfilesList() {
 }
 
 function renderHeader() {
-  document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth);
+  const done = isMonthDone(currentYear, currentMonth);
+  document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ✅' : '');
   const now = new Date();
   const cur = currentYear === now.getFullYear() && currentMonth === now.getMonth();
   const btn = document.getElementById('nextMonth');
@@ -380,6 +418,18 @@ function renderSummary() {
   }
 
   renderCategoryBars(list, allocated);
+
+  // Mark-done button
+  const doneRow = document.getElementById('summaryDoneRow');
+  if (doneRow) {
+    const done = isMonthDone(currentYear, currentMonth);
+    if (allocated > 0 || done) {
+      doneRow.innerHTML = `<button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? '✅ Done · Undo' : '✓ Mark as done'}</button>`;
+      doneRow.querySelector('#toggleDoneBtn').addEventListener('click', toggleMonthDone);
+    } else {
+      doneRow.innerHTML = '';
+    }
+  }
 }
 
 function renderCategoryBars(list, total) {
@@ -746,8 +796,9 @@ function bindEvents() {
       await Promise.all([
         sb.from('expenses').delete().eq('user_id', currentUser.id),
         sb.from('monthly_income').delete().eq('user_id', currentUser.id),
+        sb.from('completed_months').delete().eq('user_id', currentUser.id),
       ]);
-      expenses = []; incomeEntries = [];
+      expenses = []; incomeEntries = []; completedMonths = [];
       closeModal('settingsModal'); renderAll(); showToast('All data cleared');
     } catch (err) { showToast('Error: ' + err.message); }
   });

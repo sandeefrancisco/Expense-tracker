@@ -318,6 +318,23 @@ body.modal-open { overflow: hidden; }
   height: 100%; border-radius: 99px; transition: width 0.4s ease;
 }
 
+/* ─── Month Done Button ────────────────────────────────── */
+.summary-done-row { display: flex; justify-content: flex-end; margin-top: 14px; }
+.summary-done-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.75);
+  font-size: 12px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  padding: 5px 14px; border-radius: 99px; cursor: pointer;
+  transition: all 0.15s;
+}
+.summary-done-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.summary-done-btn.done {
+  background: rgba(134,239,172,0.15);
+  border-color: rgba(134,239,172,0.35);
+  color: #86efac;
+}
+
 /* ─── Segmented Tabs ───────────────────────────────────── */
 .view-toggle {
   display: flex; background: rgba(26,26,46,.08);
