@@ -25,6 +25,7 @@ let currentYear, currentMonth;
 let pendingDeleteId   = null;
 let selectedCategory  = null;
 let selectedCatColor  = CATEGORY_COLORS[0];
+let selectedCatShared = false;
 let authMode          = 'signin';
 
 /* ─── Boot ──────────────────────────────────────────────── */
@@ -182,6 +183,7 @@ async function loadUserData() {
 /* ─── Helpers ───────────────────────────────────────────── */
 function getCat(id)  { return categories.find(c => c.id === id) || { id: 'other', name: 'Other', color: '#868e96' }; }
 function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
+function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
 function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function monthStartISO() {
   const m = String(currentMonth + 1).padStart(2, '0');
@@ -394,7 +396,7 @@ function renderHeader() {
 function renderSummary() {
   const list    = getMonthExpenses();
   const income  = getMonthIncome();
-  const allocated = list.reduce((s, e) => s + e.amount, 0);
+  const allocated = list.reduce((s, e) => s + effectiveAmount(e), 0);
   const earned    = income.reduce((s, r) => s + r.amount, 0);
   const saved     = earned - allocated;
   const hasIncome = earned > 0;
@@ -452,7 +454,7 @@ function renderCategoryBars(list, total) {
     el.appendChild(s); return;
   }
   const grouped = list.reduce((acc, e) => {
-    acc[e.category] = (acc[e.category] || 0) + e.amount; return acc;
+    acc[e.category] = (acc[e.category] || 0) + effectiveAmount(e); return acc;
   }, {});
   Object.entries(grouped)
     .sort((a, b) => b[1] - a[1])
@@ -485,7 +487,7 @@ function renderListView() {
   list.forEach(e => {
     if (!grouped[e.category]) grouped[e.category] = { items: [], total: 0 };
     grouped[e.category].items.push(e);
-    grouped[e.category].total += e.amount;
+    grouped[e.category].total += effectiveAmount(e);
   });
 
   // Sort categories by total descending
@@ -512,6 +514,7 @@ function renderListView() {
 }
 
 function buildItem(e) {
+  const cat = getCat(e.category);
   const el = document.createElement('div');
   el.className = 'expense-item' + (e.checked ? ' checked' : '');
   el.dataset.id = e.id;
@@ -522,7 +525,7 @@ function buildItem(e) {
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
     </div>
-    <div class="expense-amount">${fmt(e.amount)}</div>
+    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
     <div class="expense-actions">
       <button class="item-action-btn edit-action"   data-id="${e.id}" aria-label="Edit">
         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -580,9 +583,12 @@ function selectCategory(id) {
 
 /* ─── Category Management ───────────────────────────────── */
 function openAddCategoryModal() {
-  selectedCatColor = CATEGORY_COLORS[0];
+  selectedCatColor  = CATEGORY_COLORS[0];
+  selectedCatShared = false;
   document.getElementById('catNameInput').value = '';
   document.getElementById('catFormError').classList.add('hidden');
+  const tb = document.getElementById('toggleShared');
+  tb.textContent = 'No'; tb.classList.remove('on');
   buildColorPicker();
   openModal('categoryModal');
   setTimeout(() => document.getElementById('catNameInput').focus(), 300);
@@ -612,7 +618,7 @@ async function handleAddCategory(e) {
   errEl.classList.add('hidden');
 
   const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor });
+  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared: selectedCatShared });
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
@@ -620,7 +626,7 @@ async function handleAddCategory(e) {
 
   try {
     const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color: selectedCatColor }).select().single();
+      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared: selectedCatShared }).select().single();
     if (error) throw error;
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
@@ -654,7 +660,7 @@ function renderCategorySettings() {
     row.className = 'profile-settings-row';
     row.innerHTML = `
       <span class="cat-settings-dot" style="background:${cat.color}"></span>
-      <span class="profile-settings-name">${escHtml(cat.name)}</span>
+      <span class="profile-settings-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
       <button class="danger-btn cat-del-btn" data-id="${cat.id}">Delete</button>`;
     row.querySelector('.cat-del-btn').addEventListener('click', () => deleteCategoryById(cat.id));
     container.appendChild(row);
@@ -901,6 +907,12 @@ function bindEvents() {
   // Category modal
   document.getElementById('categoryForm').addEventListener('submit', handleAddCategory);
   document.getElementById('cancelAddCat').addEventListener('click', () => closeModal('categoryModal'));
+  document.getElementById('toggleShared').addEventListener('click', () => {
+    selectedCatShared = !selectedCatShared;
+    const btn = document.getElementById('toggleShared');
+    btn.textContent = selectedCatShared ? 'Yes' : 'No';
+    btn.classList.toggle('on', selectedCatShared);
+  });
 
   document.getElementById('currencyOptions').addEventListener('click', e => {
     const btn = e.target.closest('.currency-btn');

@@ -576,6 +576,23 @@ body.modal-open { overflow: hidden; }
 }
 .cat-color-swatch.selected { border-color: var(--ink); transform: scale(1.15); }
 
+/* Shared badge (÷2) */
+.shared-badge {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  background: var(--tint); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 99px; margin-left: 5px;
+  vertical-align: middle; white-space: nowrap;
+}
+
+/* Split 50/50 toggle */
+.cat-shared-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.cat-shared-toggle {
+  padding: 5px 16px; border-radius: 99px; border: 1.5px solid var(--border);
+  background: var(--tint); font-size: 12px; font-weight: 700;
+  font-family: 'Figtree', sans-serif; color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.cat-shared-toggle.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* Category settings */
 .cat-settings-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .cat-del-btn { padding: 4px 12px !important; font-size: 12px !important; width: auto !important; min-height: auto !important; }
