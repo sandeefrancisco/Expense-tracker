@@ -412,7 +412,7 @@ body.modal-open { overflow: hidden; }
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.item-check-btn.checked { background: #d97706; border-color: #d97706; }
+.item-check-btn.checked { background: #16a34a; border-color: #16a34a; }
 .item-check-btn svg { width: 12px; height: 12px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 .expense-item.checked .expense-desc   { opacity: 0.4; text-decoration: line-through; }
 .expense-item.checked .expense-amount { opacity: 0.4; }
