@@ -431,6 +431,8 @@ input, textarea { user-select: text; }
 
 /* ─── Form ─────────────────────────────────────────────── */
 .form-group  { margin-bottom: 16px; }
+.form-error  { background: #FEE2E2; color: var(--error); font-size: 13px; font-weight: 500; padding: 10px 12px; border-radius: var(--r-input); margin-bottom: 12px; }
+.form-error.hidden { display: none; }
 .form-label  { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 8px; }
 .optional    { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--border); }
 

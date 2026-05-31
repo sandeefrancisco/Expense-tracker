@@ -152,8 +152,8 @@ function getCat(id)  { return CATEGORIES.find(c => c.id === id) || CATEGORIES[CA
 function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
 function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function monthStartISO() {
-  const d = new Date(currentYear, currentMonth, 1);
-  return d.toISOString().split('T')[0];
+  const m = String(currentMonth + 1).padStart(2, '0');
+  return `${currentYear}-${m}-01`;
 }
 
 function getMonthExpenses() {
@@ -393,6 +393,12 @@ function selectCategory(id) {
 }
 
 /* ─── Add / Edit Modal ──────────────────────────────────── */
+function clearFormError() { document.getElementById('formError').classList.add('hidden'); }
+function showFormError(msg) {
+  const el = document.getElementById('formError');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+
 function openAddModal() {
   selectedCategory = CATEGORIES[0].id; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'New Allocation';
@@ -401,6 +407,7 @@ function openAddModal() {
   document.getElementById('descInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  clearFormError();
   openModal('expenseModal');
   setTimeout(() => document.getElementById('amountInput').focus(), 300);
 }
@@ -414,11 +421,13 @@ function openEditModal(id) {
   document.getElementById('descInput').value   = e.description;
   document.getElementById('editId').value      = e.id;
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  clearFormError();
   openModal('expenseModal');
 }
 
 async function handleFormSubmit(ev) {
   ev.preventDefault();
+  clearFormError();
   const amount = parseFloat(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
   const editId = document.getElementById('editId').value;
@@ -437,7 +446,9 @@ async function handleFormSubmit(ev) {
       showToast('Added');
     }
     closeModal('expenseModal'); renderAll();
-  } catch (err) { showToast('Error: ' + err.message); }
+  } catch (err) {
+    showFormError(err.message);
+  }
   finally { btn.disabled = false; btn.textContent = editId ? 'Save Changes' : 'Add Allocation'; }
 }
 
