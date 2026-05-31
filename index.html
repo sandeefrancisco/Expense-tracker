@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=13" />
+  <link rel="stylesheet" href="style.css?v=14" />
 </head>
 <body>
 
@@ -214,8 +214,8 @@
         <div class="settings-section">
           <div class="settings-label">Currency</div>
           <div class="currency-options" id="currencyOptions">
-            <button class="currency-btn active" data-symbol="$"  data-code="USD">$ USD</button>
-            <button class="currency-btn" data-symbol="€"  data-code="EUR">€ EUR</button>
+            <button class="currency-btn" data-symbol="$"  data-code="USD">$ USD</button>
+            <button class="currency-btn active" data-symbol="€"  data-code="EUR">€ EUR</button>
             <button class="currency-btn" data-symbol="£"  data-code="GBP">£ GBP</button>
             <button class="currency-btn" data-symbol="¥"  data-code="JPY">¥ JPY</button>
             <button class="currency-btn" data-symbol="₹"  data-code="INR">₹ INR</button>
@@ -239,7 +239,7 @@
   <!-- ── Delete Confirm ── -->
   <div class="modal-backdrop hidden" id="deleteModal">
     <div class="modal confirm-modal">
-      <div class="confirm-icon">🗑️</div>
+      <div class="confirm-icon danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
       <h3 class="confirm-title">Remove allocation?</h3>
       <p class="confirm-desc">This action cannot be undone.</p>
       <div class="confirm-actions">
@@ -252,7 +252,7 @@
   <!-- ── Add Person Modal ── -->
   <div class="modal-backdrop hidden" id="profileModal">
     <div class="modal confirm-modal">
-      <div class="confirm-icon">👤</div>
+      <div class="confirm-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <h3 class="confirm-title">Add person</h3>
       <p class="confirm-desc">Give them a name to track their budget separately.</p>
       <form id="profileForm" novalidate style="width:100%;margin-top:4px;">
@@ -312,6 +312,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>

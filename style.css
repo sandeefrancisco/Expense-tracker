@@ -230,7 +230,7 @@ body.modal-open { overflow: hidden; }
 
 .summary-label {
   font-size: 11px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: 0.9px;
+  letter-spacing: 0.2px;
   opacity: 0.6; margin-bottom: 4px;
 }
 
@@ -248,7 +248,7 @@ body.modal-open { overflow: hidden; }
 }
 
 .summary-stat { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.summary-stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.55; }
+.summary-stat-label { font-size: 10px; font-weight: 600; letter-spacing: 0.2px; opacity: 0.55; }
 .summary-stat-value { font-size: 15px; font-weight: 700; }
 
 .summary-stat-divider {
@@ -367,7 +367,7 @@ body.modal-open { overflow: hidden; }
 .cat-group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .cat-group-name {
   flex: 1; font-size: 12px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted);
+  letter-spacing: 0.2px; color: var(--muted);
 }
 .cat-group-total {
   font-size: 14px; font-weight: 700; color: var(--ink);
@@ -416,7 +416,7 @@ body.modal-open { overflow: hidden; }
 
 .expense-amount {
   font-size: 14px; font-weight: 700; color: var(--ink);
-  white-space: nowrap; flex-shrink: 0; min-width: 72px;
+  white-space: nowrap; flex-shrink: 0;
 }
 .expense-info  { flex: 1; min-width: 0; }
 .expense-desc  { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -448,7 +448,8 @@ body.modal-open { overflow: hidden; }
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; padding: 56px 20px; gap: 6px;
 }
-.empty-icon { font-size: 44px; margin-bottom: 6px; opacity: 0.65; }
+.empty-icon { width: 44px; height: 44px; margin-bottom: 8px; opacity: 0.5; }
+.empty-icon svg { width: 44px; height: 44px; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state p    { font-size: 15px; font-weight: 700; color: var(--ink); }
 .empty-state span { font-size: 13px; color: var(--muted); }
 
@@ -540,8 +541,8 @@ body.modal-open { overflow: hidden; }
 .form-error  { background: #FEE2E2; color: var(--error); font-size: 13px; font-weight: 500; padding: 10px 12px; border-radius: var(--r-input); margin-bottom: 12px; }
 .form-error.hidden { display: none; }
 .income-empty { font-size: 13px; color: var(--muted); padding: 4px 0 8px; }
-.form-label  { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 8px; }
-.optional    { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--border); }
+.form-label  { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); margin-bottom: 8px; }
+.optional    { font-weight: 500; letter-spacing: 0; color: var(--border); }
 
 .form-input {
   width: 100%; padding: 13px 16px;
@@ -655,9 +656,10 @@ body.modal-open { overflow: hidden; }
 }
 
 .income-item-icon {
-  font-size: 20px; width: 36px; height: 36px; border-radius: 10px;
+  width: 36px; height: 36px; border-radius: 10px;
   background: #dcfce7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
+.income-item-icon svg { width: 16px; height: 16px; fill: none; stroke: #16a34a; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .income-item-info { flex: 1; min-width: 0; }
 .income-item-source { font-size: 14px; font-weight: 600; color: var(--ink); }
@@ -680,7 +682,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Settings ─────────────────────────────────────────── */
 .settings-content { display: flex; flex-direction: column; gap: 24px; }
 .settings-section  { display: flex; flex-direction: column; gap: 10px; }
-.settings-label    { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); }
+.settings-label    { font-size: 11px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); }
 
 .account-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--tint); border-radius: var(--r-input); border: 1px solid var(--border-subtle); }
 .account-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
@@ -712,7 +714,9 @@ body.modal-open { overflow: hidden; }
 }
 @keyframes popIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal-backdrop:has(.confirm-modal) { align-items: center; }
-.confirm-icon    { font-size: 40px; margin-bottom: 12px; }
+.confirm-icon    { width: 44px; height: 44px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--tint); }
+.confirm-icon svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.confirm-icon.danger svg { stroke: var(--error); }
 .confirm-title   { font-size: 18px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
 .confirm-desc    { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
 .confirm-actions { display: flex; gap: 10px; }

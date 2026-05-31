@@ -19,7 +19,7 @@ let profiles          = [];
 let categories        = [];
 let currentProfileId  = null;
 let completedMonths   = [];
-let settings          = { currency: { symbol: '$', code: 'USD' } };
+let settings          = { currency: { symbol: '€', code: 'EUR' } };
 let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId   = null;
@@ -56,7 +56,7 @@ async function init() {
       profiles         = [];
       currentProfileId = null;
       completedMonths  = [];
-      settings         = { currency: { symbol: '$', code: 'USD' } };
+      settings         = { currency: { symbol: '€', code: 'EUR' } };
       showAuth();
     }
   });
@@ -403,7 +403,7 @@ function renderProfilesList() {
 
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
-  document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ✅' : '');
+  document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
   const now = new Date();
   const cur = currentYear === now.getFullYear() && currentMonth === now.getMonth();
   const btn = document.getElementById('nextMonth');
@@ -453,7 +453,7 @@ function renderSummary() {
   if (doneRow) {
     const done = isMonthDone(currentYear, currentMonth);
     if (allocated > 0 || done) {
-      doneRow.innerHTML = `<button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? '✅ Done · Undo' : '✓ Mark as done'}</button>`;
+      doneRow.innerHTML = `<button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? 'Done · Undo' : 'Mark as done'}</button>`;
       doneRow.querySelector('#toggleDoneBtn').addEventListener('click', toggleMonthDone);
     } else {
       doneRow.innerHTML = '';
@@ -492,7 +492,7 @@ function renderListView() {
   if (list.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">📋</div>
+        <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M8 13h5"/></svg></div>
         <p>No allocations yet</p>
         <span>Tap + to add your first budget item</span>
       </div>`;
@@ -592,11 +592,11 @@ function buildItem(e) {
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
-    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
-    </div>`;
+    </div>
+    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
   el.addEventListener('click', ev => {
     if (ev.target.closest('.item-check-btn')) return;
     openItemOptions(e.id);
@@ -837,7 +837,7 @@ function renderIncomeList() {
     const el = document.createElement('div');
     el.className = 'income-item';
     el.innerHTML = `
-      <div class="income-item-icon">💰</div>
+      <div class="income-item-icon"><svg viewBox="0 0 24 24"><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M18.36 5.64l1.41-1.41"/><circle cx="12" cy="12" r="4"/></svg></div>
       <div class="income-item-info">
         <div class="income-item-source">${escHtml(r.source)}</div>
         ${r.note ? `<div class="income-item-note">${escHtml(r.note)}</div>` : ''}
