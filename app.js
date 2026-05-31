@@ -531,10 +531,31 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-function openModal(id)  { document.getElementById(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.getElementById(id).classList.add('hidden');    document.body.style.overflow = ''; }
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal'];
+let _scrollY = 0;
+
+function openModal(id) {
+  const anyOpen = MODALS.some(m => !document.getElementById(m).classList.contains('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  if (!anyOpen) {
+    _scrollY = window.scrollY || window.pageYOffset;
+    document.body.style.cssText = `overflow:hidden;position:fixed;top:-${_scrollY}px;left:0;right:0;width:100%;`;
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+  const anyStillOpen = MODALS.some(m => !document.getElementById(m).classList.contains('hidden'));
+  if (!anyStillOpen) {
+    document.body.style.cssText = '';
+    window.scrollTo(0, _scrollY);
+  }
+}
+
 function closeAllModals() {
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal'].forEach(closeModal);
+  MODALS.forEach(m => document.getElementById(m).classList.add('hidden'));
+  document.body.style.cssText = '';
+  window.scrollTo(0, _scrollY);
 }
 
 /* ─── Event Binding ─────────────────────────────────────── */

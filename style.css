@@ -396,9 +396,14 @@ input, textarea { user-select: text; }
 
 /* ─── Modal Backdrop ───────────────────────────────────── */
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(26,26,46,.35);
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  /* Use height:100% (layout viewport) so keyboard resize doesn't move it */
+  height: 100%;
+  background: rgba(26,26,46,.35);
   z-index: 50; display: flex; align-items: flex-end;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  overscroll-behavior: none;
 }
 .modal-backdrop.hidden { display: none; }
 
@@ -406,8 +411,12 @@ input, textarea { user-select: text; }
 .modal {
   background: var(--surface); width: 100%; max-width: 480px;
   margin: 0 auto; border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  padding: 10px 20px 36px; max-height: 92dvh; max-height: 92vh;
-  overflow-y: auto; box-shadow: var(--shadow-modal);
+  padding: 10px 20px max(36px, env(safe-area-inset-bottom, 20px));
+  max-height: 92%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: var(--shadow-modal);
   animation: slideUp 0.28s var(--ease-modal);
 }
 @keyframes slideUp {
