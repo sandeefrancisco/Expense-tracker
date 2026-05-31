@@ -552,7 +552,7 @@ body.modal-open { overflow: hidden; }
 .amount-input::placeholder { color: rgba(26,26,46,.18); font-weight: 700; }
 
 /* Category Grid */
-.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .category-chip {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 10px 4px; border-radius: 12px; border: 1.5px solid var(--border);

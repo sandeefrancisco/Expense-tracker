@@ -7,18 +7,10 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ─── Categories ────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: 'housing',       emoji: '🏠', label: 'Housing',   color: '#0ca678', bg: '#e6fcf5' },
-  { id: 'food',          emoji: '🍽️', label: 'Food',      color: '#fa5252', bg: '#fff5f5' },
-  { id: 'transport',     emoji: '🚗', label: 'Transport', color: '#1971c2', bg: '#e7f5ff' },
-  { id: 'utilities',     emoji: '💡', label: 'Bills',     color: '#1098ad', bg: '#e3fafc' },
-  { id: 'health',        emoji: '💊', label: 'Health',    color: '#2f9e44', bg: '#ebfbee' },
-  { id: 'education',     emoji: '📚', label: 'Learning',  color: '#3b5bdb', bg: '#edf2ff' },
-  { id: 'entertainment', emoji: '🎬', label: 'Fun',       color: '#e67700', bg: '#fff9db' },
-  { id: 'shopping',      emoji: '🛍️', label: 'Shopping',  color: '#ae3ec9', bg: '#f8f0ff' },
-  { id: 'travel',        emoji: '✈️', label: 'Travel',    color: '#0077b6', bg: '#e8f4fd' },
-  { id: 'personal',      emoji: '💆', label: 'Personal',  color: '#d6336c', bg: '#fff0f6' },
-  { id: 'savings',       emoji: '🏦', label: 'Savings',   color: '#2f9e44', bg: '#ebfbee' },
-  { id: 'other',         emoji: '📦', label: 'Other',     color: '#868e96', bg: '#f8f9fa' },
+  { id: 'personal', emoji: '👤', label: 'Personal',    color: '#7c3aed', bg: '#f5f3ff' },
+  { id: 'ph',       emoji: '🇵🇭', label: 'PH',          color: '#b45309', bg: '#fffbeb' },
+  { id: 'berlin',   emoji: '🏙️', label: 'Berlin',      color: '#1d4ed8', bg: '#eff6ff' },
+  { id: 'shared',   emoji: '🤝', label: 'Shared',      color: '#059669', bg: '#ecfdf5' },
 ];
 
 /* ─── State ─────────────────────────────────────────────── */
