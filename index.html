@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Expenses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- App Shell -->
+  <div id="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="month-nav">
+          <button class="icon-btn" id="prevMonth" aria-label="Previous month">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="month-display">
+            <span id="monthLabel">May 2026</span>
+          </div>
+          <button class="icon-btn" id="nextMonth" aria-label="Next month">
+            <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+        <button class="icon-btn" id="openSettings" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+
+      <!-- Summary Card -->
+      <section class="summary-card" id="summaryCard">
+        <div class="summary-label">Total spent</div>
+        <div class="summary-amount" id="totalAmount">$0.00</div>
+        <div class="summary-meta">
+          <span id="expenseCount">0 expenses</span>
+          <span class="dot">·</span>
+          <span id="budgetStatus"></span>
+        </div>
+        <!-- Category Bars -->
+        <div class="category-bars" id="categoryBars"></div>
+      </section>
+
+      <!-- View Toggle -->
+      <div class="view-toggle">
+        <button class="toggle-btn active" data-view="list" id="listToggle">Transactions</button>
+        <button class="toggle-btn" data-view="breakdown" id="breakdownToggle">Breakdown</button>
+      </div>
+
+      <!-- List View -->
+      <section class="view-section" id="listView">
+        <div id="expenseList" class="expense-list">
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">💸</div>
+            <p>No expenses yet</p>
+            <span>Tap + to add your first one</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Breakdown View -->
+      <section class="view-section hidden" id="breakdownView">
+        <div id="breakdownList" class="breakdown-list"></div>
+      </section>
+
+    </main>
+
+    <!-- FAB -->
+    <button class="fab" id="openAdd" aria-label="Add expense">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <div class="nav-indicator" id="navIndicator"></div>
+      <button class="nav-btn active" data-view="list" aria-label="Transactions">
+        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        <span>Transactions</span>
+      </button>
+      <button class="nav-btn" data-view="breakdown" aria-label="Breakdown">
+        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span>Breakdown</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Add/Edit Expense Modal -->
+  <div class="modal-backdrop hidden" id="expenseModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">New Expense</h2>
+        <button class="icon-btn close-btn" id="closeModal" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="expenseForm" novalidate>
+        <!-- Amount -->
+        <div class="form-group amount-group">
+          <label class="currency-symbol" id="currencySymbol">$</label>
+          <input
+            type="number"
+            id="amountInput"
+            class="amount-input"
+            placeholder="0.00"
+            inputmode="decimal"
+            step="0.01"
+            min="0"
+            required
+          />
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label" for="descInput">Description</label>
+          <input
+            type="text"
+            id="descInput"
+            class="form-input"
+            placeholder="What did you spend on?"
+            maxlength="80"
+            required
+          />
+        </div>
+
+        <!-- Category -->
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <div class="category-grid" id="categoryGrid"></div>
+        </div>
+
+        <!-- Date -->
+        <div class="form-group">
+          <label class="form-label" for="dateInput">Date</label>
+          <input type="date" id="dateInput" class="form-input" required />
+        </div>
+
+        <!-- Note (optional) -->
+        <div class="form-group">
+          <label class="form-label" for="noteInput">Note <span class="optional">(optional)</span></label>
+          <input
+            type="text"
+            id="noteInput"
+            class="form-input"
+            placeholder="Add a note..."
+            maxlength="120"
+          />
+        </div>
+
+        <input type="hidden" id="editId" value="" />
+
+        <button type="submit" class="submit-btn" id="submitBtn">Add Expense</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 class="modal-title">Settings</h2>
+        <button class="icon-btn close-btn" id="closeSettings" aria-label="Close">
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="settings-content">
+        <div class="settings-section">
+          <div class="settings-label">Currency</div>
+          <div class="currency-options" id="currencyOptions">
+            <button class="currency-btn active" data-symbol="$" data-code="USD">$ USD</button>
+            <button class="currency-btn" data-symbol="€" data-code="EUR">€ EUR</button>
+            <button class="currency-btn" data-symbol="£" data-code="GBP">£ GBP</button>
+            <button class="currency-btn" data-symbol="¥" data-code="JPY">¥ JPY</button>
+            <button class="currency-btn" data-symbol="₹" data-code="INR">₹ INR</button>
+            <button class="currency-btn" data-symbol="A$" data-code="AUD">A$ AUD</button>
+            <button class="currency-btn" data-symbol="C$" data-code="CAD">C$ CAD</button>
+            <button class="currency-btn" data-symbol="Fr" data-code="CHF">Fr CHF</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label">Monthly Budget</div>
+          <div class="budget-input-wrap">
+            <span class="budget-currency-symbol" id="budgetCurrencySymbol">$</span>
+            <input
+              type="number"
+              id="budgetInput"
+              class="form-input budget-input"
+              placeholder="0 = no limit"
+              min="0"
+              step="1"
+            />
+          </div>
+        </div>
+
+        <div class="settings-section danger-zone">
+          <div class="settings-label">Data</div>
+          <button class="danger-btn" id="clearDataBtn">Clear all expenses</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm -->
+  <div class="modal-backdrop hidden" id="deleteModal">
+    <div class="modal confirm-modal">
+      <div class="confirm-icon">🗑️</div>
+      <h3 class="confirm-title">Delete expense?</h3>
+      <p class="confirm-desc">This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button class="cancel-btn" id="cancelDelete">Cancel</button>
+        <button class="delete-btn" id="confirmDelete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
