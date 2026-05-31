@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#ffffff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Expenses</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,10 +13,45 @@
 </head>
 <body>
 
-  <!-- App Shell -->
-  <div id="app">
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="loading-logo">💸</div>
+    <div class="loading-ring"></div>
+  </div>
 
-    <!-- Header -->
+  <!-- Auth Screen -->
+  <div id="authScreen" class="auth-screen hidden">
+    <div class="auth-content">
+      <div class="auth-logo-wrap">
+        <span class="auth-logo-icon">💸</span>
+      </div>
+      <h1 class="auth-title" id="authTitle">Welcome back</h1>
+      <p class="auth-sub" id="authSub">Sign in to your account</p>
+
+      <form id="authForm" novalidate class="auth-form">
+        <div class="form-group">
+          <label class="form-label" for="emailInput">Email</label>
+          <input type="email" id="emailInput" class="form-input" placeholder="you@example.com"
+            autocomplete="email" inputmode="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" class="form-input" placeholder="••••••••"
+            autocomplete="current-password" />
+        </div>
+        <div class="auth-error hidden" id="authError"></div>
+        <button type="submit" class="submit-btn" id="authSubmitBtn">Sign in</button>
+      </form>
+
+      <button class="auth-toggle-btn" id="authToggle">
+        Don't have an account? <strong>Sign up</strong>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="hidden">
+
     <header class="header">
       <div class="header-inner">
         <div class="month-nav">
@@ -37,11 +71,9 @@
       </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main">
 
-      <!-- Summary Card -->
-      <section class="summary-card" id="summaryCard">
+      <section class="summary-card">
         <div class="summary-label">Total spent</div>
         <div class="summary-amount" id="totalAmount">$0.00</div>
         <div class="summary-meta">
@@ -49,42 +81,29 @@
           <span class="dot">·</span>
           <span id="budgetStatus"></span>
         </div>
-        <!-- Category Bars -->
         <div class="category-bars" id="categoryBars"></div>
       </section>
 
-      <!-- View Toggle -->
       <div class="view-toggle">
-        <button class="toggle-btn active" data-view="list" id="listToggle">Transactions</button>
-        <button class="toggle-btn" data-view="breakdown" id="breakdownToggle">Breakdown</button>
+        <button class="toggle-btn active" data-view="list">Transactions</button>
+        <button class="toggle-btn" data-view="breakdown">Breakdown</button>
       </div>
 
-      <!-- List View -->
       <section class="view-section" id="listView">
-        <div id="expenseList" class="expense-list">
-          <div class="empty-state" id="emptyState">
-            <div class="empty-icon">💸</div>
-            <p>No expenses yet</p>
-            <span>Tap + to add your first one</span>
-          </div>
-        </div>
+        <div id="expenseList" class="expense-list"></div>
       </section>
 
-      <!-- Breakdown View -->
       <section class="view-section hidden" id="breakdownView">
         <div id="breakdownList" class="breakdown-list"></div>
       </section>
 
     </main>
 
-    <!-- FAB -->
     <button class="fab" id="openAdd" aria-label="Add expense">
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
     </button>
 
-    <!-- Bottom Nav -->
     <nav class="bottom-nav">
-      <div class="nav-indicator" id="navIndicator"></div>
       <button class="nav-btn active" data-view="list" aria-label="Transactions">
         <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
         <span>Transactions</span>
@@ -107,62 +126,29 @@
           <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
-
       <form id="expenseForm" novalidate>
-        <!-- Amount -->
         <div class="form-group amount-group">
           <label class="currency-symbol" id="currencySymbol">$</label>
-          <input
-            type="number"
-            id="amountInput"
-            class="amount-input"
-            placeholder="0.00"
-            inputmode="decimal"
-            step="0.01"
-            min="0"
-            required
-          />
+          <input type="number" id="amountInput" class="amount-input" placeholder="0.00"
+            inputmode="decimal" step="0.01" min="0" required />
         </div>
-
-        <!-- Description -->
         <div class="form-group">
           <label class="form-label" for="descInput">Description</label>
-          <input
-            type="text"
-            id="descInput"
-            class="form-input"
-            placeholder="What did you spend on?"
-            maxlength="80"
-            required
-          />
+          <input type="text" id="descInput" class="form-input" placeholder="What did you spend on?" maxlength="80" required />
         </div>
-
-        <!-- Category -->
         <div class="form-group">
           <label class="form-label">Category</label>
           <div class="category-grid" id="categoryGrid"></div>
         </div>
-
-        <!-- Date -->
         <div class="form-group">
           <label class="form-label" for="dateInput">Date</label>
           <input type="date" id="dateInput" class="form-input" required />
         </div>
-
-        <!-- Note (optional) -->
         <div class="form-group">
           <label class="form-label" for="noteInput">Note <span class="optional">(optional)</span></label>
-          <input
-            type="text"
-            id="noteInput"
-            class="form-input"
-            placeholder="Add a note..."
-            maxlength="120"
-          />
+          <input type="text" id="noteInput" class="form-input" placeholder="Add a note..." maxlength="120" />
         </div>
-
         <input type="hidden" id="editId" value="" />
-
         <button type="submit" class="submit-btn" id="submitBtn">Add Expense</button>
       </form>
     </div>
@@ -178,16 +164,25 @@
           <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
-
       <div class="settings-content">
+
+        <div class="settings-section">
+          <div class="settings-label">Account</div>
+          <div class="account-row">
+            <div class="account-avatar" id="accountAvatar"></div>
+            <div class="account-email" id="accountEmail"></div>
+          </div>
+          <button class="secondary-btn" id="signOutBtn">Sign out</button>
+        </div>
+
         <div class="settings-section">
           <div class="settings-label">Currency</div>
           <div class="currency-options" id="currencyOptions">
-            <button class="currency-btn active" data-symbol="$" data-code="USD">$ USD</button>
-            <button class="currency-btn" data-symbol="€" data-code="EUR">€ EUR</button>
-            <button class="currency-btn" data-symbol="£" data-code="GBP">£ GBP</button>
-            <button class="currency-btn" data-symbol="¥" data-code="JPY">¥ JPY</button>
-            <button class="currency-btn" data-symbol="₹" data-code="INR">₹ INR</button>
+            <button class="currency-btn active" data-symbol="$"  data-code="USD">$ USD</button>
+            <button class="currency-btn" data-symbol="€"  data-code="EUR">€ EUR</button>
+            <button class="currency-btn" data-symbol="£"  data-code="GBP">£ GBP</button>
+            <button class="currency-btn" data-symbol="¥"  data-code="JPY">¥ JPY</button>
+            <button class="currency-btn" data-symbol="₹"  data-code="INR">₹ INR</button>
             <button class="currency-btn" data-symbol="A$" data-code="AUD">A$ AUD</button>
             <button class="currency-btn" data-symbol="C$" data-code="CAD">C$ CAD</button>
             <button class="currency-btn" data-symbol="Fr" data-code="CHF">Fr CHF</button>
@@ -198,21 +193,16 @@
           <div class="settings-label">Monthly Budget</div>
           <div class="budget-input-wrap">
             <span class="budget-currency-symbol" id="budgetCurrencySymbol">$</span>
-            <input
-              type="number"
-              id="budgetInput"
-              class="form-input budget-input"
-              placeholder="0 = no limit"
-              min="0"
-              step="1"
-            />
+            <input type="number" id="budgetInput" class="form-input budget-input"
+              placeholder="0 = no limit" min="0" step="1" />
           </div>
         </div>
 
         <div class="settings-section danger-zone">
           <div class="settings-label">Data</div>
-          <button class="danger-btn" id="clearDataBtn">Clear all expenses</button>
+          <button class="danger-btn" id="clearDataBtn">Clear all my expenses</button>
         </div>
+
       </div>
     </div>
   </div>
@@ -233,6 +223,7 @@
   <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
