@@ -7,10 +7,11 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ─── Categories ────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: 'personal', emoji: '👤', label: 'Personal',    color: '#7c3aed', bg: '#f5f3ff' },
-  { id: 'ph',       emoji: '🇵🇭', label: 'PH',          color: '#b45309', bg: '#fffbeb' },
-  { id: 'berlin',   emoji: '🏙️', label: 'Berlin',      color: '#1d4ed8', bg: '#eff6ff' },
-  { id: 'shared',   emoji: '🤝', label: 'Shared',      color: '#059669', bg: '#ecfdf5' },
+  { id: 'personal',      emoji: '👤', label: 'Personal',       color: '#7c3aed', bg: '#f5f3ff' },
+  { id: 'ph',            emoji: '🇵🇭', label: 'PH',             color: '#b45309', bg: '#fffbeb' },
+  { id: 'berlin_shared', emoji: '🤝', label: 'Berlin · Shared', color: '#059669', bg: '#ecfdf5' },
+  { id: 'berlin_me',     emoji: '🧑', label: 'Berlin · Me',     color: '#1d4ed8', bg: '#eff6ff' },
+  { id: 'berlin_her',    emoji: '👩', label: 'Berlin · Her',    color: '#db2777', bg: '#fdf2f8' },
 ];
 
 /* ─── State ─────────────────────────────────────────────── */
