@@ -543,30 +543,22 @@ async function handleCurrencySelect(code, symbol) {
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
 const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal'];
-let _scrollY = 0;
 
 function openModal(id) {
-  const anyOpen = MODALS.some(m => !document.getElementById(m).classList.contains('hidden'));
   document.getElementById(id).classList.remove('hidden');
-  if (!anyOpen) {
-    _scrollY = window.scrollY || window.pageYOffset;
-    document.body.style.cssText = `overflow:hidden;position:fixed;top:-${_scrollY}px;left:0;right:0;width:100%;`;
-  }
+  document.body.classList.add('modal-open');
 }
 
 function closeModal(id) {
   document.getElementById(id).classList.add('hidden');
-  const anyStillOpen = MODALS.some(m => !document.getElementById(m).classList.contains('hidden'));
-  if (!anyStillOpen) {
-    document.body.style.cssText = '';
-    window.scrollTo(0, _scrollY);
+  if (MODALS.every(m => document.getElementById(m).classList.contains('hidden'))) {
+    document.body.classList.remove('modal-open');
   }
 }
 
 function closeAllModals() {
   MODALS.forEach(m => document.getElementById(m).classList.add('hidden'));
-  document.body.style.cssText = '';
-  window.scrollTo(0, _scrollY);
+  document.body.classList.remove('modal-open');
 }
 
 /* ─── Event Binding ─────────────────────────────────────── */
