@@ -70,12 +70,10 @@
 
       <!-- Summary Card -->
       <section class="summary-card">
-
-        <!-- Hero: Savings (if income set) or Spent (if not) -->
-        <div class="summary-label" id="summaryLabel">Total spent</div>
+        <div class="summary-label" id="summaryLabel">Total allocated</div>
         <div class="summary-amount" id="summaryHero">$0.00</div>
 
-        <!-- Income + Spent row (visible when income is logged) -->
+        <!-- Earned + Allocated row (when income logged) -->
         <div class="summary-income-row hidden" id="incomeRow">
           <div class="summary-stat">
             <span class="summary-stat-label">Earned</span>
@@ -83,7 +81,7 @@
           </div>
           <div class="summary-stat-divider"></div>
           <div class="summary-stat">
-            <span class="summary-stat-label">Spent</span>
+            <span class="summary-stat-label">Allocated</span>
             <span class="summary-stat-value" id="spentVal">$0.00</span>
           </div>
           <button class="summary-edit-btn" id="editIncomeBtn" aria-label="Edit income">
@@ -91,59 +89,35 @@
           </button>
         </div>
 
-        <!-- Expense count + log income prompt (when no income) -->
+        <!-- No income yet -->
         <div class="summary-meta" id="summaryMeta">
-          <span id="expenseCount">0 expenses</span>
+          <span id="itemCount">0 items</span>
           <span class="dot">·</span>
           <button class="summary-inline-btn" id="logIncomeBtn">+ Log income</button>
         </div>
 
-        <!-- Budget pill -->
-        <button class="budget-pill budget-unset" id="budgetPill">
-          <span id="budgetPillText">+ Set budget</span>
-        </button>
-
         <div class="category-bars" id="categoryBars"></div>
       </section>
 
-      <!-- View Toggle -->
-      <div class="view-toggle">
-        <button class="toggle-btn active" data-view="list">Transactions</button>
-        <button class="toggle-btn" data-view="breakdown">Breakdown</button>
-      </div>
-
+      <!-- Budget list -->
       <section class="view-section" id="listView">
         <div id="expenseList" class="expense-list"></div>
       </section>
 
-      <section class="view-section hidden" id="breakdownView">
-        <div id="breakdownList" class="breakdown-list"></div>
-      </section>
-
     </main>
 
-    <button class="fab" id="openAdd" aria-label="Add expense">
+    <button class="fab" id="openAdd" aria-label="Add allocation">
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
     </button>
 
-    <nav class="bottom-nav">
-      <button class="nav-btn active" data-view="list" aria-label="Transactions">
-        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-        <span>Transactions</span>
-      </button>
-      <button class="nav-btn" data-view="breakdown" aria-label="Breakdown">
-        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-        <span>Breakdown</span>
-      </button>
-    </nav>
   </div>
 
-  <!-- ── Add/Edit Expense Modal ── -->
+  <!-- ── Add/Edit Allocation Modal ── -->
   <div class="modal-backdrop hidden" id="expenseModal">
     <div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-header">
-        <h2 class="modal-title" id="modalTitle">New Expense</h2>
+        <h2 class="modal-title" id="modalTitle">New Allocation</h2>
         <button class="icon-btn" id="closeModal" aria-label="Close">
           <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
@@ -154,23 +128,15 @@
           <input type="number" id="amountInput" class="amount-input" placeholder="0.00" inputmode="decimal" step="0.01" min="0" required />
         </div>
         <div class="form-group">
-          <label class="form-label" for="descInput">Description</label>
-          <input type="text" id="descInput" class="form-input" placeholder="What did you spend on?" maxlength="80" required />
+          <label class="form-label" for="descInput">Label</label>
+          <input type="text" id="descInput" class="form-input" placeholder="e.g. Rent, Groceries, Netflix…" maxlength="80" required />
         </div>
         <div class="form-group">
           <label class="form-label">Category</label>
           <div class="category-grid" id="categoryGrid"></div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="dateInput">Date</label>
-          <input type="date" id="dateInput" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="noteInput">Note <span class="optional">(optional)</span></label>
-          <input type="text" id="noteInput" class="form-input" placeholder="Add a note..." maxlength="120" />
-        </div>
         <input type="hidden" id="editId" value="" />
-        <button type="submit" class="submit-btn" id="submitBtn">Add Expense</button>
+        <button type="submit" class="submit-btn" id="submitBtn">Add Allocation</button>
       </form>
     </div>
   </div>
@@ -186,10 +152,8 @@
         </button>
       </div>
 
-      <!-- Income list -->
       <div id="incomeList" class="income-list"></div>
 
-      <!-- Add income form -->
       <div class="income-add-section">
         <div class="settings-label">Add income</div>
         <form id="incomeForm" novalidate>
@@ -210,28 +174,6 @@
           <button type="submit" class="submit-btn" id="addIncomeBtn">Add Income</button>
         </form>
       </div>
-    </div>
-  </div>
-
-  <!-- ── Budget Modal ── -->
-  <div class="modal-backdrop hidden" id="budgetModal">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <h2 class="modal-title" id="budgetModalTitle">May 2026 Budget</h2>
-        <button class="icon-btn" id="closeBudgetModal" aria-label="Close">
-          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <p class="modal-hint">Set a spending limit for this month. Each person has their own budget.</p>
-      <form id="budgetAmountForm" novalidate>
-        <div class="form-group amount-group">
-          <label class="currency-symbol" id="budgetModalSymbol">$</label>
-          <input type="number" id="budgetAmountInput" class="amount-input" placeholder="0.00" inputmode="decimal" step="0.01" min="0" required />
-        </div>
-        <button type="submit" class="submit-btn" id="saveBudgetBtn">Save Budget</button>
-      </form>
-      <button class="danger-btn hidden" id="clearBudgetBtn" style="margin-top:8px;">Remove budget for this month</button>
     </div>
   </div>
 
@@ -269,7 +211,7 @@
         </div>
         <div class="settings-section danger-zone">
           <div class="settings-label">Data</div>
-          <button class="danger-btn" id="clearDataBtn">Clear all my expenses</button>
+          <button class="danger-btn" id="clearDataBtn">Clear all my data</button>
         </div>
       </div>
     </div>
@@ -279,11 +221,11 @@
   <div class="modal-backdrop hidden" id="deleteModal">
     <div class="modal confirm-modal">
       <div class="confirm-icon">🗑️</div>
-      <h3 class="confirm-title">Delete expense?</h3>
+      <h3 class="confirm-title">Remove allocation?</h3>
       <p class="confirm-desc">This action cannot be undone.</p>
       <div class="confirm-actions">
         <button class="cancel-btn" id="cancelDelete">Cancel</button>
-        <button class="delete-btn" id="confirmDelete">Delete</button>
+        <button class="delete-btn" id="confirmDelete">Remove</button>
       </div>
     </div>
   </div>

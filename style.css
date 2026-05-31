@@ -159,7 +159,7 @@ input, textarea { user-select: text; }
 /* ─── Main ─────────────────────────────────────────────── */
 .main {
   flex: 1;
-  padding: 16px 16px calc(var(--nav-height) + 16px);
+  padding: 16px 16px 100px;
   display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto;
 }
@@ -287,16 +287,31 @@ input, textarea { user-select: text; }
 .view-section { display: flex; flex-direction: column; gap: 8px; }
 .view-section.hidden { display: none; }
 
-/* ─── Expense List ─────────────────────────────────────── */
-.expense-list { display: flex; flex-direction: column; gap: 6px; }
+/* ─── Budget List ──────────────────────────────────────── */
+.expense-list { display: flex; flex-direction: column; gap: 2px; }
 
-.date-group-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.8px; color: var(--muted); padding: 6px 2px 2px;
+/* Category group header */
+.cat-group-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 4px 6px; margin-top: 6px;
+}
+.cat-group-header:first-child { margin-top: 0; }
+.cat-group-icon {
+  width: 32px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.cat-group-name {
+  flex: 1; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted);
+}
+.cat-group-total {
+  font-size: 14px; font-weight: 700; color: var(--ink);
 }
 
+/* Allocation item */
 .expense-item {
-  background: var(--surface); border-radius: var(--r-card);
+  background: var(--surface); border-radius: 14px;
   border: 1px solid var(--border-subtle); padding: 13px 14px;
   display: flex; align-items: center; gap: 12px;
   box-shadow: var(--shadow-card); cursor: pointer;
@@ -304,14 +319,8 @@ input, textarea { user-select: text; }
 }
 .expense-item:active { transform: scale(0.985); }
 
-.expense-icon {
-  width: 40px; height: 40px; border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 19px; flex-shrink: 0;
-}
 .expense-info  { flex: 1; min-width: 0; }
 .expense-desc  { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.expense-meta  { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
 .expense-amount{ font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; flex-shrink: 0; }
 .expense-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
@@ -356,7 +365,7 @@ input, textarea { user-select: text; }
 
 /* ─── FAB ──────────────────────────────────────────────── */
 .fab {
-  position: fixed; bottom: calc(var(--nav-height) + 14px); right: 16px;
+  position: fixed; bottom: 24px; right: 16px;
   width: var(--fab-size); height: var(--fab-size); border-radius: 50%;
   background: var(--accent); border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
@@ -565,7 +574,7 @@ input, textarea { user-select: text; }
 
 /* ─── Toast ────────────────────────────────────────────── */
 .toast {
-  position: fixed; bottom: calc(var(--nav-height) + 76px); left: 50%;
+  position: fixed; bottom: 96px; left: 50%;
   transform: translateX(-50%) translateY(8px);
   background: var(--ink); color: #fff; font-size: 13px; font-weight: 600;
   font-family: 'Figtree', sans-serif; padding: 10px 18px;
