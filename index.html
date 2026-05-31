@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=11" />
+  <link rel="stylesheet" href="style.css?v=12" />
 </head>
 <body>
 
@@ -129,7 +129,7 @@
       <form id="expenseForm" novalidate>
         <div class="form-group amount-group">
           <label class="currency-symbol" id="currencySymbol">$</label>
-          <input type="number" id="amountInput" class="amount-input" placeholder="0.00" inputmode="decimal" step="0.01" min="0" required />
+          <input type="text" id="amountInput" class="amount-input" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required />
         </div>
         <div class="form-group">
           <label class="form-label" for="descInput">Label</label>
@@ -169,7 +169,7 @@
         <form id="incomeForm" novalidate>
           <div class="form-group amount-group">
             <label class="currency-symbol" id="incomeCurrencySymbol">$</label>
-            <input type="number" id="incomeAmountInput" class="amount-input" placeholder="0.00" inputmode="decimal" step="0.01" min="0" required />
+            <input type="text" id="incomeAmountInput" class="amount-input" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required />
           </div>
           <div class="income-row-fields">
             <div class="form-group" style="flex:1">
@@ -295,6 +295,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=11"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

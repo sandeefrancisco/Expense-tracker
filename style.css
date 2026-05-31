@@ -372,6 +372,24 @@ body.modal-open { overflow: hidden; }
 .cat-group-total {
   font-size: 14px; font-weight: 700; color: var(--ink);
 }
+/* Prefix parent header (e.g. "Berlin") */
+.cat-group-parent {
+  padding: 16px 4px 4px; margin-top: 10px;
+  border-bottom: 1.5px solid var(--border-subtle);
+}
+.cat-group-parent .cat-group-name {
+  font-size: 13px; letter-spacing: 0.5px; color: var(--ink);
+}
+.cat-group-parent .cat-group-total {
+  font-size: 15px;
+}
+/* Sub-category header (e.g. "Personal", "Shared") */
+.cat-group-sub {
+  padding: 10px 4px 4px 20px; margin-top: 2px;
+}
+.cat-group-sub .cat-group-dot { width: 8px; height: 8px; }
+.cat-group-sub + .expense-item { margin-left: 10px; }
+.cat-group-sub .cat-group-total { font-size: 13px; font-weight: 600; }
 
 /* Allocation item */
 .expense-item {

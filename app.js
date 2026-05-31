@@ -181,9 +181,26 @@ async function loadUserData() {
 }
 
 /* ─── Helpers ───────────────────────────────────────────── */
-function getCat(id)  { return categories.find(c => c.id === id) || { id: 'other', name: 'Other', color: '#868e96' }; }
+function getCat(id) {
+  const c = categories.find(c => c.id === id) || { id: 'other', name: 'Other', color: '#868e96', shared: false };
+  // Auto-detect shared if name contains "shared" (case-insensitive)
+  if (!c.shared && /shared/i.test(c.name)) return { ...c, shared: true };
+  return c;
+}
 function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
+function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
+
+/* Returns a map of first-word-prefix → [catId, ...] for prefixes shared by 2+ categories */
+function detectPrefixGroups(catIds) {
+  const prefixMap = {};
+  catIds.forEach(id => {
+    const firstWord = getCat(id).name.split(/\s+/)[0];
+    if (!prefixMap[firstWord]) prefixMap[firstWord] = [];
+    prefixMap[firstWord].push(id);
+  });
+  return Object.fromEntries(Object.entries(prefixMap).filter(([, ids]) => ids.length >= 2));
+}
 function escHtml(s)  { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function monthStartISO() {
   const m = String(currentMonth + 1).padStart(2, '0');
@@ -482,34 +499,87 @@ function renderListView() {
     return;
   }
 
-  // Group by category
-  const grouped = {};
+  // Group expenses by category
+  const byCat = {};
   list.forEach(e => {
-    if (!grouped[e.category]) grouped[e.category] = { items: [], total: 0 };
-    grouped[e.category].items.push(e);
-    grouped[e.category].total += effectiveAmount(e);
+    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0 };
+    byCat[e.category].items.push(e);
+    byCat[e.category].total += effectiveAmount(e);
   });
 
-  // Sort categories by total descending
-  const sorted = Object.entries(grouped).sort((a, b) => b[1].total - a[1].total);
+  const catIds = Object.keys(byCat);
+  const prefixGroups = detectPrefixGroups(catIds); // prefix → [catId, ...]
+  const inGroup = new Set(Object.values(prefixGroups).flat());
+
+  // Build top-level render list: prefix-groups + ungrouped singles
+  const seenPrefixes = new Set();
+  const topLevel = [];
+  catIds.forEach(catId => {
+    const firstWord = getCat(catId).name.split(/\s+/)[0];
+    if (inGroup.has(catId)) {
+      if (!seenPrefixes.has(firstWord)) {
+        seenPrefixes.add(firstWord);
+        const groupIds = prefixGroups[firstWord];
+        const groupTotal = groupIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
+        topLevel.push({ type: 'group', prefix: firstWord, catIds: groupIds, total: groupTotal });
+      }
+    } else {
+      topLevel.push({ type: 'single', catId, total: byCat[catId].total });
+    }
+  });
+  topLevel.sort((a, b) => b.total - a.total);
 
   container.innerHTML = '';
-  sorted.forEach(([catId, { items, total }]) => {
-    const cat = getCat(catId);
 
-    // Category group header
-    const header = document.createElement('div');
-    header.className = 'cat-group-header';
-    header.innerHTML = `
-      <span class="cat-group-dot" style="background:${cat.color}"></span>
-      <div class="cat-group-name">${escHtml(cat.name)}</div>
-      <div class="cat-group-total">${fmt(total)}</div>`;
-    container.appendChild(header);
+  topLevel.forEach(item => {
+    if (item.type === 'group') {
+      // Parent header — e.g. "Berlin"
+      const ph = document.createElement('div');
+      ph.className = 'cat-group-header cat-group-parent';
+      ph.innerHTML = `
+        <div class="cat-group-name">${escHtml(item.prefix)}</div>
+        <div class="cat-group-total">${fmt(item.total)}</div>`;
+      container.appendChild(ph);
 
-    // Items within group
-    items.sort((a, b) => b.amount - a.amount).forEach(e => {
-      container.appendChild(buildItem(e));
-    });
+      // Sub-category headers + items
+      const sortedSubs = item.catIds
+        .filter(id => byCat[id])
+        .sort((a, b) => byCat[b].total - byCat[a].total);
+
+      sortedSubs.forEach(catId => {
+        const cat = getCat(catId);
+        const { items, total } = byCat[catId];
+        const words = cat.name.split(/\s+/);
+        const sublabel = words.slice(1).join(' ') || cat.name;
+
+        const sh = document.createElement('div');
+        sh.className = 'cat-group-header cat-group-sub';
+        sh.innerHTML = `
+          <span class="cat-group-dot" style="background:${cat.color}"></span>
+          <div class="cat-group-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+          <div class="cat-group-total">${fmt(total)}</div>`;
+        container.appendChild(sh);
+
+        items.sort((a, b) => b.amount - a.amount).forEach(e => {
+          container.appendChild(buildItem(e));
+        });
+      });
+    } else {
+      const cat = getCat(item.catId);
+      const { items, total } = byCat[item.catId];
+
+      const header = document.createElement('div');
+      header.className = 'cat-group-header';
+      header.innerHTML = `
+        <span class="cat-group-dot" style="background:${cat.color}"></span>
+        <div class="cat-group-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+        <div class="cat-group-total">${fmt(total)}</div>`;
+      container.appendChild(header);
+
+      items.sort((a, b) => b.amount - a.amount).forEach(e => {
+        container.appendChild(buildItem(e));
+      });
+    }
   });
 }
 
@@ -716,7 +786,7 @@ function openEditModal(id) {
 async function handleFormSubmit(ev) {
   ev.preventDefault();
   clearFormError();
-  const amount = parseFloat(document.getElementById('amountInput').value);
+  const amount = parseAmount(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
   const bank   = document.getElementById('bankInput').value.trim();
   const editId = document.getElementById('editId').value;
@@ -800,7 +870,7 @@ function renderIncomeList() {
 
 async function handleIncomeSubmit(e) {
   e.preventDefault();
-  const amount = parseFloat(document.getElementById('incomeAmountInput').value);
+  const amount = parseAmount(document.getElementById('incomeAmountInput').value);
   const source = document.getElementById('incomeSourceInput').value.trim() || 'Salary';
   const note   = document.getElementById('incomeNoteInput').value.trim();
   const errEl  = document.getElementById('incomeFormError');
