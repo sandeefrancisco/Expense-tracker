@@ -62,7 +62,7 @@ input, textarea { user-select: text; }
   gap: 24px; z-index: 200;
 }
 
-.loading-logo { font-size: 52px; }
+.loading-logo { width: 80px; height: 80px; border-radius: 18px; }
 
 .loading-ring {
   width: 28px; height: 28px;
@@ -87,13 +87,13 @@ input, textarea { user-select: text; }
 }
 
 .auth-logo-wrap {
-  width: 72px; height: 72px;
-  background: var(--ink); border-radius: 20px;
+  width: 80px; height: 80px;
+  border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 20px; box-shadow: var(--shadow-lg);
+  margin-bottom: 20px; overflow: hidden;
 }
 
-.auth-logo-icon { font-size: 34px; }
+.auth-logo-icon { width: 80px; height: 80px; display: block; }
 .auth-title { font-size: 26px; font-weight: 800; letter-spacing: -0.6px; margin-bottom: 6px; text-align: center; }
 .auth-sub   { font-size: 14px; color: var(--muted); margin-bottom: 28px; text-align: center; }
 

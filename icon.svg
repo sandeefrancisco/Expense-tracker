@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="receiptShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#0030CC" flood-opacity="0.25"/>
+    </filter>
+    <clipPath id="bgClip">
+      <rect width="1024" height="1024" rx="220"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="220" fill="#2563EB"/>
+
+  <!-- Page curl shadow -->
+  <path d="M590 870 Q700 830 720 920 L870 920 Q855 975 790 980 L590 980 Z"
+        fill="#1D4ED8" opacity="0.5" clip-path="url(#bgClip)"/>
+
+  <!-- Receipt paper -->
+  <!-- Zig-zag torn top, rest is smooth white rectangle -->
+  <path d="
+    M178 258
+    L198 218 L218 258
+    L238 218 L258 258
+    L278 218 L298 258
+    L318 218 L338 258
+    L358 218 L378 258
+    L398 218 L418 258
+    L438 218 L458 258
+    L478 218 L498 258
+    L518 218 L538 258
+    L558 218 L578 258
+    L598 218 L618 258
+    L638 218 L658 258
+    L678 218 L698 258
+    L718 218 L738 258
+    L758 218 L778 258
+    L798 218 L818 258
+    L838 218 L858 258
+    L858 890
+    Q858 910 838 910
+    L590 910
+    Q615 855 560 830
+    L178 830
+    Q158 830 158 810
+    L158 258 Z
+  " fill="white" filter="url(#receiptShadow)"/>
+
+  <!-- Page curl triangle -->
+  <path d="M590 910 Q618 858 560 830 L590 830 Z" fill="#DBEAFE"/>
+
+  <!-- BE logo mark -->
+  <!-- B vertical stroke -->
+  <rect x="268" y="305" width="48" height="170" rx="10" fill="#2563EB"/>
+  <!-- B top bowl -->
+  <path d="M316 305 Q415 305 415 350 Q415 395 316 395 Z" fill="#2563EB"/>
+  <!-- B bottom bowl -->
+  <path d="M316 395 Q428 395 428 450 Q428 475 316 475 Z" fill="#2563EB"/>
+  <!-- Horizontal line 1 -->
+  <rect x="455" y="318" width="165" height="38" rx="19" fill="#2563EB"/>
+  <!-- Horizontal line 2 -->
+  <rect x="455" y="376" width="135" height="38" rx="19" fill="#2563EB"/>
+  <!-- Horizontal line 3 -->
+  <rect x="455" y="434" width="112" height="38" rx="19" fill="#2563EB"/>
+
+  <!-- Row 1: Blue dot -->
+  <circle cx="220" cy="575" r="32" fill="#3B82F6"/>
+  <rect x="278" y="557" width="340" height="26" rx="13" fill="#CBD5E1"/>
+  <rect x="648" y="557" width="110" height="26" rx="13" fill="#CBD5E1"/>
+
+  <!-- Row 2: Purple dot -->
+  <circle cx="220" cy="660" r="32" fill="#6366F1"/>
+  <rect x="278" y="642" width="340" height="26" rx="13" fill="#CBD5E1"/>
+  <rect x="648" y="642" width="110" height="26" rx="13" fill="#CBD5E1"/>
+
+  <!-- Row 3: Green dot -->
+  <circle cx="220" cy="745" r="32" fill="#10B981"/>
+  <rect x="278" y="727" width="290" height="26" rx="13" fill="#CBD5E1"/>
+</svg>
