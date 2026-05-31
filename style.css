@@ -687,3 +687,4 @@ body.modal-open { overflow: hidden; }
 ::-webkit-scrollbar { width: 0; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 button:focus:not(:focus-visible) { outline: none; }
+input:focus-visible, textarea:focus-visible { outline: none; }
