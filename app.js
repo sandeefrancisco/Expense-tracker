@@ -5,6 +5,19 @@ const SUPABASE_URL      = 'https://eizhfvieozigsgolckez.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpemhmdmllb3ppZ3Nnb2xja2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTEyMDUsImV4cCI6MjA5NTc2NzIwNX0.v-qAHGR-I63RL4Ue0YH5evTwot9riE-nUuw0ACffaYA';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ─── Bank logo map ─────────────────────────────────────── */
+const BANK_LOGO_DOMAINS = {
+  'bdo':         'bdo.com.ph',
+  'bpi':         'bpi.com.ph',
+  'n26':         'n26.com',
+  'commerzbank': 'commerzbank.com',
+};
+function bankLogoUrl(name) {
+  if (!name) return null;
+  const domain = BANK_LOGO_DOMAINS[name.toLowerCase().trim()];
+  return domain ? `https://logo.clearbit.com/${domain}` : null;
+}
+
 /* ─── Category colour palette ───────────────────────────── */
 const CATEGORY_COLORS = [
   '#7c3aed','#1d4ed8','#059669','#db2777',
@@ -594,7 +607,7 @@ function buildItem(e) {
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
-      ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
+      ${e.bank ? `<div class="expense-bank">${(() => { const u = bankLogoUrl(e.bank); return u ? `<img class="bank-logo" src="${u}" alt="" onerror="this.style.display='none'">` : ''; })()}${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
   el.addEventListener('click', ev => {
