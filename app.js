@@ -119,14 +119,18 @@ async function handleAuthSubmit(e) {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) throw error;
     } else {
-      const { error } = await sb.auth.signUp({ email, password });
+      const { data, error } = await sb.auth.signUp({ email, password });
       if (error) throw error;
-      errorEl.style.cssText = 'background:#dcfce7;color:#166534;';
-      errorEl.textContent   = 'Account created! Check your email to confirm, then sign in.';
-      errorEl.classList.remove('hidden');
-      btn.disabled    = false;
-      btn.textContent = 'Sign up';
-      return;
+      // If auto-confirm is on, session is returned immediately
+      if (!data.session) {
+        errorEl.style.cssText = 'background:#dcfce7;color:#166534;';
+        errorEl.textContent   = 'Account created! Check your email to confirm, then sign in.';
+        errorEl.classList.remove('hidden');
+        btn.disabled    = false;
+        btn.textContent = 'Sign up';
+        return;
+      }
+      // Auto-confirmed — onAuthStateChange will fire and open the app
     }
   } catch (err) {
     errorEl.style.cssText   = '';
