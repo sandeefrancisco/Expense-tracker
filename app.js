@@ -524,6 +524,7 @@ function buildItem(e) {
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
+      ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
     <div class="expense-actions">
@@ -674,13 +675,22 @@ function showFormError(msg) {
   el.textContent = msg; el.classList.remove('hidden');
 }
 
+function updateBankSuggestions() {
+  const dl = document.getElementById('bankSuggestions');
+  if (!dl) return;
+  const banks = [...new Set(expenses.filter(e => e.bank).map(e => e.bank))];
+  dl.innerHTML = banks.map(b => `<option value="${escHtml(b)}">`).join('');
+}
+
 function openAddModal() {
   buildCategoryGrid();
+  updateBankSuggestions();
   selectedCategory = categories[0]?.id || null; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'New Allocation';
   document.getElementById('submitBtn').textContent  = 'Add Allocation';
   document.getElementById('amountInput').value = '';
   document.getElementById('descInput').value   = '';
+  document.getElementById('bankInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
@@ -695,7 +705,9 @@ function openEditModal(id) {
   document.getElementById('submitBtn').textContent  = 'Save Changes';
   document.getElementById('amountInput').value = parseFloat(e.amount).toFixed(2);
   document.getElementById('descInput').value   = e.description;
+  document.getElementById('bankInput').value   = e.bank || '';
   document.getElementById('editId').value      = e.id;
+  updateBankSuggestions();
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
   openModal('expenseModal');
@@ -706,6 +718,7 @@ async function handleFormSubmit(ev) {
   clearFormError();
   const amount = parseFloat(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
+  const bank   = document.getElementById('bankInput').value.trim();
   const editId = document.getElementById('editId').value;
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
   if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
@@ -716,10 +729,10 @@ async function handleFormSubmit(ev) {
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, category: selectedCategory, date };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, date };
     renderAll();
     try {
-      await dbPatchExpense(editId, { amount, description: desc, category: selectedCategory, date });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, date });
       showToast('Updated');
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
@@ -727,10 +740,10 @@ async function handleFormSubmit(ev) {
     }
   } else {
     const tmp = 'tmp_' + Date.now();
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null, checked: false });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false });
     renderAll();
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, category: selectedCategory, date, note: null });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
       showToast('Added');
