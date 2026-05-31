@@ -592,27 +592,16 @@ function buildItem(e) {
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
+    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
-    </div>
-    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
-    <div class="expense-actions">
-      <button class="item-action-btn edit-action"   data-id="${e.id}" aria-label="Edit">
-        <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </button>
-      <button class="item-action-btn delete-action" data-id="${e.id}" aria-label="Delete">
-        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-      </button>
     </div>`;
   el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-action-btn') || ev.target.closest('.item-check-btn')) return;
-    document.querySelectorAll('.expense-item').forEach(i => { if (i !== el) i.classList.remove('show-actions'); });
-    el.classList.toggle('show-actions');
+    if (ev.target.closest('.item-check-btn')) return;
+    openItemOptions(e.id);
   });
   el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });
-  el.querySelector('.edit-action').addEventListener('click', ev => { ev.stopPropagation(); openEditModal(e.id); });
-  el.querySelector('.delete-action').addEventListener('click', ev => { ev.stopPropagation(); openDeleteConfirm(e.id); });
   return el;
 }
 
@@ -770,6 +759,7 @@ function openAddModal() {
 
 function openEditModal(id) {
   const e = expenses.find(x => x.id === id); if (!e) return;
+  buildCategoryGrid();
   selectedCategory = e.category; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'Edit Allocation';
   document.getElementById('submitBtn').textContent  = 'Save Changes';
@@ -899,6 +889,15 @@ async function handleIncomeSubmit(e) {
 /* ─── Delete ────────────────────────────────────────────── */
 function openDeleteConfirm(id) { pendingDeleteId = id; openModal('deleteModal'); }
 
+/* ─── Item Options Sheet ────────────────────────────────── */
+let pendingOptionsId = null;
+function openItemOptions(id) {
+  const e = expenses.find(x => x.id === id); if (!e) return;
+  pendingOptionsId = id;
+  document.getElementById('itemOptionsDesc').textContent = e.description;
+  openModal('itemOptionsModal');
+}
+
 async function handleConfirmDelete() {
   if (!pendingDeleteId) return;
   const id      = pendingDeleteId;
@@ -927,7 +926,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -979,6 +978,15 @@ function bindEvents() {
   document.getElementById('cancelDelete').addEventListener('click',  () => closeModal('deleteModal'));
   document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
 
+  // Item options sheet
+  document.getElementById('itemOptionsEdit').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openEditModal(id);
+  });
+  document.getElementById('itemOptionsDelete').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
+  });
+  document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
+
   // Settings
   document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
@@ -1020,7 +1028,7 @@ function bindEvents() {
   });
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
