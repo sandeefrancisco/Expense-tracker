@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=18" />
+  <link rel="stylesheet" href="style.css?v=19" />
 </head>
 <body>
 
@@ -279,7 +279,10 @@
         <div class="cat-color-picker" id="catColorPicker"></div>
         <div class="cat-shared-row">
           <span class="form-label" style="margin-bottom:0">Split 50/50</span>
-          <button type="button" class="cat-shared-toggle" id="toggleShared">No</button>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleShared">
+            <span class="toggle-track"></span>
+          </label>
         </div>
         <div class="form-error hidden" id="catFormError"></div>
         <div class="confirm-actions">
@@ -311,6 +314,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

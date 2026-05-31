@@ -6,32 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ─── Bank definitions ──────────────────────────────────── */
-const BANKS = [
-  { name: 'BDO',         domain: 'bdo.com.ph',     color: '#003DA5' },
-  { name: 'BPI',         domain: 'bpi.com.ph',      color: '#CC0000' },
-  { name: 'N26',         domain: 'n26.com',          color: '#1A1A2E' },
-  { name: 'Commerzbank', domain: 'commerzbank.com',  color: '#FFCC00' },
-];
-
-function bankByName(name) {
-  if (!name) return null;
-  return BANKS.find(b => b.name.toLowerCase() === name.toLowerCase().trim()) || null;
-}
-
-function bankLogoUrl(name) {
-  const b = bankByName(name);
-  return b ? `https://www.google.com/s2/favicons?domain=${b.domain}&sz=64` : null;
-}
-
-function bankLogoHtml(name, size = 16) {
-  const b = bankByName(name);
-  if (!b) return '';
-  const isLight = b.color === '#FFCC00';
-  return `<span class="bank-logo-wrap" style="background:${b.color}" data-initial="${b.name[0]}">` +
-    `<img src="https://www.google.com/s2/favicons?domain=${b.domain}&sz=64" alt="" ` +
-    `width="${size}" height="${size}" onerror="this.style.display='none'">` +
-    `</span>`;
-}
+const BANKS = ['BDO', 'BPI', 'N26', 'Commerzbank'];
 
 function buildBankGrid(current) {
   const grid = document.getElementById('bankGrid');
@@ -45,12 +20,12 @@ function buildBankGrid(current) {
   none.addEventListener('click', () => { selectedBank = null; buildBankGrid(null); });
   grid.appendChild(none);
 
-  BANKS.forEach(b => {
+  BANKS.forEach(name => {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'bank-chip' + (current === b.name ? ' active' : '');
-    chip.innerHTML = bankLogoHtml(b.name, 20) + `<span>${escHtml(b.name)}</span>`;
-    chip.addEventListener('click', () => { selectedBank = b.name; buildBankGrid(b.name); });
+    chip.className = 'bank-chip' + (current === name ? ' active' : '');
+    chip.textContent = name;
+    chip.addEventListener('click', () => { selectedBank = name; buildBankGrid(name); });
     grid.appendChild(chip);
   });
 }
@@ -653,7 +628,7 @@ function buildItem(e) {
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
-      ${e.bank ? `<div class="expense-bank">${bankLogoHtml(e.bank, 14)}${escHtml(e.bank)}</div>` : ''}
+      ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
   el.addEventListener('click', ev => {
@@ -703,11 +678,9 @@ function selectCategory(id) {
 /* ─── Category Management ───────────────────────────────── */
 function openAddCategoryModal() {
   selectedCatColor  = CATEGORY_COLORS[0];
-  selectedCatShared = false;
   document.getElementById('catNameInput').value = '';
   document.getElementById('catFormError').classList.add('hidden');
-  const tb = document.getElementById('toggleShared');
-  tb.textContent = 'No'; tb.classList.remove('on');
+  document.getElementById('toggleShared').checked = false;
   buildColorPicker();
   openModal('categoryModal');
   setTimeout(() => document.getElementById('catNameInput').focus(), 300);
@@ -736,8 +709,9 @@ async function handleAddCategory(e) {
   if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
 
+  const shared = document.getElementById('toggleShared').checked;
   const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared: selectedCatShared });
+  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared });
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
@@ -745,7 +719,7 @@ async function handleAddCategory(e) {
 
   try {
     const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared: selectedCatShared }).select().single();
+      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared }).select().single();
     if (error) throw error;
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
@@ -780,8 +754,43 @@ function renderCategorySettings() {
     row.innerHTML = `
       <span class="cat-settings-dot" style="background:${cat.color}"></span>
       <span class="profile-settings-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
-      <button class="danger-btn cat-del-btn" data-id="${cat.id}">Delete</button>`;
+      <div class="cat-row-actions">
+        <button class="icon-btn cat-rename-btn" aria-label="Rename">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="danger-btn cat-del-btn">Delete</button>
+      </div>`;
+
     row.querySelector('.cat-del-btn').addEventListener('click', () => deleteCategoryById(cat.id));
+    row.querySelector('.cat-rename-btn').addEventListener('click', () => {
+      const nameSpan = row.querySelector('.profile-settings-name');
+      const input = document.createElement('input');
+      input.type = 'text'; input.value = cat.name;
+      input.className = 'form-input cat-rename-input';
+      nameSpan.replaceWith(input);
+      input.focus(); input.select();
+
+      const commit = async () => {
+        const newName = input.value.trim();
+        if (!newName || newName === cat.name) { renderCategorySettings(); return; }
+        const idx = categories.findIndex(c => c.id === cat.id);
+        if (idx !== -1) categories[idx] = { ...categories[idx], name: newName };
+        renderCategorySettings(); renderAll();
+        try {
+          const { error } = await sb.from('categories').update({ name: newName }).eq('id', cat.id);
+          if (error) throw error;
+        } catch (err) {
+          if (idx !== -1) categories[idx] = cat;
+          renderCategorySettings(); renderAll(); showToast('Could not rename — ' + err.message, true);
+        }
+      };
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { renderCategorySettings(); }
+      });
+    });
+
     container.appendChild(row);
   });
 }
@@ -1049,13 +1058,6 @@ function bindEvents() {
   // Category modal
   document.getElementById('categoryForm').addEventListener('submit', handleAddCategory);
   document.getElementById('cancelAddCat').addEventListener('click', () => closeModal('categoryModal'));
-  document.getElementById('toggleShared').addEventListener('click', () => {
-    selectedCatShared = !selectedCatShared;
-    const btn = document.getElementById('toggleShared');
-    btn.textContent = selectedCatShared ? 'Yes' : 'No';
-    btn.classList.toggle('on', selectedCatShared);
-  });
-
   document.getElementById('currencyOptions').addEventListener('click', e => {
     const btn = e.target.closest('.currency-btn');
     if (btn) handleCurrencySelect(btn.dataset.code, btn.dataset.symbol);
