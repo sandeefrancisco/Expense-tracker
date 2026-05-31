@@ -136,6 +136,55 @@ body.modal-open { overflow: hidden; }
   height: var(--header-height);
 }
 
+/* ─── Profile Bar ──────────────────────────────────────── */
+.profile-bar {
+  position: sticky; top: var(--header-height); z-index: 19;
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  flex-shrink: 0;
+}
+.profile-bar::-webkit-scrollbar { display: none; }
+
+.profile-pill {
+  white-space: nowrap; flex-shrink: 0;
+  padding: 5px 16px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 13px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  color: var(--muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.profile-pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.profile-pill:not(.active):hover { background: var(--tint); }
+
+.profile-add-btn {
+  white-space: nowrap; flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 99px;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  font-size: 13px; font-weight: 500; font-family: 'Figtree', sans-serif;
+  color: var(--muted); cursor: pointer;
+  transition: all 0.15s;
+}
+.profile-add-btn:hover { background: var(--tint); }
+
+/* ─── Profile Settings ─────────────────────────────────── */
+.profiles-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+.profile-settings-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--r-input);
+  background: var(--tint); border: 1px solid var(--border-subtle);
+}
+.profile-settings-name { flex: 1; font-size: 14px; font-weight: 600; }
+.profile-only-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+.profile-settings-row .danger-btn { padding: 4px 12px; font-size: 12px; }
+
 .header-inner {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px; height: 100%;

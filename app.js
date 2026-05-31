@@ -22,10 +22,12 @@ const CATEGORIES = [
 ];
 
 /* ─── State ─────────────────────────────────────────────── */
-let expenses      = [];
-let incomeEntries = [];
-let settings      = { currency: { symbol: '$', code: 'USD' } };
-let currentUser   = null;
+let expenses         = [];
+let incomeEntries    = [];
+let profiles         = [];
+let currentProfileId = null;
+let settings         = { currency: { symbol: '$', code: 'USD' } };
+let currentUser      = null;
 let currentYear, currentMonth;
 let pendingDeleteId  = null;
 let selectedCategory = CATEGORIES[0].id;
@@ -53,10 +55,12 @@ async function init() {
       await loadUserData();
       showApp();
     } else if (event === 'SIGNED_OUT') {
-      currentUser   = null;
-      expenses      = [];
-      incomeEntries = [];
-      settings      = { currency: { symbol: '$', code: 'USD' } };
+      currentUser      = null;
+      expenses         = [];
+      incomeEntries    = [];
+      profiles         = [];
+      currentProfileId = null;
+      settings         = { currency: { symbol: '$', code: 'USD' } };
       showAuth();
     }
   });
@@ -131,10 +135,11 @@ async function handleAuthSubmit(e) {
 
 /* ─── Data Loading ──────────────────────────────────────── */
 async function loadUserData() {
-  const [expRes, setRes, incRes] = await Promise.all([
+  const [expRes, setRes, incRes, profRes] = await Promise.all([
     sb.from('expenses').select('*').order('created_at', { ascending: false }),
     sb.from('user_settings').select('*').eq('user_id', currentUser.id).maybeSingle(),
     sb.from('monthly_income').select('*').order('created_at', { ascending: true }),
+    sb.from('profiles').select('*').order('created_at', { ascending: true }),
   ]);
 
   if (!expRes.error && expRes.data)
@@ -145,6 +150,19 @@ async function loadUserData() {
 
   if (!incRes.error && incRes.data)
     incomeEntries = incRes.data.map(r => ({ ...r, amount: parseFloat(r.amount) }));
+
+  if (!profRes.error && profRes.data) profiles = profRes.data;
+
+  // Auto-create default profile for new users
+  if (profiles.length === 0) {
+    const { data: prof, error } = await sb.from('profiles')
+      .insert({ user_id: currentUser.id, name: 'Me' }).select().single();
+    if (!error && prof) profiles = [prof];
+  }
+
+  // Keep current profile if still valid, else default to first
+  if (!currentProfileId || !profiles.find(p => p.id === currentProfileId))
+    currentProfileId = profiles[0]?.id || null;
 }
 
 /* ─── Helpers ───────────────────────────────────────────── */
@@ -158,13 +176,17 @@ function monthStartISO() {
 
 function getMonthExpenses() {
   return expenses.filter(e => {
+    if (e.profile_id !== currentProfileId) return false;
     const d = new Date(e.date + 'T00:00:00');
     return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
   });
 }
 
 function getMonthIncome() {
-  return incomeEntries.filter(r => r.year === currentYear && r.month === currentMonth);
+  return incomeEntries.filter(r =>
+    r.profile_id === currentProfileId &&
+    r.year === currentYear && r.month === currentMonth
+  );
 }
 
 function getMonthLabel(y, m) {
@@ -181,7 +203,7 @@ function showToast(msg) {
 /* ─── DB: Allocations ───────────────────────────────────── */
 async function dbAdd(data) {
   const { data: row, error } = await sb.from('expenses')
-    .insert({ user_id: currentUser.id, ...data }).select().single();
+    .insert({ user_id: currentUser.id, profile_id: currentProfileId, ...data }).select().single();
   if (error) throw error;
   expenses.unshift({ ...row, amount: parseFloat(row.amount) });
 }
@@ -202,7 +224,7 @@ async function dbDelete(id) {
 /* ─── DB: Income ────────────────────────────────────────── */
 async function dbAddIncome(year, month, amount, source, note) {
   const { data: row, error } = await sb.from('monthly_income')
-    .insert({ user_id: currentUser.id, year, month, amount, source: source || 'Salary', note: note || null })
+    .insert({ user_id: currentUser.id, profile_id: currentProfileId, year, month, amount, source: source || 'Salary', note: note || null })
     .select().single();
   if (error) throw error;
   incomeEntries.push({ ...row, amount: parseFloat(row.amount) });
@@ -227,9 +249,95 @@ async function dbSaveSettings() {
 /* ─── Render ────────────────────────────────────────────── */
 function renderAll() {
   renderHeader();
+  renderProfileBar();
   renderSummary();
   renderListView();
   syncSettingsUI();
+}
+
+/* ─── Profiles ──────────────────────────────────────────── */
+function renderProfileBar() {
+  const bar = document.getElementById('profileBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  profiles.forEach(p => {
+    const pill = document.createElement('button');
+    pill.className = 'profile-pill' + (p.id === currentProfileId ? ' active' : '');
+    pill.textContent = p.name;
+    pill.addEventListener('click', () => {
+      currentProfileId = p.id;
+      renderProfileBar();
+      renderSummary();
+      renderListView();
+    });
+    bar.appendChild(pill);
+  });
+  const addBtn = document.createElement('button');
+  addBtn.className = 'profile-add-btn';
+  addBtn.textContent = '+ Add person';
+  addBtn.addEventListener('click', openAddProfileModal);
+  bar.appendChild(addBtn);
+}
+
+function openAddProfileModal() {
+  document.getElementById('profileNameInput').value = '';
+  document.getElementById('profileFormError').classList.add('hidden');
+  openModal('profileModal');
+  setTimeout(() => document.getElementById('profileNameInput').focus(), 300);
+}
+
+async function handleAddProfile(e) {
+  e.preventDefault();
+  const name = document.getElementById('profileNameInput').value.trim();
+  const errEl = document.getElementById('profileFormError');
+  if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
+
+  const btn = document.getElementById('confirmAddProfile');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    const { data: prof, error } = await sb.from('profiles')
+      .insert({ user_id: currentUser.id, name }).select().single();
+    if (error) throw error;
+    profiles.push(prof);
+    currentProfileId = prof.id;
+    closeModal('profileModal');
+    renderAll();
+    showToast(`${prof.name} added`);
+  } catch (err) {
+    errEl.textContent = err.message; errEl.classList.remove('hidden');
+  } finally { btn.disabled = false; btn.textContent = 'Add'; }
+}
+
+async function deleteProfile(id) {
+  const prof = profiles.find(p => p.id === id);
+  if (!prof) return;
+  if (profiles.length <= 1) { showToast("Can't delete the only person"); return; }
+  if (!confirm(`Delete "${prof.name}" and all their allocations? This cannot be undone.`)) return;
+  const { error } = await sb.from('profiles').delete().eq('id', id);
+  if (error) { showToast('Error: ' + error.message); return; }
+  profiles      = profiles.filter(p => p.id !== id);
+  expenses      = expenses.filter(e => e.profile_id !== id);
+  incomeEntries = incomeEntries.filter(r => r.profile_id !== id);
+  if (currentProfileId === id) currentProfileId = profiles[0]?.id || null;
+  renderAll();
+  showToast(`${prof.name} deleted`);
+}
+
+function renderProfilesList() {
+  const container = document.getElementById('profilesList');
+  if (!container) return;
+  container.innerHTML = '';
+  profiles.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'profile-settings-row';
+    row.innerHTML = `
+      <span class="profile-settings-name">${escHtml(p.name)}</span>
+      ${profiles.length > 1 ? `<button class="danger-btn profile-del-btn" data-id="${p.id}">Delete</button>` : '<span class="profile-only-label">Default</span>'}`;
+    if (profiles.length > 1) {
+      row.querySelector('.profile-del-btn').addEventListener('click', () => deleteProfile(p.id));
+    }
+    container.appendChild(row);
+  });
 }
 
 function renderHeader() {
@@ -542,7 +650,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -595,8 +703,12 @@ function bindEvents() {
   document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
 
   // Settings
-  document.getElementById('openSettings').addEventListener('click', () => openModal('settingsModal'));
+  document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
+
+  // Profile modal
+  document.getElementById('profileForm').addEventListener('submit', handleAddProfile);
+  document.getElementById('cancelAddProfile').addEventListener('click', () => closeModal('profileModal'));
 
   document.getElementById('currencyOptions').addEventListener('click', e => {
     const btn = e.target.closest('.currency-btn');
@@ -620,7 +732,7 @@ function bindEvents() {
   });
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 

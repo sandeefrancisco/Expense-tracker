@@ -66,6 +66,9 @@
       </div>
     </header>
 
+    <!-- Profile switcher -->
+    <div class="profile-bar" id="profileBar"></div>
+
     <main class="main">
 
       <!-- Summary Card -->
@@ -199,6 +202,10 @@
           <button class="secondary-btn" id="signOutBtn">Sign out</button>
         </div>
         <div class="settings-section">
+          <div class="settings-label">People</div>
+          <div id="profilesList" class="profiles-list"></div>
+        </div>
+        <div class="settings-section">
           <div class="settings-label">Currency</div>
           <div class="currency-options" id="currencyOptions">
             <button class="currency-btn active" data-symbol="$"  data-code="USD">$ USD</button>
@@ -229,6 +236,25 @@
         <button class="cancel-btn" id="cancelDelete">Cancel</button>
         <button class="delete-btn" id="confirmDelete">Remove</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Add Person Modal ── -->
+  <div class="modal-backdrop hidden" id="profileModal">
+    <div class="modal confirm-modal">
+      <div class="confirm-icon">👤</div>
+      <h3 class="confirm-title">Add person</h3>
+      <p class="confirm-desc">Give them a name to track their budget separately.</p>
+      <form id="profileForm" novalidate style="width:100%;margin-top:4px;">
+        <div class="form-group">
+          <input type="text" id="profileNameInput" class="form-input" placeholder="e.g. Wife, Kids, Shared…" maxlength="30" />
+        </div>
+        <div class="form-error hidden" id="profileFormError"></div>
+        <div class="confirm-actions">
+          <button type="button" class="cancel-btn" id="cancelAddProfile">Cancel</button>
+          <button type="submit" class="submit-btn" id="confirmAddProfile" style="flex:1;">Add</button>
+        </div>
+      </form>
     </div>
   </div>
 
