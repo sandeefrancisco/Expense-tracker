@@ -24,7 +24,7 @@
   --shadow-lg:    0 8px 32px rgba(26,26,46,.13);
 
   --nav-height:    64px;
-  --header-height: 92px;
+  --header-height: 56px;
   --fab-size:      52px;
 
   --ease-modal: cubic-bezier(.32,.72,0,1);
@@ -183,10 +183,13 @@ body.modal-open { overflow: hidden; }
   position: sticky; top: 0; z-index: 20;
   background: var(--surface);
   height: var(--header-height);
+  display: flex; align-items: center;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--border);
 }
-.hdr-row { display: flex; align-items: center; padding: 0 4px; }
-.hdr-top   { height: 48px; justify-content: space-between; }
-.hdr-month { height: 44px; border-bottom: 1px solid var(--border); }
+.hdr-month-nav {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 2px;
+}
 
 /* Profile button */
 .hdr-profile-btn {
@@ -210,8 +213,8 @@ body.modal-open { overflow: hidden; }
 .hdr-profile-btn svg { color: var(--muted); flex-shrink: 0; }
 
 /* Month navigation */
-.month-display { flex: 1; text-align: center; }
-.month-display span { font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -0.5px; }
+.month-display { text-align: center; }
+.month-display span { font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; }
 
 /* ─── Profile Sheet Internals ───────────────────────────── */
 .profile-pill {
