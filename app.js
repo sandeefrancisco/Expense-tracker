@@ -75,6 +75,8 @@ const expandedListGroups = new Set(); // prefix keys of expanded group parents i
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
 let   listViewMonth      = null;      // "YYYY-M" — tracks month for auto-expand reset
 
+const DND_HANDLE = `<div class="drag-handle" aria-label="Drag to reorder"><svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><circle cx="5" cy="3.5" r="1.4"/><circle cx="11" cy="3.5" r="1.4"/><circle cx="5" cy="7.5" r="1.4"/><circle cx="11" cy="7.5" r="1.4"/><circle cx="5" cy="11.5" r="1.4"/><circle cx="11" cy="11.5" r="1.4"/></svg></div>`;
+
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -696,9 +698,116 @@ function renderCategoryBars(list, total) {
     });
 }
 
+/* ─── Drag & Drop ───────────────────────────────────────────── */
+let dnd = null;
+
+function setupDrag(container, getDraggables, onReorder) {
+  container.addEventListener('pointerdown', ev => {
+    const handle = ev.target.closest('.drag-handle');
+    if (!handle) return;
+    const draggable = handle.closest('[data-drag-id]');
+    if (!draggable) return;
+    if (!getDraggables().includes(draggable)) return;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    handle.setPointerCapture(ev.pointerId);
+
+    const rect = draggable.getBoundingClientRect();
+    const ghost = draggable.cloneNode(true);
+    Object.assign(ghost.style, {
+      position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
+      width: rect.width + 'px', margin: '0', zIndex: '9999',
+      pointerEvents: 'none', opacity: '0.95', borderRadius: '14px',
+      boxShadow: '0 12px 40px rgba(26,26,46,0.28)', transform: 'scale(1.02)',
+    });
+    document.body.appendChild(ghost);
+    draggable.classList.add('drag-source');
+
+    const indicator = document.createElement('div');
+    indicator.className = 'drag-indicator';
+
+    dnd = { draggable, ghost, indicator, container, getDraggables, onReorder,
+            offsetY: ev.clientY - rect.top, insertBefore: null };
+
+    handle.addEventListener('pointermove', onDndMove, { passive: false });
+    handle.addEventListener('pointerup',   onDndEnd,  { once: true });
+    handle.addEventListener('pointercancel', () => {
+      if (!dnd) return;
+      dnd.ghost.remove(); dnd.indicator.remove();
+      dnd.draggable.classList.remove('drag-source');
+      dnd = null;
+    }, { once: true });
+  });
+}
+
+function onDndMove(ev) {
+  if (!dnd) return;
+  ev.preventDefault();
+  const { ghost, indicator, container, draggable, getDraggables, offsetY } = dnd;
+  ghost.style.top = (ev.clientY - offsetY) + 'px';
+
+  const siblings = getDraggables().filter(el => el !== draggable);
+  let insertBefore = null;
+  for (const sib of siblings) {
+    const r = sib.getBoundingClientRect();
+    if (ev.clientY < r.top + r.height * 0.5) { insertBefore = sib; break; }
+  }
+  (insertBefore?.parentElement ?? container).insertBefore(indicator, insertBefore ?? null);
+  dnd.insertBefore = insertBefore;
+}
+
+function onDndEnd() {
+  if (!dnd) return;
+  const { draggable, ghost, indicator, container, getDraggables, onReorder, insertBefore } = dnd;
+  dnd = null;
+  ghost.remove();
+  indicator.remove();
+  draggable.classList.remove('drag-source');
+  container.insertBefore(draggable, insertBefore ?? null);
+  onReorder(getDraggables().map(el => el.dataset.dragId));
+}
+
+async function saveExpenseOrder(orderedIds) {
+  orderedIds.forEach((id, idx) => {
+    const e = expenses.find(e => e.id === id);
+    if (e) e.sort_order = idx + 1;
+  });
+  try {
+    await Promise.all(orderedIds.map((id, idx) => dbPatchExpense(id, { sort_order: idx + 1 })));
+  } catch (err) {
+    showToast('Could not save order — ' + err.message, true);
+    renderListView();
+  }
+}
+
+async function saveCategoryOrder(orderedTileIds) {
+  const cont = document.getElementById('expenseList');
+  let counter = 1;
+  const updates = [];
+  for (const dragId of orderedTileIds) {
+    const tileEl = [...cont.querySelectorAll('[data-drag-id]')].find(el => el.dataset.dragId === dragId);
+    const catIds = tileEl?.dataset.catIds ? JSON.parse(tileEl.dataset.catIds) : [dragId];
+    const sorted = [...catIds].sort((a, b) => (getCat(a).sort_order ?? 99999) - (getCat(b).sort_order ?? 99999));
+    for (const id of sorted) {
+      const cat = categories.find(c => c.id === id);
+      if (cat) { cat.sort_order = counter; updates.push({ id, sort_order: counter }); }
+      counter++;
+    }
+  }
+  try {
+    await Promise.all(updates.map(u => sb.from('categories').update({ sort_order: u.sort_order }).eq('id', u.id)));
+  } catch (err) {
+    showToast('Could not save order — ' + err.message, true);
+    renderAll();
+  }
+}
+
 function renderItemsBody(items, container) {
-  const unchecked = items.filter(e => !e.checked).sort((a, b) => b.amount - a.amount);
-  const checked   = items.filter(e =>  e.checked).sort((a, b) => b.amount - a.amount);
+  const byOrder = (a, b) => ((a.sort_order ?? 99999) - (b.sort_order ?? 99999)) || b.amount - a.amount;
+  const unchecked = items.filter(e => !e.checked).sort(byOrder);
+  const checked   = items.filter(e =>  e.checked).sort(byOrder);
+
   unchecked.forEach(e => container.appendChild(buildItem(e)));
   if (unchecked.length > 0 && checked.length > 0) {
     const d = document.createElement('div');
@@ -707,6 +816,14 @@ function renderItemsBody(items, container) {
     container.appendChild(d);
   }
   checked.forEach(e => container.appendChild(buildItem(e)));
+
+  if (unchecked.length > 1) {
+    setupDrag(
+      container,
+      () => [...container.querySelectorAll(':scope > .expense-item:not(.checked)')],
+      saveExpenseOrder
+    );
+  }
 }
 
 function renderListView() {
@@ -751,7 +868,13 @@ function renderListView() {
       topLevel.push({ type: 'single', catId, total: byCat[catId].total });
     }
   });
-  topLevel.sort((a, b) => b.total - a.total);
+  // Sort by min sort_order of constituent categories, fallback to total
+  topLevel.forEach(item => {
+    const ids = item.catIds ?? [item.catId];
+    const orders = ids.map(id => categories.find(c => c.id === id)?.sort_order ?? 99999);
+    item.sortKey = Math.min(...orders);
+  });
+  topLevel.sort((a, b) => a.sortKey - b.sortKey || b.total - a.total);
 
   // When navigating to a new month: reset expand state and pre-expand top item
   const monthKey = `${currentYear}-${currentMonth}`;
@@ -767,20 +890,8 @@ function renderListView() {
   }
 
   container.innerHTML = '';
-  const mkChevron = () => {
-    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    s.setAttribute('class', 'cat-chevron');
-    s.setAttribute('viewBox', '0 0 16 16');
-    s.setAttribute('fill', 'none');
-    s.setAttribute('stroke', 'currentColor');
-    s.setAttribute('stroke-width', '2');
-    s.setAttribute('stroke-linecap', 'round');
-    s.setAttribute('stroke-linejoin', 'round');
-    const p = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-    p.setAttribute('points', '4,6 8,10 12,6');
-    s.appendChild(p);
-    return s;
-  };
+  const chevHTML = (collapsed) =>
+    `<svg class="cat-chevron${collapsed ? ' collapsed' : ''}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>`;
 
   topLevel.forEach(item => {
     const tile = document.createElement('div');
@@ -788,21 +899,20 @@ function renderListView() {
     if (item.type === 'group') {
       const isExpanded = expandedListGroups.has(item.prefix);
       tile.className = 'list-tile list-tile-grp';
+      tile.dataset.dragId = `grp__${item.prefix}`;
+      tile.dataset.catIds = JSON.stringify(item.catIds);
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      const chev = mkChevron();
-      if (!isExpanded) chev.classList.add('collapsed');
-      hdr.appendChild(chev);
-      hdr.innerHTML += `<div class="list-hdr-name">${escHtml(item.prefix)}</div>
-        <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
       grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
       tile.appendChild(grpBody);
 
-      hdr.addEventListener('click', () => {
+      hdr.addEventListener('click', ev => {
+        if (ev.target.closest('.drag-handle')) return;
         const nowExpanded = expandedListGroups.has(item.prefix);
         if (nowExpanded) expandedListGroups.delete(item.prefix);
         else expandedListGroups.add(item.prefix);
@@ -812,7 +922,7 @@ function renderListView() {
 
       const sortedSubs = item.catIds
         .filter(id => byCat[id])
-        .sort((a, b) => byCat[b].total - byCat[a].total);
+        .sort((a, b) => (getCat(a).sort_order ?? 99999) - (getCat(b).sort_order ?? 99999));
 
       sortedSubs.forEach(catId => {
         const cat = getCat(catId);
@@ -824,15 +934,11 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
-        const doneCountSub = items.filter(e => e.checked).length;
-        const doneBadgeSub = doneCountSub > 0 ? `<span class="done-badge">${doneCountSub}</span>` : '';
+        const doneCount = items.filter(e => e.checked).length;
+        const doneBadge = doneCount > 0 ? `<span class="done-badge">${doneCount}</span>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
-        const sc = mkChevron();
-        if (!isCatExp) sc.classList.add('collapsed');
-        sh.appendChild(sc);
-        sh.innerHTML += `<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadgeSub}</div>
-          <div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
+        sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
@@ -855,23 +961,21 @@ function renderListView() {
       const { items, total } = byCat[item.catId];
       const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
+      tile.dataset.dragId = item.catId;
 
-      const doneCountSingle = items.filter(e => e.checked).length;
-      const doneBadgeSingle = doneCountSingle > 0 ? `<span class="done-badge">${doneCountSingle}</span>` : '';
+      const doneCount = items.filter(e => e.checked).length;
+      const doneBadge = doneCount > 0 ? `<span class="done-badge">${doneCount}</span>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      const chev = mkChevron();
-      if (!isCatExp) chev.classList.add('collapsed');
-      hdr.appendChild(chev);
-      hdr.innerHTML += `<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadgeSingle}</div>
-        <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
+      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
       tile.appendChild(hdr);
 
       const itemsBody = document.createElement('div');
       itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
       tile.appendChild(itemsBody);
 
-      hdr.addEventListener('click', () => {
+      hdr.addEventListener('click', ev => {
+        if (ev.target.closest('.drag-handle')) return;
         const nowExpanded = expandedListCats.has(item.catId);
         if (nowExpanded) expandedListCats.delete(item.catId);
         else expandedListCats.add(item.catId);
@@ -884,6 +988,9 @@ function renderListView() {
 
     container.appendChild(tile);
   });
+
+  // Setup drag-to-reorder for category tiles
+  setupDrag(container, () => [...container.querySelectorAll(':scope > .list-tile')], saveCategoryOrder);
 }
 
 function buildItem(e) {
@@ -891,7 +998,9 @@ function buildItem(e) {
   const el = document.createElement('div');
   el.className = 'expense-item' + (e.checked ? ' checked' : '');
   el.dataset.id = e.id;
+  el.dataset.dragId = e.id;
   el.innerHTML = `
+    ${e.checked ? '<div class="drag-spacer"></div>' : DND_HANDLE}
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
@@ -904,7 +1013,7 @@ function buildItem(e) {
       <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
     </button>`;
   el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn')) return;
+    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn') || ev.target.closest('.drag-handle')) return;
     openEditModal(e.id);
   });
   el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });
@@ -1009,8 +1118,9 @@ async function handleAddCategory(e) {
   const shared      = document.getElementById('toggleShared').checked;
   const cur_code    = selectedCatCurrency?.code   || null;
   const cur_symbol  = selectedCatCurrency?.symbol || null;
+  const catOrder = categories.length > 0 ? Math.max(...categories.map(c => c.sort_order ?? 0)) + 1 : 1;
   const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol });
+  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
@@ -1018,7 +1128,7 @@ async function handleAddCategory(e) {
 
   try {
     const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol }).select().single();
+      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder }).select().single();
     if (error) throw error;
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
@@ -1160,11 +1270,13 @@ async function handleFormSubmit(ev) {
     }
   } else {
     const tmp = 'tmp_' + Date.now();
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false });
+    const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
+    const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder });
     renderAll();
     showToast('Added'); // optimistic — fires the moment the modal closes
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
     } catch (err) {

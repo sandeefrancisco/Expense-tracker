@@ -453,12 +453,12 @@ body.modal-open { overflow: hidden; }
   border: 1px solid var(--border);
   overflow: hidden;
 }
-.list-tile-grp .list-tile-hdr { padding: 17px 16px; }
+.list-tile-grp .list-tile-hdr { padding: 17px 4px 17px 0; }
 
 /* Tile header row (clickable) */
 .list-tile-hdr {
-  display: flex; align-items: center; gap: 12px;
-  padding: 16px 16px; min-height: 44px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 16px 16px 0; min-height: 44px; cursor: pointer; user-select: none;
   transition: background 0.12s;
 }
 .list-tile-hdr:active { background: var(--tint); }
@@ -509,6 +509,22 @@ body.modal-open { overflow: hidden; }
 }
 /* Indented items under sub-category headers */
 .cat-items-indented .expense-item { margin-left: 10px; }
+
+/* ─── Drag & Drop ──────────────────────────────────────────── */
+.drag-handle {
+  width: 44px; height: 44px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; color: var(--muted); opacity: 0.45;
+  touch-action: none; user-select: none; border-radius: 8px;
+  transition: opacity var(--t);
+}
+.drag-handle:active { cursor: grabbing; opacity: 0.8; }
+.drag-spacer { width: 44px; height: 44px; flex-shrink: 0; }
+.drag-source { opacity: 0.25 !important; pointer-events: none !important; }
+.drag-indicator {
+  height: 2px; background: var(--accent); border-radius: 1px;
+  margin: 2px 0; pointer-events: none; flex-shrink: 0;
+}
 
 /* Allocation item */
 .expense-item {
