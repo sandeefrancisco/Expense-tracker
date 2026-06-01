@@ -263,20 +263,22 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Summary Card ─────────────────────────────────────── */
 .summary-card {
-  background: #1c1c1e; border-radius: var(--r-card);
-  padding: 16px 16px 14px; color: #fff;
+  background: var(--surface); border-radius: var(--r-card);
+  border: 1px solid var(--border);
+  padding: 16px 16px 14px; color: var(--ink);
   position: relative;
 }
 
 .summary-label {
   font-size: 11px; font-weight: 700;
   letter-spacing: 0.3px; text-transform: uppercase;
-  opacity: 0.5; margin-bottom: 3px;
+  color: var(--muted); opacity: 1; margin-bottom: 3px;
 }
 
 .summary-amount {
   font-size: 28px; font-weight: 800;
   letter-spacing: -1px; line-height: 1; margin-bottom: 8px;
+  color: var(--ink);
 }
 
 /* Multi-currency breakdown inside summary card */
@@ -308,18 +310,18 @@ body.modal-open { overflow: hidden; }
 
 .summary-sub {
   font-size: 13px; font-weight: 500;
-  opacity: 0.55; margin-top: 5px;
+  color: var(--muted); margin-top: 5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .card-menu-btn {
   position: absolute; top: 10px; right: 10px;
   width: 44px; height: 44px; border-radius: 10px;
-  border: none; background: rgba(255,255,255,0.1);
+  border: none; background: var(--tint);
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.75); transition: background var(--t);
+  color: var(--muted); transition: background var(--t);
 }
-.card-menu-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+.card-menu-btn:active { background: var(--border); color: var(--ink); }
 
 /* Card actions dropdown */
 .card-menu {
