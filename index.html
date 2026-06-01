@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=54" />
+  <link rel="stylesheet" href="style.css?v=55" />
 </head>
 <body>
 
@@ -345,12 +345,11 @@
   <div class="modal-backdrop hidden" id="categoryModal">
     <div class="modal confirm-modal">
       <h3 class="confirm-title">New Category</h3>
-      <p class="confirm-desc">Name it and pick a colour.</p>
+      <p class="confirm-desc">Name it and set options.</p>
       <form id="categoryForm" novalidate style="width:100%;margin-top:4px;">
         <div class="form-group">
           <input type="text" id="catNameInput" class="form-input" placeholder="e.g. Rent, Groceries, Berlin…" maxlength="30" />
         </div>
-        <div class="cat-color-picker" id="catColorPicker"></div>
         <div class="cat-shared-row">
           <span class="form-label" style="margin-bottom:0">Split 50/50</span>
           <label class="toggle-switch">
@@ -359,8 +358,8 @@
           </label>
         </div>
         <div class="form-group" style="margin-top:12px">
-          <label class="form-label">Currency <span class="optional">(opt.)</span></label>
-          <div class="currency-options cat-currency-options" id="catCurrencyPicker"></div>
+          <label class="form-label" for="catCurrencySelect">Currency <span class="optional">(opt.)</span></label>
+          <select id="catCurrencySelect" class="form-select"></select>
         </div>
         <div class="form-error hidden" id="catFormError"></div>
         <div class="confirm-actions">
@@ -428,6 +427,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=54"></script>
+  <script src="app.js?v=55"></script>
 </body>
 </html>

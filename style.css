@@ -519,7 +519,6 @@ body.modal-open { overflow: hidden; }
   transition: opacity var(--t);
 }
 .drag-handle:active { cursor: grabbing; opacity: 0.8; }
-.drag-spacer { width: 44px; height: 44px; flex-shrink: 0; }
 .drag-source { opacity: 0.25 !important; pointer-events: none !important; }
 .drag-indicator {
   height: 2px; background: var(--accent); border-radius: 1px;
@@ -759,6 +758,15 @@ body.modal-open { overflow: hidden; }
 }
 .form-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .form-input::placeholder { color: rgba(92,89,117,.45); }
+.form-select {
+  width: 100%; padding: 13px 40px 13px 16px;
+  border: 1.5px solid var(--border); border-radius: var(--r-input);
+  font-size: 15px; font-family: 'Figtree', sans-serif; font-weight: 500;
+  color: var(--ink); background: var(--tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235C5975' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4,6 8,10 12,6'/%3E%3C/svg%3E") no-repeat right 14px center / 16px 16px;
+  min-height: 50px; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer;
+  transition: border-color var(--t), box-shadow var(--t);
+}
+.form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 
 .amount-group {
   display: flex; align-items: center; gap: 4px;
@@ -797,12 +805,6 @@ body.modal-open { overflow: hidden; }
 .category-chip.cat-add-chip .chip-label { color: var(--muted); }
 
 /* Color picker (add-category modal) */
-.cat-color-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
-.cat-color-swatch {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  border: 3px solid transparent; cursor: pointer; transition: all 0.15s;
-}
-.cat-color-swatch.selected { border-color: var(--ink); transform: scale(1.15); }
 
 /* Shared badge (÷2) */
 .shared-badge {

@@ -64,9 +64,7 @@ let currentYear, currentMonth;
 let pendingDeleteId   = null;
 let selectedCategory  = null;
 let selectedBank      = null;
-let selectedCatColor    = CATEGORY_COLORS[0];
 let selectedCatShared   = false;
-let selectedCatCurrency = null; // null → inherit global; { code, symbol } → override
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
@@ -833,6 +831,13 @@ function renderItemsBody(items, container) {
       saveExpenseOrder
     );
   }
+  if (checked.length > 1) {
+    setupDrag(
+      container,
+      () => [...container.querySelectorAll(':scope > .expense-item.checked')],
+      saveExpenseOrder
+    );
+  }
 }
 
 function renderListView() {
@@ -1009,7 +1014,7 @@ function buildItem(e) {
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
   el.innerHTML = `
-    ${e.checked ? '<div class="drag-spacer"></div>' : DND_HANDLE}
+    ${DND_HANDLE}
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
@@ -1070,51 +1075,20 @@ function selectCategory(id) {
 
 /* ─── Category Management ───────────────────────────────── */
 function openAddCategoryModal() {
-  selectedCatColor    = CATEGORY_COLORS[0];
-  selectedCatCurrency = null;
   document.getElementById('catNameInput').value = '';
   document.getElementById('catFormError').classList.add('hidden');
   document.getElementById('toggleShared').checked = false;
-  buildColorPicker();
-  buildCatCurrencyPicker();
+  buildCatCurrencySelect();
   openModal('categoryModal');
   setTimeout(() => document.getElementById('catNameInput').focus(), 300);
 }
 
-function buildCatCurrencyPicker() {
-  const el = document.getElementById('catCurrencyPicker');
-  if (!el) return;
-  el.innerHTML = '';
-  const defBtn = document.createElement('button');
-  defBtn.type = 'button';
-  defBtn.className = 'currency-btn' + (!selectedCatCurrency ? ' active' : '');
-  defBtn.textContent = 'Default';
-  defBtn.addEventListener('click', () => { selectedCatCurrency = null; buildCatCurrencyPicker(); });
-  el.appendChild(defBtn);
-  CURRENCIES.forEach(c => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'currency-btn' + (selectedCatCurrency?.code === c.code ? ' active' : '');
-    btn.textContent = c.label;
-    btn.addEventListener('click', () => { selectedCatCurrency = { code: c.code, symbol: c.symbol }; buildCatCurrencyPicker(); });
-    el.appendChild(btn);
-  });
-}
-
-function buildColorPicker() {
-  const picker = document.getElementById('catColorPicker');
-  picker.innerHTML = '';
-  CATEGORY_COLORS.forEach(color => {
-    const sw = document.createElement('button');
-    sw.type = 'button';
-    sw.className = 'cat-color-swatch' + (color === selectedCatColor ? ' selected' : '');
-    sw.style.background = color; sw.dataset.color = color;
-    sw.addEventListener('click', () => {
-      selectedCatColor = color;
-      document.querySelectorAll('.cat-color-swatch').forEach(s => s.classList.toggle('selected', s.dataset.color === color));
-    });
-    picker.appendChild(sw);
-  });
+function buildCatCurrencySelect() {
+  const sel = document.getElementById('catCurrencySelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Default</option>' +
+    CURRENCIES.map(c => `<option value="${c.code}">${c.label}</option>`).join('');
+  sel.value = '';
 }
 
 async function handleAddCategory(e) {
@@ -1124,12 +1098,15 @@ async function handleAddCategory(e) {
   if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
 
-  const shared      = document.getElementById('toggleShared').checked;
-  const cur_code    = selectedCatCurrency?.code   || null;
-  const cur_symbol  = selectedCatCurrency?.symbol || null;
+  const shared   = document.getElementById('toggleShared').checked;
+  const selCode  = document.getElementById('catCurrencySelect').value;
+  const cur      = CURRENCIES.find(c => c.code === selCode);
+  const cur_code   = cur?.code   || null;
+  const cur_symbol = cur?.symbol || null;
+  const color    = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
   const catOrder = categories.length > 0 ? Math.max(...categories.map(c => c.sort_order ?? 0)) + 1 : 1;
   const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
+  categories.push({ id: tmp, user_id: currentUser.id, name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
@@ -1137,7 +1114,7 @@ async function handleAddCategory(e) {
 
   try {
     const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder }).select().single();
+      .insert({ user_id: currentUser.id, name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder }).select().single();
     if (error) throw error;
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
