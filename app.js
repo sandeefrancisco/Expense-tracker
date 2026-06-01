@@ -915,13 +915,13 @@ function buildCategoryGrid() {
   categories.forEach(cat => {
     const chip = document.createElement('button');
     chip.type = 'button'; chip.className = 'category-chip'; chip.dataset.id = cat.id;
-    chip.innerHTML = `<span class="chip-dot" style="background:${cat.color}"></span><span class="chip-label">${escHtml(cat.name)}</span>`;
+    chip.innerHTML = `<span class="chip-label">${escHtml(cat.name)}</span>`;
     chip.addEventListener('click', () => selectCategory(cat.id));
     grid.appendChild(chip);
   });
   const addChip = document.createElement('button');
   addChip.type = 'button'; addChip.className = 'category-chip cat-add-chip';
-  addChip.innerHTML = `<span class="chip-dot-add">+</span><span class="chip-label">New</span>`;
+  addChip.innerHTML = `<span class="chip-label">+ New</span>`;
   addChip.addEventListener('click', openAddCategoryModal);
   grid.appendChild(addChip);
 }
