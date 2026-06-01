@@ -77,10 +77,23 @@ const expandedListCats   = new Set(); // catIds of expanded categories in list v
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
 
+function saveViewMonth() {
+  localStorage.setItem('viewYear',  currentYear);
+  localStorage.setItem('viewMonth', currentMonth);
+}
+
 async function init() {
-  const now    = new Date();
-  currentYear  = now.getFullYear();
-  currentMonth = now.getMonth();
+  const now        = new Date();
+  const savedYear  = parseInt(localStorage.getItem('viewYear'),  10);
+  const savedMonth = parseInt(localStorage.getItem('viewMonth'), 10);
+  currentYear  = !isNaN(savedYear)  ? savedYear  : now.getFullYear();
+  currentMonth = !isNaN(savedMonth) ? savedMonth : now.getMonth();
+  // clamp: never let the saved view exceed the current real month
+  if (currentYear > now.getFullYear() ||
+      (currentYear === now.getFullYear() && currentMonth > now.getMonth())) {
+    currentYear  = now.getFullYear();
+    currentMonth = now.getMonth();
+  }
 
   bindEvents();
 
@@ -1088,6 +1101,7 @@ async function handleMoveConfirm() {
   closeModal('moveModal');
   currentYear  = targetYear;
   currentMonth = targetMonth;
+  saveViewMonth();
   renderAll();
   showToast(`Moved to ${getMonthLabel(targetYear, targetMonth)}`);
 
@@ -1242,12 +1256,14 @@ function bindEvents() {
 
   // Month nav
   document.getElementById('prevMonth').addEventListener('click', () => {
-    currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderAll();
+    currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    saveViewMonth(); renderAll();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
     const now = new Date();
     if (currentYear === now.getFullYear() && currentMonth === now.getMonth()) return;
-    currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderAll();
+    currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    saveViewMonth(); renderAll();
   });
 
   // Allocation form
