@@ -696,6 +696,19 @@ function renderCategoryBars(list, total) {
     });
 }
 
+function renderItemsBody(items, container) {
+  const unchecked = items.filter(e => !e.checked).sort((a, b) => b.amount - a.amount);
+  const checked   = items.filter(e =>  e.checked).sort((a, b) => b.amount - a.amount);
+  unchecked.forEach(e => container.appendChild(buildItem(e)));
+  if (unchecked.length > 0 && checked.length > 0) {
+    const d = document.createElement('div');
+    d.className = 'items-done-divider';
+    d.textContent = checked.length === 1 ? '1 done' : `${checked.length} done`;
+    container.appendChild(d);
+  }
+  checked.forEach(e => container.appendChild(buildItem(e)));
+}
+
 function renderListView() {
   const container = document.getElementById('expenseList');
   const list = getMonthExpenses();
@@ -811,12 +824,14 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
+        const doneCountSub = items.filter(e => e.checked).length;
+        const doneBadgeSub = doneCountSub > 0 ? `<span class="done-badge">${doneCountSub}</span>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
         const sc = mkChevron();
         if (!isCatExp) sc.classList.add('collapsed');
         sh.appendChild(sc);
-        sh.innerHTML += `<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+        sh.innerHTML += `<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadgeSub}</div>
           <div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
         subTile.appendChild(sh);
 
@@ -832,9 +847,7 @@ function renderListView() {
           sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
         });
 
-        items.sort((a, b) => (a.checked !== b.checked ? (a.checked ? 1 : -1) : b.amount - a.amount)).forEach(e => {
-          itemsBody.appendChild(buildItem(e));
-        });
+        renderItemsBody(items, itemsBody);
       });
 
     } else {
@@ -843,12 +856,14 @@ function renderListView() {
       const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
 
+      const doneCountSingle = items.filter(e => e.checked).length;
+      const doneBadgeSingle = doneCountSingle > 0 ? `<span class="done-badge">${doneCountSingle}</span>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       const chev = mkChevron();
       if (!isCatExp) chev.classList.add('collapsed');
       hdr.appendChild(chev);
-      hdr.innerHTML += `<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+      hdr.innerHTML += `<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadgeSingle}</div>
         <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
       tile.appendChild(hdr);
 
@@ -864,9 +879,7 @@ function renderListView() {
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
 
-      items.sort((a, b) => (a.checked !== b.checked ? (a.checked ? 1 : -1) : b.amount - a.amount)).forEach(e => {
-        itemsBody.appendChild(buildItem(e));
-      });
+      renderItemsBody(items, itemsBody);
     }
 
     container.appendChild(tile);

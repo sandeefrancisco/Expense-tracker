@@ -547,6 +547,25 @@ body.modal-open { overflow: hidden; }
 .expense-item.checked .expense-desc   { opacity: 0.4; text-decoration: line-through; }
 .expense-item.checked .expense-amount { opacity: 0.4; }
 
+/* Done divider between unchecked and checked items */
+.items-done-divider {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; color: var(--muted);
+  padding: 10px 14px 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.items-done-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* Green count badge on category header */
+.done-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #16a34a; color: #fff;
+  font-size: 10px; font-weight: 700; line-height: 1;
+  min-width: 17px; height: 17px; border-radius: 99px;
+  padding: 0 4px;
+  vertical-align: middle; margin-left: 5px;
+}
+
 .expense-amount {
   font-size: 17px; font-weight: 700; color: var(--ink);
   white-space: nowrap; flex-shrink: 0;
