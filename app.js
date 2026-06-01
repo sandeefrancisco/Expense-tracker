@@ -1033,7 +1033,7 @@ function renderListView() {
 
       sortedSubs.forEach(catId => {
         const cat = getCat(catId);
-        const { items, total } = byCat[catId];
+        const { items, total, paidTotal } = byCat[catId];
         const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
         const isCatExp = expandedListCats.has(catId);
 
@@ -1041,7 +1041,11 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
-        const subPaid = items.filter(e => e.checked).length;
+        const subPaid    = items.filter(e => e.checked).length;
+        const subGrand   = total + paidTotal;
+        const subLeftHtml = total > 0
+          ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
+          : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
         sh.innerHTML = `
@@ -1050,7 +1054,10 @@ function renderListView() {
             <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
             <div class="list-sub-count">${subPaid}/${items.length}</div>
           </div>
-          <div class="list-sub-total">${fmtCat(total, catId)}</div>`;
+          <div class="list-sub-right">
+            <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
+            ${subLeftHtml}
+          </div>`;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
