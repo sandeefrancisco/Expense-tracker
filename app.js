@@ -347,6 +347,16 @@ function fmtGroupTotal(catIds, byCat) {
   });
   return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
 }
+function fmtGroupGrandTotal(catIds, byCat) {
+  const acc = {};
+  catIds.forEach(id => {
+    if (!byCat[id]) return;
+    const { code, symbol } = getCatCurrency(id);
+    if (!acc[code]) acc[code] = { symbol, total: 0 };
+    acc[code].total += (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+  });
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
+}
 function fmtGroupDoneTotal(catIds, byCat) {
   const acc = {};
   catIds.forEach(id => {
@@ -971,8 +981,12 @@ function renderListView() {
       hdr.className = 'list-tile-hdr';
       const grpFirstCat = getCat(item.catIds[0]);
       const grpColor = grpFirstCat?.color || 'var(--accent)';
-      const grpPaid  = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked).length || 0), 0);
-      const grpTotal = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      const grpPaid      = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked).length || 0), 0);
+      const grpTotal     = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      const grpUnpaidAmt = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
+      const grpLeftHtml  = grpUnpaidAmt > 0
+        ? `<div class="list-hdr-left">${fmtGroupTotal(item.catIds, byCat)} left</div>`
+        : grpPaid > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
       hdr.innerHTML = `
         <div class="cat-icon-box" style="background:${grpColor}">
           <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
@@ -982,7 +996,10 @@ function renderListView() {
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
         </div>
-        <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtGroupGrandTotal(item.catIds, byCat)}</div>
+          ${grpLeftHtml}
+        </div>
         <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
@@ -1045,12 +1062,16 @@ function renderListView() {
 
     } else {
       const cat = getCat(item.catId);
-      const { items, total } = byCat[item.catId];
+      const { items, total, paidTotal } = byCat[item.catId];
       const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
-      const paidCount = items.filter(e => e.checked).length;
+      const paidCount  = items.filter(e => e.checked).length;
+      const grandTotal = total + paidTotal;
+      const leftHtml   = total > 0
+        ? `<div class="list-hdr-left">${fmtCat(total, item.catId)} left</div>`
+        : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       hdr.innerHTML = `
@@ -1062,7 +1083,10 @@ function renderListView() {
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
-        <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtCat(grandTotal, item.catId)}</div>
+          ${leftHtml}
+        </div>
         <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
