@@ -70,8 +70,8 @@ let selectedCatCurrency = null; // null → inherit global; { code, symbol } →
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
-const collapsedGroups   = new Set(); // prefix keys of collapsed group parents
-const collapsedCats     = new Set(); // catIds of collapsed single/sub categories
+const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
+const expandedListCats   = new Set(); // catIds of expanded categories in list view
 const expandedCardGroups = new Set(); // card breakdown: expanded group prefixes
 const expandedCardCats   = new Set(); // card breakdown: expanded catIds
 
@@ -832,28 +832,28 @@ function renderListView() {
     const tile = document.createElement('div');
 
     if (item.type === 'group') {
-      const grpCollapsed = collapsedGroups.has(item.prefix);
+      const isExpanded = expandedListGroups.has(item.prefix);
       tile.className = 'list-tile list-tile-grp';
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       const chev = mkChevron();
-      if (grpCollapsed) chev.classList.add('collapsed');
+      if (!isExpanded) chev.classList.add('collapsed');
       hdr.appendChild(chev);
       hdr.innerHTML += `<div class="list-hdr-name">${escHtml(item.prefix)}</div>
         <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
-      grpBody.className = 'cat-group-body' + (grpCollapsed ? ' collapsed' : '');
+      grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
       tile.appendChild(grpBody);
 
       hdr.addEventListener('click', () => {
-        const isNowCollapsed = collapsedGroups.has(item.prefix);
-        if (isNowCollapsed) collapsedGroups.delete(item.prefix);
-        else collapsedGroups.add(item.prefix);
-        grpBody.classList.toggle('collapsed', !isNowCollapsed);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+        const nowExpanded = expandedListGroups.has(item.prefix);
+        if (nowExpanded) expandedListGroups.delete(item.prefix);
+        else expandedListGroups.add(item.prefix);
+        grpBody.classList.toggle('collapsed', nowExpanded);
+        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
 
       const sortedSubs = item.catIds
@@ -864,7 +864,7 @@ function renderListView() {
         const cat = getCat(catId);
         const { items, total } = byCat[catId];
         const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
-        const catCollapsed = collapsedCats.has(catId);
+        const isCatExp = expandedListCats.has(catId);
 
         const subTile = document.createElement('div');
         subTile.className = 'list-sub-tile';
@@ -873,7 +873,7 @@ function renderListView() {
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
         const sc = mkChevron();
-        if (catCollapsed) sc.classList.add('collapsed');
+        if (!isCatExp) sc.classList.add('collapsed');
         sh.appendChild(sc);
         sh.innerHTML += `<span class="cat-group-dot" style="background:${cat.color}"></span>
           <div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
@@ -881,15 +881,15 @@ function renderListView() {
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
-        itemsBody.className = 'cat-items-body' + (catCollapsed ? ' collapsed' : '');
+        itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
         subTile.appendChild(itemsBody);
 
         sh.addEventListener('click', () => {
-          const isNowCollapsed = collapsedCats.has(catId);
-          if (isNowCollapsed) collapsedCats.delete(catId);
-          else collapsedCats.add(catId);
-          itemsBody.classList.toggle('collapsed', !isNowCollapsed);
-          sh.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+          const nowExpanded = expandedListCats.has(catId);
+          if (nowExpanded) expandedListCats.delete(catId);
+          else expandedListCats.add(catId);
+          itemsBody.classList.toggle('collapsed', nowExpanded);
+          sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
         });
 
         items.sort((a, b) => b.amount - a.amount).forEach(e => {
@@ -900,13 +900,13 @@ function renderListView() {
     } else {
       const cat = getCat(item.catId);
       const { items, total } = byCat[item.catId];
-      const catCollapsed = collapsedCats.has(item.catId);
+      const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       const chev = mkChevron();
-      if (catCollapsed) chev.classList.add('collapsed');
+      if (!isCatExp) chev.classList.add('collapsed');
       hdr.appendChild(chev);
       hdr.innerHTML += `<span class="cat-group-dot" style="background:${cat.color}"></span>
         <div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
@@ -914,15 +914,15 @@ function renderListView() {
       tile.appendChild(hdr);
 
       const itemsBody = document.createElement('div');
-      itemsBody.className = 'cat-items-body' + (catCollapsed ? ' collapsed' : '');
+      itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
       tile.appendChild(itemsBody);
 
       hdr.addEventListener('click', () => {
-        const isNowCollapsed = collapsedCats.has(item.catId);
-        if (isNowCollapsed) collapsedCats.delete(item.catId);
-        else collapsedCats.add(item.catId);
-        itemsBody.classList.toggle('collapsed', !isNowCollapsed);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+        const nowExpanded = expandedListCats.has(item.catId);
+        if (nowExpanded) expandedListCats.delete(item.catId);
+        else expandedListCats.add(item.catId);
+        itemsBody.classList.toggle('collapsed', nowExpanded);
+        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
 
       items.sort((a, b) => b.amount - a.amount).forEach(e => {
