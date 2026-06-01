@@ -72,6 +72,7 @@ let movePickerYear      = null;
 let movePickerMonth     = null;
 const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
+let   listViewMonth      = null;      // "YYYY-M" — tracks month for auto-expand reset
 
 
 /* ─── Boot ──────────────────────────────────────────────── */
@@ -413,28 +414,27 @@ function renderAll() {
 
 /* ─── Profiles ──────────────────────────────────────────── */
 function renderProfileBar() {
-  const bar = document.getElementById('profileBar');
-  if (!bar) return;
-  bar.innerHTML = '';
+  // Update header trigger label
+  const prof = profiles.find(p => p.id === currentProfileId);
+  const lbl  = document.getElementById('profileTriggerLabel');
+  if (lbl) lbl.textContent = prof?.name ?? 'Me';
+
+  // Populate profile sheet list
+  const sheetList = document.getElementById('profileSheetList');
+  if (!sheetList) return;
+  sheetList.innerHTML = '';
   profiles.forEach(p => {
-    const pill = document.createElement('button');
-    pill.className = 'profile-pill' + (p.id === currentProfileId ? ' active' : '');
-    pill.textContent = p.name;
-    pill.addEventListener('click', () => {
+    const btn = document.createElement('button');
+    btn.className = 'option-row-btn' + (p.id === currentProfileId ? ' profile-option-active' : '');
+    btn.textContent = p.name;
+    btn.addEventListener('click', () => {
       currentProfileId = p.id;
       localStorage.setItem('activeProfileId', p.id);
-      renderProfileBar();
-      renderHeader();
-      renderSummary();
-      renderListView();
+      closeModal('profileSheet');
+      renderAll();
     });
-    bar.appendChild(pill);
+    sheetList.appendChild(btn);
   });
-  const addBtn = document.createElement('button');
-  addBtn.className = 'profile-add-btn';
-  addBtn.textContent = '+ Add person';
-  addBtn.addEventListener('click', openAddProfileModal);
-  bar.appendChild(addBtn);
 }
 
 function openAddProfileModal() {
@@ -534,46 +534,44 @@ function renderSummary() {
   const labelEl = document.getElementById('summaryLabel');
   heroEl.style.color = '';
 
+  const incomeRow = document.getElementById('incomeRow');
+  const metaRow   = document.getElementById('summaryMeta');
+
   if (isMultiCur) {
-    labelEl.textContent = 'Total allocated';
+    // Multi-currency: hero shows each currency stacked, meta shows item count
+    labelEl.textContent = 'Tracked this month';
     heroEl.innerHTML = curEntries
       .map(([code, { symbol, total }]) =>
         `<div class="mc-row"><span class="mc-code">${escHtml(code)}</span><span class="mc-val">${escHtml(symbol)}${total.toFixed(2)}</span></div>`)
       .join('');
+    incomeRow.classList.add('hidden');
+    metaRow.classList.remove('hidden');
+    const n = list.length;
+    document.getElementById('itemCount').textContent = n === 1 ? '1 item' : `${n} items`;
   } else {
     heroEl.innerHTML = '';
     const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
     const allocated = curEntries[0]?.[1].total  ?? 0;
     if (earned > 0) {
-      const saved = earned - allocated;
-      labelEl.textContent = saved >= 0 ? 'Saved this month' : 'Over income';
+      const saved  = earned - allocated;
+      const isOver = saved < 0;
+      labelEl.textContent = isOver ? 'Over budget' : 'Left this month';
       heroEl.textContent  = `${sym}${Math.abs(saved).toFixed(2)}`;
-      heroEl.style.color  = saved >= 0 ? '#86efac' : '#fca5a5';
+      heroEl.style.color  = isOver ? '#fca5a5' : '#86efac';
+      document.getElementById('earnedVal').textContent = fmt(earned);
+      document.getElementById('spentVal').textContent  = `${sym}${allocated.toFixed(2)}`;
+      incomeRow.classList.remove('hidden');
+      metaRow.classList.add('hidden');
     } else {
-      labelEl.textContent = 'Total allocated';
+      labelEl.textContent = 'Tracked this month';
       heroEl.textContent  = `${sym}${allocated.toFixed(2)}`;
+      incomeRow.classList.add('hidden');
+      metaRow.classList.remove('hidden');
+      const n = list.length;
+      document.getElementById('itemCount').textContent = n === 1 ? '1 item' : `${n} items`;
     }
   }
 
-  const incomeRow = document.getElementById('incomeRow');
-  const metaRow   = document.getElementById('summaryMeta');
-  if (earned > 0) {
-    const allocatedStr = isMultiCur
-      ? curEntries.map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ')
-      : `${curEntries[0]?.[1].symbol ?? settings.currency.symbol}${(curEntries[0]?.[1].total ?? 0).toFixed(2)}`;
-    document.getElementById('earnedVal').textContent = fmt(earned);
-    document.getElementById('spentVal').textContent  = allocatedStr;
-    incomeRow.classList.remove('hidden');
-    metaRow.classList.add('hidden');
-  } else {
-    incomeRow.classList.add('hidden');
-    metaRow.classList.remove('hidden');
-    const n = list.length;
-    document.getElementById('itemCount').textContent =
-      n === 0 ? '0 items' : n === 1 ? '1 item' : `${n} items`;
-  }
-
-  renderCategoryBars(list, totalAll);
   updateCardMenu(earned, totalAll);
 }
 
@@ -669,6 +667,19 @@ function renderListView() {
     }
   });
   topLevel.sort((a, b) => b.total - a.total);
+
+  // When navigating to a new month: reset expand state and pre-expand top item
+  const monthKey = `${currentYear}-${currentMonth}`;
+  if (listViewMonth !== monthKey) {
+    listViewMonth = monthKey;
+    expandedListCats.clear();
+    expandedListGroups.clear();
+    if (topLevel.length > 0) {
+      const top = topLevel[0];
+      if (top.type === 'group') expandedListGroups.add(top.prefix);
+      else expandedListCats.add(top.catId);
+    }
+  }
 
   container.innerHTML = '';
   const mkChevron = () => {
@@ -1236,7 +1247,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -1313,6 +1324,11 @@ function bindEvents() {
   document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
 
+  // Profile trigger + sheet
+  document.getElementById('profileTrigger').addEventListener('click', () => { renderProfileBar(); openModal('profileSheet'); });
+  document.getElementById('profileSheetCancel').addEventListener('click', () => closeModal('profileSheet'));
+  document.getElementById('profileSheetAdd').addEventListener('click', () => { closeModal('profileSheet'); openAddProfileModal(); });
+
   // Profile modal
   document.getElementById('profileForm').addEventListener('submit', handleAddProfile);
   document.getElementById('cancelAddProfile').addEventListener('click', () => closeModal('profileModal'));
@@ -1355,7 +1371,7 @@ function bindEvents() {
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 

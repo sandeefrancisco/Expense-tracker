@@ -7,8 +7,9 @@
   --border:        #EBEBF0;
   --border-subtle: rgba(26,26,46,.07);
   --tint:          #F3F3F8;
-  --accent:        #1A1A2E;
-  --accent-hover:  #2D2D4A;
+  --accent:        #2563EB;
+  --accent-hover:  #1D4ED8;
+  --accent-tint:   #EFF6FF;
   --success:       #22C55E;
   --error:         #EF4444;
 
@@ -181,18 +182,17 @@ body.modal-open { overflow: hidden; }
   height: var(--header-height);
 }
 
-/* ─── Profile Bar ──────────────────────────────────────── */
-.profile-bar {
-  position: sticky; top: var(--header-height); z-index: 19;
-  display: flex; align-items: center; gap: 6px;
-  padding: 10px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  flex-shrink: 0;
+/* ─── Profile Trigger (in header) ─────────────────────── */
+.profile-trigger {
+  display: flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 99px;
+  border: 1.5px solid var(--border); background: transparent;
+  font-size: 14px; font-weight: 700; font-family: 'Figtree', sans-serif;
+  color: var(--ink); cursor: pointer; transition: background var(--t);
+  white-space: nowrap; flex-shrink: 0;
+  min-height: 36px;
 }
-.profile-bar::-webkit-scrollbar { display: none; }
+.profile-trigger:hover { background: var(--tint); }
 
 .profile-pill {
   white-space: nowrap; flex-shrink: 0;
@@ -231,11 +231,8 @@ body.modal-open { overflow: hidden; }
 .profile-settings-row .danger-btn { padding: 4px 12px; font-size: 13px; }
 
 .header-inner {
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 20px; height: 100%; position: relative;
-}
-.header-inner #openSettings {
-  position: absolute; right: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; height: 100%;
 }
 
 .month-nav { display: flex; align-items: center; gap: 2px; }
@@ -244,7 +241,7 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Icon Button ──────────────────────────────────────── */
 .icon-btn {
-  width: 38px; height: 38px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   border: none; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: var(--ink); transition: background var(--t); flex-shrink: 0;
@@ -266,25 +263,19 @@ body.modal-open { overflow: hidden; }
 /* ─── Summary Card ─────────────────────────────────────── */
 .summary-card {
   background: #1c1c1e; border-radius: var(--r-card);
-  padding: 22px 20px 16px; color: #fff;
-  position: relative; overflow: hidden;
-}
-
-.summary-card::before {
-  content: ''; position: absolute; top: -50px; right: -50px;
-  width: 180px; height: 180px;
-  background: rgba(255,255,255,0.04); border-radius: 50%; pointer-events: none;
+  padding: 16px 16px 14px; color: #fff;
+  position: relative;
 }
 
 .summary-label {
-  font-size: 12px; font-weight: 600;
-  letter-spacing: 0.2px;
-  opacity: 0.6; margin-bottom: 4px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.3px; text-transform: uppercase;
+  opacity: 0.5; margin-bottom: 3px;
 }
 
 .summary-amount {
-  font-size: 36px; font-weight: 800;
-  letter-spacing: -1.5px; line-height: 1; margin-bottom: 12px;
+  font-size: 28px; font-weight: 800;
+  letter-spacing: -1px; line-height: 1; margin-bottom: 8px;
 }
 
 /* Multi-currency breakdown inside summary card */
@@ -298,8 +289,8 @@ body.modal-open { overflow: hidden; }
   letter-spacing: 0.5px; min-width: 32px;
 }
 .mc-val {
-  font-size: 26px; font-weight: 800;
-  letter-spacing: -1px; line-height: 1;
+  font-size: 22px; font-weight: 800;
+  letter-spacing: -0.8px; line-height: 1;
 }
 
 /* Currency badge in category settings list */
@@ -480,7 +471,7 @@ body.modal-open { overflow: hidden; }
 /* List tile — card wrapper for each group or category */
 .list-tile {
   background: var(--surface); border-radius: 14px;
-  border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 .list-tile-grp .list-tile-hdr { padding: 17px 16px; }
@@ -543,10 +534,9 @@ body.modal-open { overflow: hidden; }
 /* Allocation item */
 .expense-item {
   background: var(--surface); border-radius: 14px;
-  border: 1px solid var(--border-subtle); padding: 15px 16px;
+  border: 1px solid var(--border); padding: 15px 16px;
   display: flex; align-items: center; gap: 14px;
-  box-shadow: var(--shadow-card); cursor: pointer;
-  transition: box-shadow var(--t), transform 0.1s; overflow: hidden;
+  cursor: pointer; transition: background var(--t), transform 0.1s; overflow: hidden;
 }
 .expense-item:active { transform: scale(0.985); }
 
@@ -630,17 +620,19 @@ body.modal-open { overflow: hidden; }
 
 /* ─── FAB ──────────────────────────────────────────────── */
 .fab {
-  position: fixed; bottom: 24px; right: 16px;
-  width: var(--fab-size); height: var(--fab-size); border-radius: 50%;
+  position: fixed; bottom: 24px;
+  left: 50%; transform: translateX(-50%);
+  height: 50px; padding: 0 24px; border-radius: 99px;
   background: var(--accent); border: none; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; gap: 8px;
   color: #fff; box-shadow: var(--shadow-fab); z-index: 30;
+  font-size: 16px; font-weight: 700; font-family: 'Figtree', sans-serif;
+  white-space: nowrap;
   transition: transform 0.1s, background var(--t);
 }
-@media (min-width: 480px) { .fab { right: calc(50% - 240px + 16px); } }
 .fab:hover  { background: var(--accent-hover); }
-.fab:active { transform: scale(0.93); }
-.fab svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; }
+.fab:active { transform: translateX(-50%) scale(0.95); }
+.fab svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; flex-shrink: 0; }
 
 /* ─── Bottom Nav ───────────────────────────────────────── */
 .bottom-nav {
@@ -711,7 +703,7 @@ body.modal-open { overflow: hidden; }
   transition: border-color var(--t), box-shadow var(--t), background var(--t);
   outline: none; -webkit-appearance: none;
 }
-.form-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,26,46,.08); }
+.form-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .form-input::placeholder { color: rgba(92,89,117,.45); }
 
 .amount-group {
@@ -721,7 +713,7 @@ body.modal-open { overflow: hidden; }
   width: 100%; box-sizing: border-box; overflow: hidden;
   transition: border-color var(--t), box-shadow var(--t), background var(--t);
 }
-.amount-group:focus-within { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(26,26,46,.08); }
+.amount-group:focus-within { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 
 .currency-symbol { font-size: 24px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
 
@@ -918,6 +910,10 @@ body.modal-open { overflow: hidden; }
 .toast.show        { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.hidden      { display: none; }
 .toast.toast-error { background: var(--error); color: #fff; }
+
+/* Profile sheet */
+.profile-sheet-title { font-size: 13px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); margin-bottom: 8px; padding: 0 2px; }
+.profile-option-active { background: var(--accent-tint) !important; color: var(--accent) !important; }
 
 /* ─── Utils ────────────────────────────────────────────── */
 .hidden { display: none !important; }
