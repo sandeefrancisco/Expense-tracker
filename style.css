@@ -288,8 +288,9 @@ body.modal-open { overflow: hidden; }
 .sc-stats { display: flex; align-items: stretch; padding-bottom: 2px; }
 .sc-stat { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 4px 0; gap: 4px; }
 .sc-stat-n {
-  font-size: 40px; font-weight: 800; color: var(--ink);
-  line-height: 1; letter-spacing: -1.5px;
+  font-size: 28px; font-weight: 800; color: var(--ink);
+  line-height: 1; letter-spacing: -1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 .sc-stat-lbl {
   font-size: 11px; font-weight: 700; color: var(--muted);

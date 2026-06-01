@@ -614,10 +614,11 @@ function renderProfilesList() {
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
-  const now = new Date();
-  const cur = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+  const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  const hasNext = expenses.some(e => e.date && e.date.slice(0, 7) > currentMonthStr);
   const btn = document.getElementById('nextMonth');
-  btn.style.opacity = cur ? '0.3' : '1'; btn.disabled = cur;
+  btn.style.opacity = hasNext ? '1' : '0.3';
+  btn.disabled = !hasNext;
 }
 
 function renderSummary() {
@@ -707,12 +708,21 @@ function renderSummary() {
     progPct.style.color  = pct === 100 ? '#16a34a' : pct > 0 ? 'var(--accent)' : 'var(--muted)';
   }
 
-  // Stats
-  const catCount = new Set(list.map(e => e.category)).size;
+  // Stats — paid vs due amounts in primary currency
+  let paidBase = 0, dueBase = 0;
+  list.forEach(e => {
+    const cur = getCatCurrency(e.category);
+    const amt = effectiveAmount(e);
+    const b   = toBase(amt, cur.code) ?? (cur.code === primaryCode ? amt : 0);
+    if (e.checked) paidBase += b; else dueBase += b;
+  });
+  const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 10000
+    ? `${primarySym}${(v / 1000).toFixed(1)}k`
+    : `${primarySym}${v.toFixed(0)}`;
   const statItems = document.getElementById('scStatItems');
   const statCats  = document.getElementById('scStatCats');
-  if (statItems) statItems.textContent = n;
-  if (statCats)  statCats.textContent  = catCount;
+  if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
+  if (statCats)  statCats.textContent  = n > 0 ? fmtStat(dueBase)  : '—';
 
   updateCardMenu(earned, totalAll);
 }
