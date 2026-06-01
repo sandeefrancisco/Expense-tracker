@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=44" />
+  <link rel="stylesheet" href="style.css?v=45" />
 </head>
 <body>
 
@@ -152,34 +152,40 @@
 
   <!-- ── Add/Edit Allocation Modal ── -->
   <div class="modal-backdrop hidden" id="expenseModal">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <h2 class="modal-title" id="modalTitle">New Allocation</h2>
-        <button class="icon-btn" id="closeModal" aria-label="Close">
-          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
+    <div class="modal modal-pinned">
+      <div class="modal-sticky-top">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalTitle">New Allocation</h2>
+          <button class="icon-btn" id="closeModal" aria-label="Close">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
       </div>
       <form id="expenseForm" novalidate>
-        <div class="form-group amount-group">
-          <label class="currency-symbol" id="currencySymbol">$</label>
-          <input type="text" id="amountInput" class="amount-input" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required />
+        <div class="modal-body">
+          <div class="form-group amount-group">
+            <label class="currency-symbol" id="currencySymbol">$</label>
+            <input type="text" id="amountInput" class="amount-input" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="descInput">Label</label>
+            <input type="text" id="descInput" class="form-input" placeholder="e.g. Rent, Groceries, Netflix…" maxlength="80" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bank <span class="optional">(opt.)</span></label>
+            <div class="bank-grid" id="bankGrid"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <div class="category-grid" id="categoryGrid"></div>
+          </div>
+          <input type="hidden" id="editId" value="" />
+          <div class="form-error hidden" id="formError"></div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="descInput">Label</label>
-          <input type="text" id="descInput" class="form-input" placeholder="e.g. Rent, Groceries, Netflix…" maxlength="80" required />
+        <div class="modal-sticky-footer">
+          <button type="submit" class="submit-btn" id="submitBtn">Add Allocation</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Bank <span class="optional">(opt.)</span></label>
-          <div class="bank-grid" id="bankGrid"></div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Category</label>
-          <div class="category-grid" id="categoryGrid"></div>
-        </div>
-        <input type="hidden" id="editId" value="" />
-        <div class="form-error hidden" id="formError"></div>
-        <button type="submit" class="submit-btn" id="submitBtn">Add Allocation</button>
       </form>
     </div>
   </div>
@@ -390,6 +396,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=44"></script>
+  <script src="app.js?v=45"></script>
 </body>
 </html>

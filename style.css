@@ -663,6 +663,35 @@ body.modal-open { overflow: hidden; }
 .modal-title  { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
 .modal-hint   { font-size: 14px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
 
+/* ─── Pinned-layout modal (sticky header + footer) ──────── */
+.modal-pinned {
+  padding: 0;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.modal-pinned form {
+  display: flex; flex-direction: column;
+  flex: 1; overflow: hidden; width: 100%;
+}
+.modal-sticky-top {
+  padding: 10px 20px 0;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.modal-sticky-top .modal-handle { margin-bottom: 14px; }
+.modal-sticky-top .modal-header { margin-bottom: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.modal-body {
+  flex: 1; overflow-y: auto; padding: 16px 20px 4px;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
+.modal-sticky-footer {
+  padding: 12px 20px max(24px, env(safe-area-inset-bottom, 16px));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-sticky-footer .submit-btn { margin-top: 0; }
+
 /* ─── Form ─────────────────────────────────────────────── */
 .modal form  { width: 100%; }
 .form-group  { width: 100%; margin-bottom: 16px; }
@@ -713,7 +742,7 @@ body.modal-open { overflow: hidden; }
   font-family: 'Figtree', sans-serif; text-align: center;
 }
 .category-chip:active { background: var(--border); }
-.category-chip.selected { border-color: var(--accent); background: var(--accent); }
+.category-chip.selected { border-color: var(--ink); background: var(--ink); }
 .category-chip.cat-add-chip { border-style: dashed; }
 .chip-label { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .category-chip.selected .chip-label { color: #fff; }
