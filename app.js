@@ -909,7 +909,7 @@ async function toggleCheck(id) {
 }
 
 /* ─── Category Grid ─────────────────────────────────────── */
-function buildCategoryGrid() {
+function buildCategoryGrid(showAdd = false) {
   const grid = document.getElementById('categoryGrid');
   grid.innerHTML = '';
   categories.forEach(cat => {
@@ -919,11 +919,13 @@ function buildCategoryGrid() {
     chip.addEventListener('click', () => selectCategory(cat.id));
     grid.appendChild(chip);
   });
-  const addChip = document.createElement('button');
-  addChip.type = 'button'; addChip.className = 'category-chip cat-add-chip';
-  addChip.innerHTML = `<span class="chip-label">+ New</span>`;
-  addChip.addEventListener('click', openAddCategoryModal);
-  grid.appendChild(addChip);
+  if (showAdd) {
+    const addChip = document.createElement('button');
+    addChip.type = 'button'; addChip.className = 'category-chip cat-add-chip';
+    addChip.innerHTML = `<span class="chip-label">+ New</span>`;
+    addChip.addEventListener('click', openAddCategoryModal);
+    grid.appendChild(addChip);
+  }
 }
 
 function selectCategory(id) {
