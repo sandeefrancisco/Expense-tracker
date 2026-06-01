@@ -70,6 +70,8 @@ let selectedCatCurrency = null; // null → inherit global; { code, symbol } →
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
+const collapsedGroups   = new Set(); // prefix keys of collapsed group parents
+const collapsedCats     = new Set(); // catIds of collapsed single/sub categories
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -644,16 +646,34 @@ function renderListView() {
   topLevel.sort((a, b) => b.total - a.total);
 
   container.innerHTML = '';
+  const chevron = () => `<svg class="cat-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>`;
 
   topLevel.forEach(item => {
     if (item.type === 'group') {
+      const grpCollapsed = collapsedGroups.has(item.prefix);
+
       // Parent header — e.g. "Berlin"
       const ph = document.createElement('div');
       ph.className = 'cat-group-header cat-group-parent';
       ph.innerHTML = `
+        ${chevron()}
         <div class="cat-group-name">${escHtml(item.prefix)}</div>
         <div class="cat-group-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      if (grpCollapsed) ph.querySelector('.cat-chevron').classList.add('collapsed');
       container.appendChild(ph);
+
+      // Collapsible group body
+      const grpBody = document.createElement('div');
+      grpBody.className = 'cat-group-body' + (grpCollapsed ? ' collapsed' : '');
+      container.appendChild(grpBody);
+
+      ph.addEventListener('click', () => {
+        const isNowCollapsed = collapsedGroups.has(item.prefix);
+        if (isNowCollapsed) collapsedGroups.delete(item.prefix);
+        else collapsedGroups.add(item.prefix);
+        grpBody.classList.toggle('collapsed', !isNowCollapsed);
+        ph.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+      });
 
       // Sub-category headers + items
       const sortedSubs = item.catIds
@@ -665,33 +685,64 @@ function renderListView() {
         const { items, total } = byCat[catId];
         const words = cat.name.split(/\s+/);
         const sublabel = words.slice(1).join(' ') || cat.name;
+        const catCollapsed = collapsedCats.has(catId);
 
         const sh = document.createElement('div');
         sh.className = 'cat-group-header cat-group-sub';
         sh.innerHTML = `
+          ${chevron()}
           <span class="cat-group-dot" style="background:${cat.color}"></span>
           <div class="cat-group-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
           <div class="cat-group-total">${fmtCat(total, catId)}</div>`;
-        container.appendChild(sh);
+        if (catCollapsed) sh.querySelector('.cat-chevron').classList.add('collapsed');
+        grpBody.appendChild(sh);
+
+        const itemsBody = document.createElement('div');
+        itemsBody.className = 'cat-items-body cat-items-indented' + (catCollapsed ? ' collapsed' : '');
+        grpBody.appendChild(itemsBody);
+
+        sh.addEventListener('click', () => {
+          const isNowCollapsed = collapsedCats.has(catId);
+          if (isNowCollapsed) collapsedCats.delete(catId);
+          else collapsedCats.add(catId);
+          itemsBody.classList.toggle('collapsed', !isNowCollapsed);
+          sh.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+        });
 
         items.sort((a, b) => b.amount - a.amount).forEach(e => {
-          container.appendChild(buildItem(e));
+          itemsBody.appendChild(buildItem(e));
         });
       });
+
     } else {
       const cat = getCat(item.catId);
       const { items, total } = byCat[item.catId];
+      const catCollapsed = collapsedCats.has(item.catId);
 
       const header = document.createElement('div');
       header.className = 'cat-group-header';
       header.innerHTML = `
+        ${chevron()}
         <span class="cat-group-dot" style="background:${cat.color}"></span>
         <div class="cat-group-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
         <div class="cat-group-total">${fmtCat(total, item.catId)}</div>`;
+      if (catCollapsed) header.querySelector('.cat-chevron').classList.add('collapsed');
       container.appendChild(header);
 
+      const itemsBody = document.createElement('div');
+      itemsBody.className = 'cat-items-body' + (catCollapsed ? ' collapsed' : '');
+      container.appendChild(itemsBody);
+
+      header.addEventListener('click', () => {
+        const isNowCollapsed = collapsedCats.has(item.catId);
+        if (isNowCollapsed) collapsedCats.delete(item.catId);
+        else collapsedCats.add(item.catId);
+        itemsBody.classList.toggle('collapsed', !isNowCollapsed);
+        header.querySelector('.cat-chevron').classList.toggle('collapsed', !isNowCollapsed);
+      });
+
       items.sort((a, b) => b.amount - a.amount).forEach(e => {
-        container.appendChild(buildItem(e));
+        itemsBody.appendChild(buildItem(e));
       });
     }
   });
