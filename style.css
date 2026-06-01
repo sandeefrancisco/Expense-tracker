@@ -49,10 +49,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   overscroll-behavior: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 
-input, textarea { user-select: text; }
+input, textarea { -webkit-user-select: text; user-select: text; }
 
 body.modal-open { overflow: hidden; }
 
@@ -930,7 +931,7 @@ body.modal-open { overflow: hidden; }
 
 /* Sign out row */
 .settings-signout-btn {
-  all: unset; box-sizing: border-box;
+  all: unset; box-sizing: border-box; -webkit-user-select: none; user-select: none;
   display: flex; align-items: center; justify-content: center;
   width: 100%; padding: 14px;
   font-size: 15px; font-weight: 600; color: var(--error);
@@ -942,7 +943,7 @@ body.modal-open { overflow: hidden; }
 
 /* Add row (bottom of card) */
 .settings-add-row {
-  all: unset; box-sizing: border-box;
+  all: unset; box-sizing: border-box; -webkit-user-select: none; user-select: none;
   display: flex; align-items: center; gap: 10px;
   width: 100%; padding: 12px 16px; min-height: 52px;
   border-top: 1px solid var(--border-subtle);
@@ -960,7 +961,7 @@ body.modal-open { overflow: hidden; }
 
 /* Danger row */
 .settings-danger-row {
-  all: unset; box-sizing: border-box;
+  all: unset; box-sizing: border-box; -webkit-user-select: none; user-select: none;
   display: flex; align-items: center; gap: 12px;
   width: 100%; padding: 12px 16px; min-height: 52px;
   font-size: 15px; font-weight: 600; color: var(--error);
@@ -971,7 +972,7 @@ body.modal-open { overflow: hidden; }
 
 /* Icon-only buttons inside settings rows */
 .settings-icon-btn {
-  all: unset; box-sizing: border-box;
+  all: unset; box-sizing: border-box; -webkit-user-select: none; user-select: none;
   width: 36px; height: 36px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--muted); flex-shrink: 0;
