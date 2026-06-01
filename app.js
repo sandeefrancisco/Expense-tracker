@@ -606,11 +606,15 @@ function renderProfilesList() {
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
-  const currentMonthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-  const hasNext = expenses.some(e => e.date && e.date.slice(0, 7) > currentMonthStr);
+  const now         = new Date();
+  const nowStr      = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const viewStr     = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  const hasFuture   = expenses.some(e => e.date && e.date.slice(0, 7) > viewStr);
+  // Allow forward if not yet at today's month, OR there is data beyond the current view
+  const canGoForward = viewStr < nowStr || hasFuture;
   const btn = document.getElementById('nextMonth');
-  btn.style.opacity = hasNext ? '1' : '0.3';
-  btn.disabled = !hasNext;
+  btn.style.opacity = canGoForward ? '1' : '0.3';
+  btn.disabled = !canGoForward;
 }
 
 function renderSummary() {
