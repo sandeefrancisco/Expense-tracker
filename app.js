@@ -532,10 +532,6 @@ function renderSummary() {
 
   const heroEl  = document.getElementById('summaryHero');
   const labelEl = document.getElementById('summaryLabel');
-  heroEl.style.color = '';
-
-  const heroEl  = document.getElementById('summaryHero');
-  const labelEl = document.getElementById('summaryLabel');
   const subEl   = document.getElementById('summarySub');
   const n = list.length;
   const itemStr = n === 1 ? '1 item' : `${n} items`;
