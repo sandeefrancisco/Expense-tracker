@@ -197,7 +197,7 @@ body.modal-open { overflow: hidden; }
 
 .profile-pill {
   white-space: nowrap; flex-shrink: 0;
-  padding: 5px 16px;
+  padding: 5px 16px; min-height: 44px;
   border-radius: 99px;
   border: 1.5px solid var(--border);
   background: transparent;
@@ -210,7 +210,7 @@ body.modal-open { overflow: hidden; }
 
 .profile-add-btn {
   white-space: nowrap; flex-shrink: 0;
-  padding: 5px 14px;
+  padding: 5px 14px; min-height: 44px;
   border-radius: 99px;
   border: 1.5px dashed var(--border);
   background: transparent;
@@ -458,7 +458,7 @@ body.modal-open { overflow: hidden; }
 /* Tile header row (clickable) */
 .list-tile-hdr {
   display: flex; align-items: center; gap: 12px;
-  padding: 16px 16px; cursor: pointer; user-select: none;
+  padding: 16px 16px; min-height: 44px; cursor: pointer; user-select: none;
   transition: background 0.12s;
 }
 .list-tile-hdr:active { background: var(--tint); }
@@ -473,7 +473,7 @@ body.modal-open { overflow: hidden; }
 .list-sub-tile { border-top: 1px solid var(--border-subtle); }
 .list-sub-hdr {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px 14px 22px; cursor: pointer; user-select: none;
+  padding: 14px 16px 14px 22px; min-height: 44px; cursor: pointer; user-select: none;
   transition: background 0.12s;
 }
 .list-sub-hdr:active { background: var(--tint); }
@@ -555,6 +555,8 @@ body.modal-open { overflow: hidden; }
   display: flex; align-items: center; gap: 8px;
 }
 .items-done-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+/* Suppress the item's own border-top immediately after the divider line */
+.items-done-divider + .expense-item { border-top: none; }
 
 /* Green count badge on category header */
 .done-badge {
@@ -593,7 +595,7 @@ body.modal-open { overflow: hidden; }
 }
 .option-row-btn {
   display: flex; align-items: center; gap: 14px;
-  width: 100%; padding: 15px 18px; border: none; border-radius: 14px;
+  width: 100%; padding: 15px 18px; min-height: 44px; border: none; border-radius: 14px;
   background: var(--tint); cursor: pointer;
   font-size: 16px; font-weight: 600; color: var(--ink);
   margin-bottom: 10px; transition: background var(--t);
@@ -781,7 +783,7 @@ body.modal-open { overflow: hidden; }
 /* Color picker (add-category modal) */
 .cat-color-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
 .cat-color-swatch {
-  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
   border: 3px solid transparent; cursor: pointer; transition: all 0.15s;
 }
 .cat-color-swatch.selected { border-color: var(--ink); transform: scale(1.15); }
@@ -813,11 +815,11 @@ body.modal-open { overflow: hidden; }
 
 /* Category rename inline input */
 .cat-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.cat-rename-input { flex: 1; height: 34px; font-size: 14px; padding: 4px 10px; }
+.cat-rename-input { flex: 1; min-height: 44px; font-size: 14px; padding: 4px 10px; }
 
 /* Category settings */
 .cat-settings-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.cat-del-btn { padding: 4px 12px !important; font-size: 13px !important; width: auto !important; min-height: auto !important; }
+.cat-del-btn { padding: 4px 12px !important; font-size: 13px !important; width: auto !important; min-height: 44px !important; }
 .categories-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
 
 /* Buttons */
@@ -860,7 +862,7 @@ body.modal-open { overflow: hidden; }
 .income-item-amount { font-size: 16px; font-weight: 700; color: #16a34a; white-space: nowrap; flex-shrink: 0; }
 
 .income-item-del {
-  width: 28px; height: 28px; border-radius: 8px; border: none;
+  width: 44px; height: 44px; border-radius: 10px; border: none;
   background: transparent; cursor: pointer; color: var(--muted);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t); flex-shrink: 0;
