@@ -544,11 +544,12 @@ function renderSummary() {
 
   const incomeRow = document.getElementById('incomeRow');
   const metaRow   = document.getElementById('summaryMeta');
-  if (earned > 0 && !isMultiCur) {
-    const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
-    const allocated = curEntries[0]?.[1].total  ?? 0;
+  if (earned > 0) {
+    const allocatedStr = isMultiCur
+      ? curEntries.map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ')
+      : `${curEntries[0]?.[1].symbol ?? settings.currency.symbol}${(curEntries[0]?.[1].total ?? 0).toFixed(2)}`;
     document.getElementById('earnedVal').textContent = fmt(earned);
-    document.getElementById('spentVal').textContent  = `${sym}${allocated.toFixed(2)}`;
+    document.getElementById('spentVal').textContent  = allocatedStr;
     incomeRow.classList.remove('hidden');
     metaRow.classList.add('hidden');
   } else {
