@@ -903,15 +903,23 @@ function renderListView() {
   const container = document.getElementById('expenseList');
   const list = getMonthExpenses();
 
+  const sectionHdr = document.querySelector('.list-section-hdr');
   if (list.length === 0) {
+    if (sectionHdr) sectionHdr.style.display = 'none';
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M8 13h5"/></svg></div>
         <p>No allocations yet</p>
         <span>Tap + to add your first budget item</span>
+        <button class="list-add-btn empty-add-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add expense
+        </button>
       </div>`;
+    container.querySelector('.empty-add-btn').addEventListener('click', openAddModal);
     return;
   }
+  if (sectionHdr) sectionHdr.style.display = '';
 
   // Group expenses by category
   const byCat = {};
@@ -1163,6 +1171,12 @@ function buildItem(e) {
   el.className = 'expense-item' + (e.checked ? ' checked' : '');
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
+  let amtSub = '';
+  if (e.checked) {
+    amtSub = '<div class="expense-amt-sub expense-amt-paid">✓ paid</div>';
+  } else if (cat.shared) {
+    amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
+  }
   el.innerHTML = `
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
@@ -1171,7 +1185,10 @@ function buildItem(e) {
       <div class="expense-desc">${escHtml(e.description)}</div>
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
-    <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+    <div class="expense-amt-right">
+      <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+      ${amtSub}
+    </div>
     <button class="item-more-btn" aria-label="More options">
       <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
     </button>`;

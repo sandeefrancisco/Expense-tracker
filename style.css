@@ -628,8 +628,8 @@ body.modal-open { overflow: hidden; }
   transition: color var(--t);
 }
 .item-more-btn:active { color: var(--ink); }
-.expense-item.checked .expense-desc   { opacity: 0.4; text-decoration: line-through; }
-.expense-item.checked .expense-amount { opacity: 0.4; }
+.expense-item.checked .expense-desc    { opacity: 0.4; text-decoration: line-through; }
+.expense-item.checked .expense-amount  { opacity: 0.4; }
 
 /* Done divider between unchecked and checked items */
 .items-done-divider {
@@ -658,10 +658,14 @@ body.modal-open { overflow: hidden; }
   vertical-align: middle; margin-left: 6px; white-space: nowrap;
 }
 
-.expense-amount {
-  font-size: 17px; font-weight: 700; color: var(--ink);
-  white-space: nowrap; flex-shrink: 0;
+.expense-amt-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;
 }
+.expense-amount {
+  font-size: 17px; font-weight: 700; color: var(--ink); white-space: nowrap;
+}
+.expense-amt-sub  { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.expense-amt-paid { color: #16a34a; }
 .expense-info  { flex: 1; min-width: 0; }
 .expense-desc  { font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .expense-bank  { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -707,6 +711,7 @@ body.modal-open { overflow: hidden; }
 .empty-icon svg { width: 44px; height: 44px; fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .empty-state p    { font-size: 16px; font-weight: 700; color: var(--ink); }
 .empty-state span { font-size: 14px; color: var(--muted); }
+.empty-add-btn { margin-top: 12px; }
 
 /* ─── Breakdown ────────────────────────────────────────── */
 .breakdown-list { display: flex; flex-direction: column; gap: 6px; }
