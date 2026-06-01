@@ -666,6 +666,26 @@ function renderSummary() {
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
   }
 
+  // Progress bar
+  const paidCount = list.filter(e => e.checked).length;
+  const pct = n > 0 ? Math.round(paidCount / n * 100) : 0;
+  const progText = document.getElementById('scProgText');
+  const progFill = document.getElementById('scProgFill');
+  const progPct  = document.getElementById('scProgPct');
+  if (progText) progText.textContent = `${paidCount} of ${n} paid`;
+  if (progFill) progFill.style.width = `${pct}%`;
+  if (progPct) {
+    progPct.textContent  = pct === 100 ? '✓ 100%' : `${pct}%`;
+    progPct.style.color  = pct === 100 ? '#16a34a' : pct > 0 ? 'var(--accent)' : 'var(--muted)';
+  }
+
+  // Stats
+  const catCount = new Set(list.map(e => e.category)).size;
+  const statItems = document.getElementById('scStatItems');
+  const statCats  = document.getElementById('scStatCats');
+  if (statItems) statItems.textContent = n;
+  if (statCats)  statCats.textContent  = catCount;
+
   updateCardMenu(earned, totalAll);
 }
 

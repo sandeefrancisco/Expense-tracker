@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=60" />
+  <link rel="stylesheet" href="style.css?v=61" />
 </head>
 <body>
 
@@ -130,9 +130,34 @@
           </svg>
         </button>
 
+        <!-- Paid progress -->
+        <div class="sc-prog-row">
+          <span class="sc-prog-text" id="scProgText">0 of 0 paid</span>
+          <div class="sc-prog-track"><div class="sc-prog-fill" id="scProgFill" style="width:0%"></div></div>
+          <span class="sc-prog-pct" id="scProgPct">0%</span>
+        </div>
+
+        <div class="sc-rule"></div>
+
+        <!-- Financial info -->
         <div class="summary-label" id="summaryLabel">Tracked this month</div>
         <div class="summary-amount" id="summaryHero">—</div>
         <div class="summary-sub" id="summarySub"></div>
+
+        <div class="sc-rule"></div>
+
+        <!-- Stats -->
+        <div class="sc-stats">
+          <div class="sc-stat">
+            <div class="sc-stat-n" id="scStatItems">0</div>
+            <div class="sc-stat-lbl">ITEMS</div>
+          </div>
+          <div class="sc-stat-sep"></div>
+          <div class="sc-stat">
+            <div class="sc-stat-n" id="scStatCats">0</div>
+            <div class="sc-stat-lbl">CATEGORIES</div>
+          </div>
+        </div>
 
       </section>
 
@@ -417,6 +442,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=60"></script>
+  <script src="app.js?v=61"></script>
 </body>
 </html>
