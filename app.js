@@ -978,11 +978,11 @@ function renderListView() {
           <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
           ${DND_HANDLE}
         </div>
-        <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
-        <div class="list-tile-right">
-          <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
         </div>
+        <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>
         <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
@@ -1021,11 +1021,11 @@ function renderListView() {
         sh.className = 'list-sub-hdr';
         sh.innerHTML = `
           <div class="list-sub-dot" style="background:${cat.color}"></div>
-          <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-          <div class="list-tile-right">
-            <div class="list-sub-total">${fmtCat(total, catId)}</div>
+          <div class="list-tile-main">
+            <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
             <div class="list-sub-count">${subPaid}/${items.length}</div>
-          </div>`;
+          </div>
+          <div class="list-sub-total">${fmtCat(total, catId)}</div>`;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
@@ -1058,11 +1058,11 @@ function renderListView() {
           <span class="cat-icon-letter">${escHtml(cat.name.charAt(0).toUpperCase())}</span>
           ${DND_HANDLE}
         </div>
-        <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-        <div class="list-tile-right">
-          <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
+        <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>
         <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
