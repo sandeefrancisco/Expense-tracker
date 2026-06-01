@@ -969,10 +969,23 @@ function renderListView() {
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      const grpDoneFmt = fmtGroupDoneTotal(item.catIds, byCat);
-      const grpDoneBadge = grpDoneFmt ? `<span class="done-badge">${grpDoneFmt}</span>` : '';
-      const grpCount = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}<span class="item-count">(${grpCount})</span>${grpDoneBadge}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      const grpFirstCat = getCat(item.catIds[0]);
+      const grpColor = grpFirstCat?.color || 'var(--accent)';
+      const grpPaid  = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked).length || 0), 0);
+      const grpTotal = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      hdr.innerHTML = `
+        <div class="cat-icon-box" style="background:${grpColor}">
+          <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
+          ${DND_HANDLE}
+        </div>
+        <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
+        <div class="list-tile-right">
+          <div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>
+          <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
+        </div>
+        <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>`;
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
@@ -980,13 +993,14 @@ function renderListView() {
       tile.appendChild(grpBody);
 
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle')) return;
+        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
         const nowExpanded = expandedListGroups.has(item.prefix);
         if (nowExpanded) expandedListGroups.delete(item.prefix);
         else expandedListGroups.add(item.prefix);
         grpBody.classList.toggle('collapsed', nowExpanded);
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
 
       const sortedSubs = item.catIds
         .filter(id => byCat[id])
@@ -1002,11 +1016,16 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
-        const paidAmt = byCat[catId]?.paidTotal || 0;
-        const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, catId)}</span>` : '';
+        const subPaid = items.filter(e => e.checked).length;
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
-        sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
+        sh.innerHTML = `
+          <div class="list-sub-dot" style="background:${cat.color}"></div>
+          <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+          <div class="list-tile-right">
+            <div class="list-sub-total">${fmtCat(total, catId)}</div>
+            <div class="list-sub-count">${subPaid}/${items.length}</div>
+          </div>`;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
@@ -1031,11 +1050,22 @@ function renderListView() {
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
-      const paidAmt = byCat[item.catId]?.paidTotal || 0;
-      const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, item.catId)}</span>` : '';
+      const paidCount = items.filter(e => e.checked).length;
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
+      hdr.innerHTML = `
+        <div class="cat-icon-box" style="background:${cat.color}">
+          <span class="cat-icon-letter">${escHtml(cat.name.charAt(0).toUpperCase())}</span>
+          ${DND_HANDLE}
+        </div>
+        <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+        <div class="list-tile-right">
+          <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>
+          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+        </div>
+        <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>`;
       tile.appendChild(hdr);
 
       const itemsBody = document.createElement('div');
@@ -1043,13 +1073,14 @@ function renderListView() {
       tile.appendChild(itemsBody);
 
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle')) return;
+        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
         const nowExpanded = expandedListCats.has(item.catId);
         if (nowExpanded) expandedListCats.delete(item.catId);
         else expandedListCats.add(item.catId);
         itemsBody.classList.toggle('collapsed', nowExpanded);
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
 
       renderItemsBody(items, itemsBody);
     }
@@ -1060,6 +1091,47 @@ function renderListView() {
   // Setup drag-to-reorder for category tiles
   setupDrag(container, () => [...container.querySelectorAll(':scope > .list-tile')], saveCategoryOrder);
 }
+
+async function handleRenameCategory(catId, newName) {
+  const idx = categories.findIndex(c => c.id === catId);
+  if (idx === -1) return;
+  const old = categories[idx];
+  categories[idx] = { ...old, name: newName };
+  renderAll();
+  try {
+    const { error } = await sb.from('categories').update({ name: newName }).eq('id', catId);
+    if (error) throw error;
+  } catch (err) {
+    categories[idx] = old;
+    renderAll(); showToast('Could not rename — ' + err.message, true);
+  }
+}
+
+/* ─── Category context menu ─────────────────────────────── */
+function openCatCtxMenu(btn, catId) {
+  const menu = document.getElementById('catCtxMenu');
+  const cat  = getCat(catId);
+  menu.innerHTML = `
+    <button class="card-menu-item" id="ccmAdd">+ Add to ${escHtml(cat?.name ?? 'category')}</button>
+    <button class="card-menu-item" id="ccmRename">Rename</button>`;
+  const rect = btn.getBoundingClientRect();
+  menu.style.top   = `${rect.bottom + 6}px`;
+  menu.style.right = `${window.innerWidth - rect.right}px`;
+  menu.classList.remove('hidden');
+  menu.querySelector('#ccmAdd').addEventListener('click', () => {
+    menu.classList.add('hidden');
+    openAddModal();
+    selectCategory(catId);
+  });
+  menu.querySelector('#ccmRename').addEventListener('click', () => {
+    menu.classList.add('hidden');
+    const current = getCat(catId)?.name ?? '';
+    const next = prompt('Rename category:', current);
+    if (next && next.trim() && next.trim() !== current) handleRenameCategory(catId, next.trim());
+  });
+}
+
+document.addEventListener('click', () => document.getElementById('catCtxMenu')?.classList.add('hidden'));
 
 function buildItem(e) {
   const cat = getCat(e.category);

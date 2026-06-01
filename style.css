@@ -472,41 +472,79 @@ body.modal-open { overflow: hidden; }
 .view-section.hidden { display: none; }
 
 /* ─── Budget List ──────────────────────────────────────── */
-.expense-list { display: flex; flex-direction: column; gap: 8px; }
+.expense-list { display: flex; flex-direction: column; gap: 12px; }
 
 /* List tile — card wrapper for each group or category */
 .list-tile {
-  background: var(--surface); border-radius: 14px;
-  border: 1px solid var(--border);
+  background: var(--surface); border-radius: 20px;
+  border: none;
+  box-shadow: 0 2px 14px rgba(26,26,46,0.07);
   overflow: hidden;
 }
-.list-tile-grp .list-tile-hdr { padding: 17px 4px 17px 0; }
 
 /* Tile header row (clickable) */
 .list-tile-hdr {
-  display: flex; align-items: center; gap: 8px;
-  padding: 16px 16px 16px 0; min-height: 44px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 12px 12px 12px;
+  min-height: 60px; cursor: pointer; user-select: none;
   transition: background 0.12s;
 }
 .list-tile-hdr:active { background: var(--tint); }
 .list-tile-hdr .cat-chevron { color: var(--muted); flex-shrink: 0; }
-.list-hdr-name {
-  flex: 1; font-size: 16px; font-weight: 700; color: var(--ink);
+
+/* Colored icon box with category initial */
+.cat-icon-box {
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative; overflow: hidden;
 }
-.list-hdr-total { font-size: 17px; font-weight: 700; color: var(--ink); }
-.list-tile-grp .list-hdr-name { font-size: 17px; letter-spacing: 0.1px; }
+.cat-icon-letter {
+  font-size: 19px; font-weight: 800; color: rgba(255,255,255,0.92);
+  pointer-events: none; position: relative; z-index: 0;
+}
+.cat-icon-box .drag-handle {
+  position: absolute; inset: 0; opacity: 0;
+  width: 100%; height: 100%;
+  border-radius: 13px; z-index: 1;
+}
+
+/* Name + inline chevron */
+.list-hdr-name {
+  flex: 1; display: flex; align-items: center; gap: 4px;
+  font-size: 17px; font-weight: 700; color: var(--ink); min-width: 0;
+}
+.list-hdr-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Right meta block (amount + paid count) */
+.list-tile-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0;
+}
+.list-hdr-total { font-size: 17px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.list-hdr-paid-count { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+
+/* ⋮ options button on category tile */
+.cat-opts-btn {
+  all: unset; -webkit-user-select: none; user-select: none; box-sizing: border-box;
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer; color: var(--muted);
+  transition: background var(--t); margin-right: -2px;
+}
+.cat-opts-btn:active { background: var(--border); color: var(--ink); }
 
 /* Sub-category inside a group tile */
 .list-sub-tile { border-top: 1px solid var(--border-subtle); }
 .list-sub-hdr {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px 14px 22px; min-height: 44px; cursor: pointer; user-select: none;
+  padding: 13px 12px 13px 16px; min-height: 48px; cursor: pointer; user-select: none;
   transition: background 0.12s;
 }
 .list-sub-hdr:active { background: var(--tint); }
 .list-sub-hdr .cat-chevron { color: var(--muted); flex-shrink: 0; }
-.list-sub-name { font-size: 15px; font-weight: 600; color: var(--muted); }
-.list-sub-total { font-size: 16px; font-weight: 600; }
+.list-sub-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.list-sub-name { flex: 1; display: flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 600; color: var(--muted); min-width: 0; }
+.list-sub-total { font-size: 15px; font-weight: 700; color: var(--ink); }
+.list-sub-count { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 2px; }
 
 /* Keep dot size */
 .cat-group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
@@ -514,7 +552,7 @@ body.modal-open { overflow: hidden; }
 /* Expense items inside a tile lose their outer card border */
 .list-tile .expense-item {
   border-radius: 0; border: none; border-top: 1px solid var(--border-subtle);
-  box-shadow: none; margin: 0;
+  box-shadow: none; margin: 0; padding-left: 8px;
 }
 
 /* Chevron indicator */
