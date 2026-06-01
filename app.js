@@ -534,41 +534,37 @@ function renderSummary() {
   const labelEl = document.getElementById('summaryLabel');
   heroEl.style.color = '';
 
-  const incomeRow = document.getElementById('incomeRow');
-  const metaRow   = document.getElementById('summaryMeta');
+  const heroEl  = document.getElementById('summaryHero');
+  const labelEl = document.getElementById('summaryLabel');
+  const subEl   = document.getElementById('summarySub');
+  const n = list.length;
+  const itemStr = n === 1 ? '1 item' : `${n} items`;
+
+  heroEl.style.color = '';
+  heroEl.innerHTML   = '';
 
   if (isMultiCur) {
-    // Multi-currency: hero shows each currency stacked, meta shows item count
+    // Show largest currency as hero, others in sub line
+    curEntries.sort((a, b) => b[1].total - a[1].total);
+    const [, { symbol: pSym, total: pTotal }] = curEntries[0];
+    const rest = curEntries.slice(1)
+      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.innerHTML = curEntries
-      .map(([code, { symbol, total }]) =>
-        `<div class="mc-row"><span class="mc-code">${escHtml(code)}</span><span class="mc-val">${escHtml(symbol)}${total.toFixed(2)}</span></div>`)
-      .join('');
-    incomeRow.classList.add('hidden');
-    metaRow.classList.remove('hidden');
-    const n = list.length;
-    document.getElementById('itemCount').textContent = n === 1 ? '1 item' : `${n} items`;
+    heroEl.textContent  = `${pSym}${pTotal.toFixed(2)}`;
+    subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
   } else {
-    heroEl.innerHTML = '';
     const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
     const allocated = curEntries[0]?.[1].total  ?? 0;
     if (earned > 0) {
       const saved  = earned - allocated;
       const isOver = saved < 0;
-      labelEl.textContent = isOver ? 'Over budget' : 'Left this month';
+      labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
       heroEl.textContent  = `${sym}${Math.abs(saved).toFixed(2)}`;
-      heroEl.style.color  = isOver ? '#fca5a5' : '#86efac';
-      document.getElementById('earnedVal').textContent = fmt(earned);
-      document.getElementById('spentVal').textContent  = `${sym}${allocated.toFixed(2)}`;
-      incomeRow.classList.remove('hidden');
-      metaRow.classList.add('hidden');
+      subEl.textContent   = `of ${sym}${earned.toFixed(2)} earned · ${sym}${allocated.toFixed(2)} spent`;
     } else {
       labelEl.textContent = 'Tracked this month';
       heroEl.textContent  = `${sym}${allocated.toFixed(2)}`;
-      incomeRow.classList.add('hidden');
-      metaRow.classList.remove('hidden');
-      const n = list.length;
-      document.getElementById('itemCount').textContent = n === 1 ? '1 item' : `${n} items`;
+      subEl.textContent   = itemStr;
     }
   }
 

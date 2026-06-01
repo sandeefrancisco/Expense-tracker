@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=37" />
+  <link rel="stylesheet" href="style.css?v=38" />
 </head>
 <body>
 
@@ -127,26 +127,9 @@
           </svg>
         </button>
 
-        <div class="summary-label" id="summaryLabel">Total allocated</div>
-        <div class="summary-amount" id="summaryHero">$0.00</div>
-
-        <!-- Earned + Allocated row (when income logged) -->
-        <div class="summary-income-row hidden" id="incomeRow">
-          <div class="summary-stat">
-            <span class="summary-stat-label">Earned</span>
-            <span class="summary-stat-value" id="earnedVal">$0.00</span>
-          </div>
-          <div class="summary-stat-divider"></div>
-          <div class="summary-stat">
-            <span class="summary-stat-label">Allocated</span>
-            <span class="summary-stat-value" id="spentVal">$0.00</span>
-          </div>
-        </div>
-
-        <!-- No income yet -->
-        <div class="summary-meta" id="summaryMeta">
-          <span id="itemCount">0 items</span>
-        </div>
+        <div class="summary-label" id="summaryLabel">Tracked this month</div>
+        <div class="summary-amount" id="summaryHero">—</div>
+        <div class="summary-sub" id="summarySub"></div>
 
       </section>
 
@@ -407,6 +390,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=37"></script>
+  <script src="app.js?v=38"></script>
 </body>
 </html>

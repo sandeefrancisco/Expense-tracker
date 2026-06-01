@@ -305,19 +305,11 @@ body.modal-open { overflow: hidden; }
 /* Category modal currency picker — compact wrap */
 .cat-currency-options { flex-wrap: wrap; gap: 4px; }
 
-/* Income + Spent row */
-.summary-income-row {
-  display: flex; flex-direction: column; gap: 7px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 12px; padding: 10px 12px;
-  margin-bottom: 10px;
+.summary-sub {
+  font-size: 13px; font-weight: 500;
+  opacity: 0.55; margin-top: 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-.summary-stat { display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; gap: 8px; }
-.summary-stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.2px; opacity: 0.55; flex-shrink: 0; }
-.summary-stat-value { font-size: 16px; font-weight: 700; text-align: right; }
-
-.summary-stat-divider { display: none; }
 
 .card-menu-btn {
   position: absolute; top: 14px; right: 14px;
@@ -350,22 +342,6 @@ body.modal-open { overflow: hidden; }
 .card-menu-item.cm-done { color: #16a34a; }
 .card-menu-item.cm-undone { color: var(--muted); }
 
-/* Meta row (expense count + log income prompt) */
-.summary-meta {
-  font-size: 13px; opacity: 0.7;
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 10px;
-}
-.summary-meta .dot { opacity: 0.5; }
-
-.summary-inline-btn {
-  background: rgba(255,255,255,0.15); border: none;
-  color: #fff; font-size: 12px; font-weight: 600;
-  font-family: 'Figtree', sans-serif; padding: 3px 10px;
-  border-radius: 99px; cursor: pointer;
-  transition: background var(--t);
-}
-.summary-inline-btn:hover { background: rgba(255,255,255,0.25); }
 
 /* Budget Pill */
 .budget-pill {
