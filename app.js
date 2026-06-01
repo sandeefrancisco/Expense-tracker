@@ -886,12 +886,16 @@ function buildItem(e) {
       <div class="expense-desc">${escHtml(e.description)}</div>
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
-    <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
+    <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+    <button class="item-more-btn" aria-label="More options">
+      <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+    </button>`;
   el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-check-btn')) return;
-    openItemOptions(e.id);
+    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn')) return;
+    openEditModal(e.id);
   });
   el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });
+  el.querySelector('.item-more-btn').addEventListener('click', ev => { ev.stopPropagation(); openItemOptions(e.id); });
   return el;
 }
 

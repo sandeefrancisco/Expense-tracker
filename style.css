@@ -510,22 +510,37 @@ body.modal-open { overflow: hidden; }
 /* Allocation item */
 .expense-item {
   background: var(--surface); border-radius: 14px;
-  border: 1px solid var(--border); padding: 15px 16px;
-  display: flex; align-items: center; gap: 14px;
+  border: 1px solid var(--border); padding: 12px 8px 12px 12px;
+  display: flex; align-items: center; gap: 12px;
   cursor: pointer; transition: background var(--t), transform 0.1s; overflow: hidden;
 }
 .expense-item:active { transform: scale(0.985); }
 
-/* Per-item checkbox */
+/* Per-item checkbox — 44×44 touch target */
 .item-check-btn {
-  width: 24px; height: 24px; flex-shrink: 0;
-  border-radius: 50%; border: 2px solid var(--border);
+  width: 44px; height: 44px; flex-shrink: 0;
+  border-radius: 50%; border: none;
   background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.15s; position: relative;
 }
-.item-check-btn.checked { background: #16a34a; border-color: #16a34a; }
-.item-check-btn svg { width: 12px; height: 12px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.item-check-btn::after {
+  content: ''; position: absolute;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--border); transition: all 0.15s;
+}
+.item-check-btn.checked::after { background: #16a34a; border-color: #16a34a; }
+.item-check-btn svg { width: 12px; height: 12px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 1; }
+
+/* Per-item ⋯ more button */
+.item-more-btn {
+  width: 36px; height: 44px; flex-shrink: 0;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); border-radius: 8px; padding: 0;
+  transition: color var(--t);
+}
+.item-more-btn:active { color: var(--ink); }
 .expense-item.checked .expense-desc   { opacity: 0.4; text-decoration: line-through; }
 .expense-item.checked .expense-amount { opacity: 0.4; }
 
