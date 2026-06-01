@@ -1430,7 +1430,15 @@ async function handleConfirmDelete() {
 
 /* ─── Settings ──────────────────────────────────────────── */
 function syncSettingsUI() {
-  document.querySelectorAll('.currency-btn').forEach(b => b.classList.toggle('active', b.dataset.code === settings.currency.code));
+  const sel = document.getElementById('currencySelect');
+  if (sel) sel.value = settings.currency.code;
+}
+
+function buildCurrencySelect() {
+  const sel = document.getElementById('currencySelect');
+  if (!sel) return;
+  sel.innerHTML = CURRENCIES.map(c => `<option value="${c.code}">${c.label}</option>`).join('');
+  sel.value = settings.currency.code;
 }
 
 async function handleCurrencySelect(code, symbol) {
@@ -1514,7 +1522,7 @@ function bindEvents() {
   document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
 
   // Settings
-  document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
+  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
   document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
@@ -1531,9 +1539,9 @@ function bindEvents() {
   // Category modal
   document.getElementById('categoryForm').addEventListener('submit', handleAddCategory);
   document.getElementById('cancelAddCat').addEventListener('click', () => closeModal('categoryModal'));
-  document.getElementById('currencyOptions').addEventListener('click', e => {
-    const btn = e.target.closest('.currency-btn');
-    if (btn) handleCurrencySelect(btn.dataset.code, btn.dataset.symbol);
+  document.getElementById('currencySelect').addEventListener('change', e => {
+    const cur = CURRENCIES.find(c => c.code === e.target.value);
+    if (cur) handleCurrencySelect(cur.code, cur.symbol);
   });
 
   document.getElementById('signOutBtn').addEventListener('click', async () => {

@@ -985,25 +985,15 @@ body.modal-open { overflow: hidden; }
 /* Category color dot in settings */
 .cat-settings-dot-lg { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 
-/* Currency */
-.currency-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.currency-btn {
-  padding: 8px 14px; border-radius: var(--r-btn);
-  border: 1.5px solid var(--border); background: var(--tint);
-  font-size: 14px; font-weight: 600; font-family: 'Figtree', sans-serif;
-  color: var(--muted); cursor: pointer; transition: all var(--t); min-height: 44px;
-}
-.currency-btn:hover  { border-color: var(--ink); color: var(--ink); }
-.currency-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
 
 /* ─── Confirm Modal ────────────────────────────────────── */
 .confirm-modal {
   border-radius: var(--r-sheet); padding: 32px 24px;
-  margin: auto 12px; text-align: center; animation: popIn 0.22s ease;
+  margin: auto 12px; text-align: left; animation: popIn 0.22s ease;
 }
 @keyframes popIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .modal-backdrop:has(.confirm-modal) { align-items: center; }
-.confirm-icon    { width: 44px; height: 44px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--tint); }
+.confirm-icon    { width: 44px; height: 44px; margin: 0 0 14px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--tint); }
 .confirm-icon svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .confirm-icon.danger svg { stroke: var(--error); }
 .confirm-title   { font-size: 18px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.3px; }
