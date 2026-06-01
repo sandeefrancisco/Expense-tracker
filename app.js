@@ -474,6 +474,8 @@ function renderProfileBar() {
   const prof = profiles.find(p => p.id === currentProfileId);
   const lbl  = document.getElementById('profileTriggerLabel');
   if (lbl) lbl.textContent = prof?.name ?? 'Me';
+  const av = document.getElementById('profileAvatarEl');
+  if (av) av.textContent = (prof?.name ?? 'M').charAt(0).toUpperCase();
 
   // Populate profile sheet list
   const sheetList = document.getElementById('profileSheetList');
