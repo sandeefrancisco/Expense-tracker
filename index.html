@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=35" />
+  <link rel="stylesheet" href="style.css?v=36" />
 </head>
 <body>
 
@@ -118,6 +118,14 @@
 
       <!-- Summary Card -->
       <section class="summary-card">
+        <button class="card-menu-btn" id="cardMenuBtn" aria-label="Month actions">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <circle cx="12" cy="5"  r="1.8" fill="currentColor"/>
+            <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+            <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+          </svg>
+        </button>
+
         <div class="summary-label" id="summaryLabel">Total allocated</div>
         <div class="summary-amount" id="summaryHero">$0.00</div>
 
@@ -132,21 +140,18 @@
             <span class="summary-stat-label">Allocated</span>
             <span class="summary-stat-value" id="spentVal">$0.00</span>
           </div>
-          <button class="summary-edit-btn" id="editIncomeBtn" aria-label="Edit income">
-            <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
         </div>
 
         <!-- No income yet -->
         <div class="summary-meta" id="summaryMeta">
           <span id="itemCount">0 items</span>
-          <span class="dot">·</span>
-          <button class="summary-inline-btn" id="logIncomeBtn">+ Log income</button>
         </div>
 
         <div class="category-bars" id="categoryBars"></div>
-        <div class="summary-done-row" id="summaryDoneRow"></div>
       </section>
+
+      <!-- Card actions dropdown -->
+      <div class="card-menu hidden" id="cardMenu"></div>
 
       <!-- Budget list -->
       <section class="view-section" id="listView">
@@ -387,6 +392,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=35"></script>
+  <script src="app.js?v=36"></script>
 </body>
 </html>

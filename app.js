@@ -574,22 +574,31 @@ function renderSummary() {
   }
 
   renderCategoryBars(list, totalAll);
+  updateCardMenu(earned, totalAll);
+}
 
-  const doneRow = document.getElementById('summaryDoneRow');
-  if (doneRow) {
-    const done = isMonthDone(currentYear, currentMonth);
-    if (totalAll > 0 || done) {
-      doneRow.innerHTML = `
-        <div class="summary-actions-row">
-          <button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? 'Done · Undo' : 'Mark as done'}</button>
-          ${totalAll > 0 ? '<button class="summary-move-btn" id="openMoveBtn">Move to…</button>' : ''}
-        </div>`;
-      doneRow.querySelector('#toggleDoneBtn').addEventListener('click', toggleMonthDone);
-      if (totalAll > 0) doneRow.querySelector('#openMoveBtn').addEventListener('click', openMoveModal);
-    } else {
-      doneRow.innerHTML = '';
-    }
+function updateCardMenu(earned, totalAll) {
+  const menu = document.getElementById('cardMenu');
+  if (!menu) return;
+  const done = isMonthDone(currentYear, currentMonth);
+  const rows = [];
+  if (earned === 0) {
+    rows.push(`<button class="card-menu-item" id="cmLogIncome">Log income</button>`);
+  } else {
+    rows.push(`<button class="card-menu-item" id="cmEditIncome">Edit income</button>`);
   }
+  if (totalAll > 0 || done) {
+    rows.push(`<button class="card-menu-item ${done ? 'cm-undone' : 'cm-done'}" id="cmToggleDone">${done ? 'Undo done' : 'Mark as done'}</button>`);
+  }
+  if (totalAll > 0) {
+    rows.push(`<button class="card-menu-item" id="cmMoveTo">Move to…</button>`);
+  }
+  menu.innerHTML = rows.join('');
+  const close = () => menu.classList.add('hidden');
+  menu.querySelector('#cmLogIncome')?.addEventListener('click',    () => { close(); openIncomeModal(); });
+  menu.querySelector('#cmEditIncome')?.addEventListener('click',   () => { close(); openIncomeModal(); });
+  menu.querySelector('#cmToggleDone')?.addEventListener('click',   () => { close(); toggleMonthDone(); });
+  menu.querySelector('#cmMoveTo')?.addEventListener('click',       () => { close(); openMoveModal(); });
 }
 
 
@@ -724,8 +733,7 @@ function renderListView() {
         const sc = mkChevron();
         if (!isCatExp) sc.classList.add('collapsed');
         sh.appendChild(sc);
-        sh.innerHTML += `<span class="cat-group-dot" style="background:${cat.color}"></span>
-          <div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+        sh.innerHTML += `<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
           <div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
         subTile.appendChild(sh);
 
@@ -757,8 +765,7 @@ function renderListView() {
       const chev = mkChevron();
       if (!isCatExp) chev.classList.add('collapsed');
       hdr.appendChild(chev);
-      hdr.innerHTML += `<span class="cat-group-dot" style="background:${cat.color}"></span>
-        <div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+      hdr.innerHTML += `<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
         <div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
       tile.appendChild(hdr);
 
@@ -1273,9 +1280,19 @@ function bindEvents() {
   document.getElementById('amountInput').addEventListener('input', clearFormError);
   document.getElementById('descInput').addEventListener('input', clearFormError);
 
+  // Card actions menu
+  document.getElementById('cardMenuBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    const menu = document.getElementById('cardMenu');
+    if (!menu.classList.contains('hidden')) { menu.classList.add('hidden'); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    menu.style.top   = `${rect.bottom + 6}px`;
+    menu.style.right = `${window.innerWidth - rect.right}px`;
+    menu.classList.remove('hidden');
+  });
+  document.addEventListener('click', () => document.getElementById('cardMenu')?.classList.add('hidden'));
+
   // Income
-  document.getElementById('logIncomeBtn').addEventListener('click', openIncomeModal);
-  document.getElementById('editIncomeBtn').addEventListener('click', openIncomeModal);
   document.getElementById('incomeForm').addEventListener('submit', handleIncomeSubmit);
   document.getElementById('closeIncomeModal').addEventListener('click', () => closeModal('incomeModal'));
 
