@@ -347,6 +347,17 @@ function fmtGroupTotal(catIds, byCat) {
   });
   return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
 }
+function fmtGroupDoneTotal(catIds, byCat) {
+  const acc = {};
+  catIds.forEach(id => {
+    if (!byCat[id] || !byCat[id].paidTotal) return;
+    const { code, symbol } = getCatCurrency(id);
+    if (!acc[code]) acc[code] = { symbol, total: 0 };
+    acc[code].total += byCat[id].paidTotal;
+  });
+  const parts = Object.values(acc).filter(v => v.total > 0).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`);
+  return parts.join(' · ');
+}
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
 
@@ -710,43 +721,59 @@ function renderCategoryBars(list, total) {
 /* ─── Drag & Drop ───────────────────────────────────────────── */
 let dnd = null;
 
-function setupDrag(container, getDraggables, onReorder) {
+function setupDrag(container, getDraggables, onReorder, handleSelector = '.drag-handle', threshold = 0) {
   container.addEventListener('pointerdown', ev => {
-    const handle = ev.target.closest('.drag-handle');
+    const handle = ev.target.closest(handleSelector);
     if (!handle) return;
     const draggable = handle.closest('[data-drag-id]');
     if (!draggable) return;
     if (!getDraggables().includes(draggable)) return;
 
-    ev.preventDefault();
-    ev.stopPropagation();
-    handle.setPointerCapture(ev.pointerId);
+    const doInitDrag = (startEv) => {
+      startEv.preventDefault();
+      startEv.stopPropagation();
+      handle.setPointerCapture(startEv.pointerId);
 
-    const rect = draggable.getBoundingClientRect();
-    const ghost = draggable.cloneNode(true);
-    Object.assign(ghost.style, {
-      position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
-      width: rect.width + 'px', margin: '0', zIndex: '9999',
-      pointerEvents: 'none', opacity: '0.95', borderRadius: '14px',
-      boxShadow: '0 12px 40px rgba(26,26,46,0.28)', transform: 'scale(1.02)',
-    });
-    document.body.appendChild(ghost);
-    draggable.classList.add('drag-source');
+      const rect = draggable.getBoundingClientRect();
+      const ghost = draggable.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
+        width: rect.width + 'px', margin: '0', zIndex: '9999',
+        pointerEvents: 'none', opacity: '0.95', borderRadius: '14px',
+        boxShadow: '0 12px 40px rgba(26,26,46,0.28)', transform: 'scale(1.02)',
+      });
+      document.body.appendChild(ghost);
+      draggable.classList.add('drag-source');
 
-    const indicator = document.createElement('div');
-    indicator.className = 'drag-indicator';
+      const indicator = document.createElement('div');
+      indicator.className = 'drag-indicator';
 
-    dnd = { draggable, ghost, indicator, container, getDraggables, onReorder,
-            offsetY: ev.clientY - rect.top, insertBefore: null };
+      dnd = { draggable, ghost, indicator, container, getDraggables, onReorder,
+              offsetY: startEv.clientY - rect.top, insertBefore: null };
 
-    handle.addEventListener('pointermove', onDndMove, { passive: false });
-    handle.addEventListener('pointerup',   onDndEnd,  { once: true });
-    handle.addEventListener('pointercancel', () => {
-      if (!dnd) return;
-      dnd.ghost.remove(); dnd.indicator.remove();
-      dnd.draggable.classList.remove('drag-source');
-      dnd = null;
-    }, { once: true });
+      handle.addEventListener('pointermove', onDndMove, { passive: false });
+      handle.addEventListener('pointerup',   onDndEnd,  { once: true });
+      handle.addEventListener('pointercancel', () => {
+        if (!dnd) return;
+        dnd.ghost.remove(); dnd.indicator.remove();
+        dnd.draggable.classList.remove('drag-source');
+        dnd = null;
+      }, { once: true });
+    };
+
+    if (threshold === 0) {
+      doInitDrag(ev);
+    } else {
+      const startY = ev.clientY;
+      const onPre = (moveEv) => {
+        if (Math.abs(moveEv.clientY - startY) >= threshold) {
+          handle.removeEventListener('pointermove', onPre);
+          doInitDrag(moveEv);
+        }
+      };
+      handle.addEventListener('pointermove', onPre, { passive: false });
+      handle.addEventListener('pointerup', () => handle.removeEventListener('pointermove', onPre), { once: true });
+    }
   });
 }
 
@@ -830,14 +857,14 @@ function renderItemsBody(items, container) {
     setupDrag(
       container,
       () => [...container.querySelectorAll(':scope > .expense-item:not(.checked)')],
-      saveExpenseOrder
+      saveExpenseOrder, '.item-check-btn', 8
     );
   }
   if (checked.length > 1) {
     setupDrag(
       container,
       () => [...container.querySelectorAll(':scope > .expense-item.checked')],
-      saveExpenseOrder
+      saveExpenseOrder, '.item-check-btn', 8
     );
   }
 }
@@ -859,9 +886,11 @@ function renderListView() {
   // Group expenses by category
   const byCat = {};
   list.forEach(e => {
-    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0 };
+    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0, paidTotal: 0 };
     byCat[e.category].items.push(e);
-    byCat[e.category].total += effectiveAmount(e);
+    const amt = effectiveAmount(e);
+    if (e.checked) byCat[e.category].paidTotal += amt;
+    else byCat[e.category].total += amt;
   });
 
   const catIds = Object.keys(byCat);
@@ -920,7 +949,9 @@ function renderListView() {
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      const grpDoneFmt = fmtGroupDoneTotal(item.catIds, byCat);
+      const grpDoneBadge = grpDoneFmt ? `<span class="done-badge">${grpDoneFmt}</span>` : '';
+      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}${grpDoneBadge}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
@@ -950,8 +981,8 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
-        const doneCount = items.filter(e => e.checked).length;
-        const doneBadge = doneCount > 0 ? `<span class="done-badge">${doneCount}</span>` : '';
+        const paidAmt = byCat[catId]?.paidTotal || 0;
+        const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, catId)}</span>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
         sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
@@ -979,8 +1010,8 @@ function renderListView() {
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
-      const doneCount = items.filter(e => e.checked).length;
-      const doneBadge = doneCount > 0 ? `<span class="done-badge">${doneCount}</span>` : '';
+      const paidAmt = byCat[item.catId]?.paidTotal || 0;
+      const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, item.catId)}</span>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
@@ -1016,7 +1047,6 @@ function buildItem(e) {
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
   el.innerHTML = `
-    ${DND_HANDLE}
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
@@ -1029,7 +1059,7 @@ function buildItem(e) {
       <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
     </button>`;
   el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn') || ev.target.closest('.drag-handle')) return;
+    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn')) return;
     openEditModal(e.id);
   });
   el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });

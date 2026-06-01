@@ -520,20 +520,22 @@ body.modal-open { overflow: hidden; }
 /* Allocation item */
 .expense-item {
   background: var(--surface); border-radius: 14px;
-  border: 1px solid var(--border); padding: 12px 8px 12px 12px;
+  border: 1px solid var(--border); padding: 10px 8px 10px 4px;
   display: flex; align-items: center; gap: 12px;
   cursor: pointer; transition: background var(--t), transform 0.1s; overflow: hidden;
 }
 .expense-item:active { transform: scale(0.985); }
 
-/* Per-item checkbox — 44×44 touch target */
+/* Per-item checkbox — 44×44 touch target; also drag initiation zone */
 .item-check-btn {
   width: 44px; height: 44px; flex-shrink: 0;
   border-radius: 50%; border: none;
-  background: transparent; cursor: pointer;
+  background: transparent; cursor: grab;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s; position: relative;
+  touch-action: none; -webkit-user-select: none; user-select: none;
 }
+.item-check-btn:active { cursor: grabbing; }
 .item-check-btn::after {
   content: ''; position: absolute;
   width: 24px; height: 24px; border-radius: 50%;
@@ -565,14 +567,14 @@ body.modal-open { overflow: hidden; }
 /* Suppress the item's own border-top immediately after the divider line */
 .items-done-divider + .expense-item { border-top: none; }
 
-/* Green count badge on category header */
+/* Green paid-amount badge on category header */
 .done-badge {
   display: inline-flex; align-items: center; justify-content: center;
   background: #16a34a; color: #fff;
-  font-size: 10px; font-weight: 700; line-height: 1;
-  min-width: 17px; height: 17px; border-radius: 99px;
-  padding: 0 4px;
-  vertical-align: middle; margin-left: 5px;
+  font-size: 11px; font-weight: 700; line-height: 1;
+  height: 19px; border-radius: 99px;
+  padding: 0 7px;
+  vertical-align: middle; margin-left: 6px; white-space: nowrap;
 }
 
 .expense-amount {
