@@ -832,7 +832,7 @@ function renderListView() {
           sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
         });
 
-        items.sort((a, b) => b.amount - a.amount).forEach(e => {
+        items.sort((a, b) => (a.checked !== b.checked ? (a.checked ? 1 : -1) : b.amount - a.amount)).forEach(e => {
           itemsBody.appendChild(buildItem(e));
         });
       });
@@ -864,7 +864,7 @@ function renderListView() {
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
       });
 
-      items.sort((a, b) => b.amount - a.amount).forEach(e => {
+      items.sort((a, b) => (a.checked !== b.checked ? (a.checked ? 1 : -1) : b.amount - a.amount)).forEach(e => {
         itemsBody.appendChild(buildItem(e));
       });
     }
