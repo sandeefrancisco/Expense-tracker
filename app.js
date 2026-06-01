@@ -539,29 +539,44 @@ function renderSummary() {
   heroEl.style.color = '';
   heroEl.innerHTML   = '';
 
-  if (isMultiCur) {
-    // Show largest currency as hero, others in sub line
-    curEntries.sort((a, b) => b[1].total - a[1].total);
-    const [, { symbol: pSym, total: pTotal }] = curEntries[0];
-    const rest = curEntries.slice(1)
+  const primaryCode = settings.currency.code;
+  const primarySym  = settings.currency.symbol;
+
+  if (earned > 0) {
+    // Savings hero is always in the primary (income) currency.
+    // Other-currency allocations show in the sub line only.
+    const primaryAllocated = byCur[primaryCode]?.total ?? 0;
+    const saved  = earned - primaryAllocated;
+    const isOver = saved < 0;
+    labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
+    heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
+
+    // Sub: "of €X earned · €Y spent [· ₱Z spent]"
+    const spentParts = curEntries
+      .sort((a, b) => (a[0] === primaryCode ? -1 : b[0] === primaryCode ? 1 : b[1].total - a[1].total))
+      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)} spent`);
+    subEl.textContent = [`of ${primarySym}${earned.toFixed(2)} earned`, ...spentParts].join(' · ');
+  } else if (curEntries.length === 0) {
+    labelEl.textContent = 'Tracked this month';
+    heroEl.textContent  = `${primarySym}0.00`;
+    subEl.textContent   = itemStr;
+  } else if (curEntries.length === 1) {
+    const [, { symbol, total }] = curEntries[0];
+    labelEl.textContent = 'Tracked this month';
+    heroEl.textContent  = `${symbol}${total.toFixed(2)}`;
+    subEl.textContent   = itemStr;
+  } else {
+    // Multi-currency, no income: primary currency as hero (or largest if primary absent)
+    const heroEntry = byCur[primaryCode]
+      ? [primaryCode, byCur[primaryCode]]
+      : curEntries.sort((a, b) => b[1].total - a[1].total)[0];
+    const [heroCode, { symbol: hSym, total: hTotal }] = heroEntry;
+    const rest = curEntries
+      .filter(([code]) => code !== heroCode)
       .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${pSym}${pTotal.toFixed(2)}`;
+    heroEl.textContent  = `${hSym}${hTotal.toFixed(2)}`;
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
-  } else {
-    const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
-    const allocated = curEntries[0]?.[1].total  ?? 0;
-    if (earned > 0) {
-      const saved  = earned - allocated;
-      const isOver = saved < 0;
-      labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
-      heroEl.textContent  = `${sym}${Math.abs(saved).toFixed(2)}`;
-      subEl.textContent   = `of ${sym}${earned.toFixed(2)} earned · ${sym}${allocated.toFixed(2)} spent`;
-    } else {
-      labelEl.textContent = 'Tracked this month';
-      heroEl.textContent  = `${sym}${allocated.toFixed(2)}`;
-      subEl.textContent   = itemStr;
-    }
   }
 
   updateCardMenu(earned, totalAll);
