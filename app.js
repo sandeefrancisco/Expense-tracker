@@ -1583,6 +1583,26 @@ function openItemOptions(id) {
   openModal('itemOptionsModal');
 }
 
+async function duplicateExpense(id) {
+  const src = expenses.find(e => e.id === id); if (!src) return;
+  const tmp = 'tmp_' + Date.now();
+  const catItems = expenses.filter(e => e.category === src.category && !e.checked);
+  const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
+  const copy = { ...src, id: tmp, checked: false, sort_order: newOrder };
+  expenses.unshift(copy);
+  renderAll();
+  showToast('Duplicated');
+  try {
+    const payload = { user_id: src.user_id, profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder };
+    const row = await dbSaveExpense(payload);
+    const idx = expenses.findIndex(e => e.id === tmp);
+    if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+  } catch (err) {
+    expenses = expenses.filter(e => e.id !== tmp);
+    renderAll(); showToast('Could not duplicate — ' + err.message, true);
+  }
+}
+
 async function handleConfirmDelete() {
   if (!pendingDeleteId) return;
   const id      = pendingDeleteId;
@@ -1697,6 +1717,9 @@ function bindEvents() {
   // Item options sheet
   document.getElementById('itemOptionsEdit').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openEditModal(id);
+  });
+  document.getElementById('itemOptionsDuplicate').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); duplicateExpense(id);
   });
   document.getElementById('itemOptionsDelete').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
