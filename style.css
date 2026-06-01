@@ -55,26 +55,71 @@ input, textarea { user-select: text; }
 
 body.modal-open { overflow: hidden; }
 
-/* ─── Loading Screen ───────────────────────────────────── */
+/* ─── Skeleton Shimmer ─────────────────────────────────── */
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skel {
+  background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,0.75) 50%, var(--border) 75%);
+  background-size: 400% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px; display: block; flex-shrink: 0;
+}
+
+.skel-dark {
+  background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.1) 75%);
+  background-size: 400% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px; display: block; flex-shrink: 0;
+}
+
+/* ─── Loading / Skeleton Screen ─────────────────────────── */
 .loading-screen {
   position: fixed; inset: 0;
-  background: var(--surface);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 24px; z-index: 200;
+  background: var(--bg);
+  z-index: 200; overflow: hidden;
 }
 
-.loading-logo { width: 80px; height: 80px; border-radius: 18px; }
-
-.loading-ring {
-  width: 28px; height: 28px;
-  border: 2.5px solid var(--border);
-  border-top-color: var(--ink);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.skel-hdr {
+  height: var(--header-height);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; max-width: 480px; margin: 0 auto;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+.skel-bar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px; max-width: 480px; margin: 0 auto;
+}
+
+.skel-content {
+  max-width: 480px; margin: 0 auto;
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+}
+
+.skel-card {
+  background: var(--ink); border-radius: var(--r-card);
+  padding: 22px 20px 20px;
+}
+
+.skel-list {
+  background: var(--surface); border-radius: var(--r-card);
+  padding: 4px 0;
+  box-shadow: var(--shadow-card);
+}
+
+.skel-cat-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+}
+
+.skel-item-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+}
 
 /* ─── Auth Screen ──────────────────────────────────────── */
 .auth-screen {

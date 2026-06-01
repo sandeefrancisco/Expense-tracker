@@ -62,40 +62,35 @@ async function init() {
   currentYear  = now.getFullYear();
   currentMonth = now.getMonth();
 
-  // Bind events first so the auth form always works before any async work
   bindEvents();
 
-  // getSession() reads the stored JWT from localStorage — no network round-trip
   const { data: { session } } = await sb.auth.getSession();
 
   if (session?.user) {
     currentUser = session.user;
-    await loadUserData();   // fetch all tables before showing anything
+    // Skeleton (loading screen) stays visible during the data fetch
+    await loadUserData();
     buildCategoryGrid();
     showApp();
+    hideLoading(); // remove skeleton once the real content is painted
   } else {
     showAuth();
+    hideLoading();
   }
 
-  // Hide the loading screen only after data is ready (or the auth form is ready)
-  hideLoading();
-
-  // Supabase v2 fires onAuthStateChange with SIGNED_IN (or INITIAL_SESSION) even
-  // for a plain session restore on page load.  Without this guard that second event
-  // would call loadUserData() again, wiping any optimistic state already set above.
   const bootstrappedUserId = session?.user?.id ?? null;
 
   sb.auth.onAuthStateChange(async (event, session) => {
-    // INITIAL_SESSION = v2's dedicated "session restored" event — already handled
     if (event === 'INITIAL_SESSION') return;
 
     if (event === 'SIGNED_IN' && session?.user) {
-      // Same user getSession() already loaded → skip the redundant second load
       if (session.user.id === bootstrappedUserId) return;
       currentUser = session.user;
+      showSkeleton(); // instantly hide auth form and show skeleton while data loads
       await loadUserData();
       buildCategoryGrid();
       showApp();
+      hideLoading();
     } else if (event === 'SIGNED_OUT') {
       currentUser      = null;
       expenses         = [];
@@ -110,8 +105,13 @@ async function init() {
   });
 }
 
-/* ─── Loading ───────────────────────────────────────────── */
-function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
+/* ─── Loading / Skeleton ────────────────────────────────── */
+function hideLoading()  { document.getElementById('loadingScreen').classList.add('hidden'); }
+
+function showSkeleton() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('loadingScreen').classList.remove('hidden');
+}
 
 /* ─── Auth UI ───────────────────────────────────────────── */
 function showAuth() {
@@ -872,9 +872,9 @@ async function handleFormSubmit(ev) {
     const prev = i !== -1 ? { ...expenses[i] } : null;
     if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, date };
     renderAll();
+    showToast('Updated'); // optimistic — fires the moment the modal closes
     try {
       await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, date });
-      showToast('Updated');
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -883,11 +883,11 @@ async function handleFormSubmit(ev) {
     const tmp = 'tmp_' + Date.now();
     expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false });
     renderAll();
+    showToast('Added'); // optimistic — fires the moment the modal closes
     try {
       const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
-      showToast('Added');
     } catch (err) {
       expenses = expenses.filter(e => e.id !== tmp);
       renderAll(); showToast('Could not save — ' + err.message, true);
