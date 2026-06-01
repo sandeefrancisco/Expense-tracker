@@ -951,7 +951,8 @@ function renderListView() {
       hdr.className = 'list-tile-hdr';
       const grpDoneFmt = fmtGroupDoneTotal(item.catIds, byCat);
       const grpDoneBadge = grpDoneFmt ? `<span class="done-badge">${grpDoneFmt}</span>` : '';
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}${grpDoneBadge}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      const grpCount = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}<span class="item-count">(${grpCount})</span>${grpDoneBadge}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
@@ -985,7 +986,7 @@ function renderListView() {
         const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, catId)}</span>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
-        sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
+        sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
@@ -1014,7 +1015,7 @@ function renderListView() {
       const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, item.catId)}</span>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
+      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
       tile.appendChild(hdr);
 
       const itemsBody = document.createElement('div');
@@ -1366,9 +1367,13 @@ function openIncomeModal() {
   document.getElementById('incomeCurrencySymbol').textContent = settings.currency.symbol;
   document.getElementById('incomeAmountInput').value = '';
   document.getElementById('incomeSourceInput').value = '';
-  document.getElementById('incomeNoteInput').value   = '';
+  document.getElementById('incomeFormError').classList.add('hidden');
+  // Reset source chips to Salary
+  document.querySelectorAll('.income-src-chip').forEach(c => c.classList.toggle('active', c.dataset.src === 'Salary'));
+  document.getElementById('incomeSourceCustomGroup').style.display = 'none';
   renderIncomeList();
   openModal('incomeModal');
+  setTimeout(() => document.getElementById('incomeAmountInput').focus(), 300);
 }
 
 function renderIncomeList() {
@@ -1407,27 +1412,28 @@ function renderIncomeList() {
 async function handleIncomeSubmit(e) {
   e.preventDefault();
   const amount = parseAmount(document.getElementById('incomeAmountInput').value);
-  const source = document.getElementById('incomeSourceInput').value.trim() || 'Salary';
-  const note   = document.getElementById('incomeNoteInput').value.trim();
   const errEl  = document.getElementById('incomeFormError');
-  if (!amount || amount <= 0) { errEl.textContent = 'Enter an income amount.'; errEl.classList.remove('hidden'); return; }
+  if (!amount || amount <= 0) { errEl.textContent = 'Enter an amount.'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
 
+  const activeChip = document.querySelector('.income-src-chip.active');
+  const source = (activeChip?.dataset.src === '')
+    ? (document.getElementById('incomeSourceInput').value.trim() || 'Other')
+    : (activeChip?.dataset.src || 'Salary');
+
   const tmp = 'tmp_' + Date.now();
-  incomeEntries.push({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: note || null });
-  document.getElementById('incomeAmountInput').value = '';
-  document.getElementById('incomeSourceInput').value = '';
-  document.getElementById('incomeNoteInput').value   = '';
-  renderIncomeList(); renderSummary();
+  incomeEntries.push({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
+  closeModal('incomeModal');
+  renderSummary();
   showToast('Income added');
 
   try {
-    const row = await dbSaveIncome({ user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: note || null });
+    const row = await dbSaveIncome({ user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
     const idx = incomeEntries.findIndex(r => r.id === tmp);
     if (idx !== -1) incomeEntries[idx] = { ...row, amount: parseFloat(row.amount) };
   } catch (err) {
     incomeEntries = incomeEntries.filter(r => r.id !== tmp);
-    renderIncomeList(); renderSummary();
+    renderSummary();
     showToast('Could not save — ' + err.message, true);
   }
 }
@@ -1539,6 +1545,17 @@ function bindEvents() {
   // Income
   document.getElementById('incomeForm').addEventListener('submit', handleIncomeSubmit);
   document.getElementById('closeIncomeModal').addEventListener('click', () => closeModal('incomeModal'));
+  document.querySelectorAll('.income-src-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.income-src-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const customGroup = document.getElementById('incomeSourceCustomGroup');
+      const isOther = chip.dataset.src === '';
+      customGroup.style.display = isOther ? '' : 'none';
+      if (isOther) document.getElementById('incomeSourceInput').focus();
+      else document.getElementById('incomeAmountInput').focus();
+    });
+  });
 
   // Delete
   document.getElementById('cancelDelete').addEventListener('click',  () => closeModal('deleteModal'));

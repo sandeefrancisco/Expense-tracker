@@ -567,6 +567,12 @@ body.modal-open { overflow: hidden; }
 /* Suppress the item's own border-top immediately after the divider line */
 .items-done-divider + .expense-item { border-top: none; }
 
+/* Item count (n) on category header */
+.item-count {
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  margin-left: 4px;
+}
+
 /* Green paid-amount badge on category header */
 .done-badge {
   display: inline-flex; align-items: center; justify-content: center;
@@ -884,7 +890,17 @@ body.modal-open { overflow: hidden; }
 
 .income-add-section { border-top: 1px solid var(--border); padding-top: 16px; }
 
-.income-row-fields { display: flex; gap: 10px; }
+.income-src-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.income-src-chip {
+  all: unset; -webkit-user-select: none; user-select: none; box-sizing: border-box;
+  padding: 7px 16px; border-radius: 99px;
+  border: 1.5px solid var(--border); background: var(--tint);
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  cursor: pointer; transition: all var(--t);
+}
+.income-src-chip.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
 
 /* ─── Settings ─────────────────────────────────────────── */
 /* ─── Settings Redesign ────────────────────────────────── */
