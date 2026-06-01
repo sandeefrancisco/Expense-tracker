@@ -612,13 +612,7 @@ function renderSummary() {
     const isOver = saved < 0;
     labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
     heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
-    // Show total spent in primary, then list any foreign original amounts
-    const foreignParts = curEntries
-      .filter(([code]) => code !== primaryCode && rateCache[code] != null)
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`);
-    const spentStr = `${primarySym}${totalBase.toFixed(2)} spent`;
-    const foreignStr = foreignParts.length ? ` (${foreignParts.join(' + ')} converted)` : '';
-    subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${spentStr}${foreignStr}`;
+    subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
