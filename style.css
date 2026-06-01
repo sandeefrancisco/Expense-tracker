@@ -510,6 +510,8 @@ body.modal-open { overflow: hidden; }
 }
 .list-hdr-name-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list-hdr-paid-count { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+.list-hdr-installment { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.1px; margin-top: 2px; }
+.list-hdr-installment--done { color: #16a34a; }
 
 /* Right: total + left-amount stacked column */
 .list-hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }

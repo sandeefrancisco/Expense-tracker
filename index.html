@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=71" />
+  <link rel="stylesheet" href="style.css?v=72" />
 </head>
 <body>
 
@@ -406,6 +406,33 @@
     </div>
   </div>
 
+  <!-- ── Installment Modal ── -->
+  <div class="modal-backdrop hidden" id="installmentModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">Installments</h3>
+      <p class="modal-hint" id="installmentCatName"></p>
+      <div class="form-group">
+        <label class="form-label">Total installments</label>
+        <input type="number" id="installmentTotal" class="form-input" placeholder="e.g. 12" min="2" max="360" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">First payment month</label>
+        <input type="month" id="installmentStart" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Due day <span class="optional">(opt.)</span></label>
+        <input type="number" id="installmentDueDay" class="form-input" placeholder="e.g. 15" min="1" max="31" />
+      </div>
+      <div class="form-error hidden" id="installmentError"></div>
+      <div class="confirm-actions" style="margin-top:4px">
+        <button type="button" class="cancel-btn" id="installmentCancel">Cancel</button>
+        <button type="button" class="submit-btn" id="installmentSave" style="flex:1">Save</button>
+      </div>
+      <button type="button" class="option-row-btn option-row-danger" id="installmentClear" style="width:100%;margin-top:8px;justify-content:center;display:none">Remove installments</button>
+    </div>
+  </div>
+
   <!-- ── Move Month Modal ── -->
   <div class="modal-backdrop hidden" id="moveModal">
     <div class="modal">
@@ -437,6 +464,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=71"></script>
+  <script src="app.js?v=72"></script>
 </body>
 </html>

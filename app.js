@@ -61,7 +61,8 @@ let completedMonths   = [];
 let settings          = { currency: { symbol: '€', code: 'EUR' } };
 let currentUser       = null;
 let currentYear, currentMonth;
-let pendingDeleteId   = null;
+let pendingDeleteId          = null;
+let pendingInstallmentCatId  = null;
 let selectedCategory  = null;
 let selectedBank      = null;
 let selectedCatShared   = false;
@@ -371,6 +372,22 @@ function fmtGroupDoneTotal(catIds, byCat) {
 }
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
+
+function ordinal(n) { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+function getInstallmentProgress(cat) {
+  if (!cat.installment_total || !cat.installment_start) return null;
+  const start = new Date(cat.installment_start + 'T00:00:00');
+  const diff  = (currentYear - start.getFullYear()) * 12 + (currentMonth - start.getMonth());
+  const current = Math.max(1, Math.min(diff + 1, cat.installment_total));
+  return { current, total: cat.installment_total, dueDay: cat.installment_due_day || null };
+}
+function installmentHtml(cat) {
+  const p = getInstallmentProgress(cat);
+  if (!p) return '';
+  const due = p.dueDay ? ` · due ${ordinal(p.dueDay)}` : '';
+  const done = p.current >= p.total;
+  return `<div class="list-hdr-installment${done ? ' list-hdr-installment--done' : ''}">${p.current}/${p.total} installments${due}</div>`;
+}
 
 /* Returns a map of first-word-prefix → [catId, ...] for prefixes shared by 2+ categories */
 function detectPrefixGroups(catIds) {
@@ -1055,6 +1072,7 @@ function renderListView() {
           <div class="list-sub-dot" style="background:${cat.color}"></div>
           <div class="list-tile-main">
             <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+            ${installmentHtml(cat)}
             <div class="list-sub-count">${subPaid}/${items.length}</div>
           </div>
           <div class="list-sub-right">
@@ -1099,6 +1117,7 @@ function renderListView() {
         </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+          ${installmentHtml(cat)}
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1149,12 +1168,51 @@ async function handleRenameCategory(catId, newName) {
   }
 }
 
+/* ─── Installment modal ─────────────────────────────────── */
+function openInstallmentModal(catId) {
+  pendingInstallmentCatId = catId;
+  const cat = getCat(catId);
+  document.getElementById('installmentCatName').textContent = cat.name;
+  document.getElementById('installmentTotal').value   = cat.installment_total  || '';
+  document.getElementById('installmentStart').value   = cat.installment_start  ? cat.installment_start.slice(0, 7) : `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+  document.getElementById('installmentDueDay').value  = cat.installment_due_day || '';
+  document.getElementById('installmentError').classList.add('hidden');
+  document.getElementById('installmentClear').style.display = cat.installment_total ? '' : 'none';
+  openModal('installmentModal');
+}
+async function handleInstallmentSave() {
+  const catId  = pendingInstallmentCatId;
+  const total  = parseInt(document.getElementById('installmentTotal').value);
+  const start  = document.getElementById('installmentStart').value;
+  const dueDay = parseInt(document.getElementById('installmentDueDay').value) || null;
+  const errEl  = document.getElementById('installmentError');
+  if (!total || total < 2) { errEl.textContent = 'Enter the total number of installments (min 2).'; errEl.classList.remove('hidden'); return; }
+  if (!start) { errEl.textContent = 'Pick the first payment month.'; errEl.classList.remove('hidden'); return; }
+  const startDate = `${start}-01`;
+  const idx = categories.findIndex(c => c.id === catId); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...categories[idx] };
+  categories[idx] = { ...categories[idx], installment_total: total, installment_start: startDate, installment_due_day: dueDay };
+  closeModal('installmentModal'); renderAll(); showToast('Installments saved');
+  try { await sb.from('categories').update({ installment_total: total, installment_start: startDate, installment_due_day: dueDay }).eq('id', catId); }
+  catch (err) { categories[idx] = old; renderAll(); showToast('Could not save — ' + err.message, true); }
+}
+async function handleInstallmentClear() {
+  const catId = pendingInstallmentCatId;
+  const idx = categories.findIndex(c => c.id === catId); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...categories[idx] };
+  categories[idx] = { ...categories[idx], installment_total: null, installment_start: null, installment_due_day: null };
+  closeModal('installmentModal'); renderAll(); showToast('Installments removed');
+  try { await sb.from('categories').update({ installment_total: null, installment_start: null, installment_due_day: null }).eq('id', catId); }
+  catch (err) { categories[idx] = old; renderAll(); showToast('Could not remove — ' + err.message, true); }
+}
+
 /* ─── Category context menu ─────────────────────────────── */
 function openCatCtxMenu(btn, catId) {
   const menu = document.getElementById('catCtxMenu');
   const cat  = getCat(catId);
   menu.innerHTML = `
     <button class="card-menu-item" id="ccmAdd">+ Add to ${escHtml(cat?.name ?? 'category')}</button>
+    <button class="card-menu-item" id="ccmInstallments">Installments…</button>
     <button class="card-menu-item" id="ccmRename">Rename</button>`;
   const rect = btn.getBoundingClientRect();
   menu.style.top   = `${rect.bottom + 6}px`;
@@ -1164,6 +1222,10 @@ function openCatCtxMenu(btn, catId) {
     menu.classList.add('hidden');
     openAddModal();
     selectCategory(catId);
+  });
+  menu.querySelector('#ccmInstallments').addEventListener('click', () => {
+    menu.classList.add('hidden');
+    openInstallmentModal(catId);
   });
   menu.querySelector('#ccmRename').addEventListener('click', () => {
     menu.classList.add('hidden');
@@ -1716,7 +1778,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -1803,6 +1865,11 @@ function bindEvents() {
   });
   document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
 
+  // Installment modal
+  document.getElementById('installmentSave').addEventListener('click', handleInstallmentSave);
+  document.getElementById('installmentClear').addEventListener('click', handleInstallmentClear);
+  document.getElementById('installmentCancel').addEventListener('click', () => closeModal('installmentModal'));
+
   // Settings
   document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
@@ -1855,7 +1922,7 @@ function bindEvents() {
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
