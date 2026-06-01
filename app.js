@@ -374,19 +374,11 @@ function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
 
 function ordinal(n) { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
-function getInstallmentProgress(cat) {
-  if (!cat.installment_total || !cat.installment_start) return null;
-  const start = new Date(cat.installment_start + 'T00:00:00');
-  const diff  = (currentYear - start.getFullYear()) * 12 + (currentMonth - start.getMonth());
-  const current = Math.max(1, Math.min(diff + 1, cat.installment_total));
-  return { current, total: cat.installment_total, dueDay: cat.installment_due_day || null };
-}
-function installmentHtml(cat) {
-  const p = getInstallmentProgress(cat);
-  if (!p) return '';
-  const due = p.dueDay ? ` · due ${ordinal(p.dueDay)}` : '';
-  const done = p.current >= p.total;
-  return `<div class="list-hdr-installment${done ? ' list-hdr-installment--done' : ''}">${p.current}/${p.total} installments${due}</div>`;
+function expenseInstallmentHtml(e) {
+  if (!e.installment_total || !e.installment_current) return '';
+  const due  = e.installment_due_day ? ` · due ${ordinal(e.installment_due_day)}` : '';
+  const done = e.installment_current >= e.installment_total;
+  return `<div class="expense-installment${done ? ' expense-installment--done' : ''}">${e.installment_current}/${e.installment_total}${due}</div>`;
 }
 
 /* Returns a map of first-word-prefix → [catId, ...] for prefixes shared by 2+ categories */
@@ -1082,7 +1074,6 @@ function renderListView() {
           <div class="list-sub-dot" style="background:${cat.color}"></div>
           <div class="list-tile-main">
             <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-            ${installmentHtml(cat)}
             <div class="list-sub-count">${subPaid}/${items.length}</div>
           </div>
           <div class="list-sub-right">
@@ -1127,7 +1118,6 @@ function renderListView() {
         </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-          ${installmentHtml(cat)}
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1178,42 +1168,41 @@ async function handleRenameCategory(catId, newName) {
   }
 }
 
-/* ─── Installment modal ─────────────────────────────────── */
-function openInstallmentModal(catId) {
-  pendingInstallmentCatId = catId;
-  const cat = getCat(catId);
-  document.getElementById('installmentCatName').textContent = cat.name;
-  document.getElementById('installmentTotal').value   = cat.installment_total  || '';
-  document.getElementById('installmentStart').value   = cat.installment_start  ? cat.installment_start.slice(0, 7) : `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-  document.getElementById('installmentDueDay').value  = cat.installment_due_day || '';
+/* ─── Installment modal (expense-level) ─────────────────── */
+function openInstallmentModal(expenseId) {
+  pendingInstallmentCatId = expenseId; // reuse variable; holds expense id
+  const e = expenses.find(x => x.id === expenseId);
+  document.getElementById('installmentCatName').textContent = e?.description ?? '';
+  document.getElementById('installmentTotal').value   = e?.installment_total   || '';
+  document.getElementById('installmentCurrent').value = e?.installment_current || '';
+  document.getElementById('installmentDueDay').value  = e?.installment_due_day || '';
   document.getElementById('installmentError').classList.add('hidden');
-  document.getElementById('installmentClear').style.display = cat.installment_total ? '' : 'none';
+  document.getElementById('installmentClear').style.display = e?.installment_total ? '' : 'none';
   openModal('installmentModal');
 }
 async function handleInstallmentSave() {
-  const catId  = pendingInstallmentCatId;
+  const id     = pendingInstallmentCatId;
   const total  = parseInt(document.getElementById('installmentTotal').value);
-  const start  = document.getElementById('installmentStart').value;
+  const current= parseInt(document.getElementById('installmentCurrent').value);
   const dueDay = parseInt(document.getElementById('installmentDueDay').value) || null;
   const errEl  = document.getElementById('installmentError');
-  if (!total || total < 2) { errEl.textContent = 'Enter the total number of installments (min 2).'; errEl.classList.remove('hidden'); return; }
-  if (!start) { errEl.textContent = 'Pick the first payment month.'; errEl.classList.remove('hidden'); return; }
-  const startDate = `${start}-01`;
-  const idx = categories.findIndex(c => c.id === catId); if (idx === -1) { closeModal('installmentModal'); return; }
-  const old = { ...categories[idx] };
-  categories[idx] = { ...categories[idx], installment_total: total, installment_start: startDate, installment_due_day: dueDay };
+  if (!total || total < 2)   { errEl.textContent = 'Enter total installments (min 2).'; errEl.classList.remove('hidden'); return; }
+  if (!current || current < 1 || current > total) { errEl.textContent = 'Current installment must be between 1 and total.'; errEl.classList.remove('hidden'); return; }
+  const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...expenses[idx] };
+  expenses[idx] = { ...expenses[idx], installment_total: total, installment_current: current, installment_due_day: dueDay };
   closeModal('installmentModal'); renderAll(); showToast('Installments saved');
-  try { await sb.from('categories').update({ installment_total: total, installment_start: startDate, installment_due_day: dueDay }).eq('id', catId); }
-  catch (err) { categories[idx] = old; renderAll(); showToast('Could not save — ' + err.message, true); }
+  try { await sb.from('expenses').update({ installment_total: total, installment_current: current, installment_due_day: dueDay }).eq('id', id); }
+  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not save — ' + err.message, true); }
 }
 async function handleInstallmentClear() {
-  const catId = pendingInstallmentCatId;
-  const idx = categories.findIndex(c => c.id === catId); if (idx === -1) { closeModal('installmentModal'); return; }
-  const old = { ...categories[idx] };
-  categories[idx] = { ...categories[idx], installment_total: null, installment_start: null, installment_due_day: null };
+  const id  = pendingInstallmentCatId;
+  const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...expenses[idx] };
+  expenses[idx] = { ...expenses[idx], installment_total: null, installment_current: null, installment_due_day: null };
   closeModal('installmentModal'); renderAll(); showToast('Installments removed');
-  try { await sb.from('categories').update({ installment_total: null, installment_start: null, installment_due_day: null }).eq('id', catId); }
-  catch (err) { categories[idx] = old; renderAll(); showToast('Could not remove — ' + err.message, true); }
+  try { await sb.from('expenses').update({ installment_total: null, installment_current: null, installment_due_day: null }).eq('id', id); }
+  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not remove — ' + err.message, true); }
 }
 
 /* ─── Category context menu ─────────────────────────────── */
@@ -1222,7 +1211,6 @@ function openCatCtxMenu(btn, catId) {
   const cat  = getCat(catId);
   menu.innerHTML = `
     <button class="card-menu-item" id="ccmAdd">+ Add to ${escHtml(cat?.name ?? 'category')}</button>
-    <button class="card-menu-item" id="ccmInstallments">Installments…</button>
     <button class="card-menu-item" id="ccmRename">Rename</button>`;
   const rect = btn.getBoundingClientRect();
   menu.style.top   = `${rect.bottom + 6}px`;
@@ -1232,10 +1220,6 @@ function openCatCtxMenu(btn, catId) {
     menu.classList.add('hidden');
     openAddModal();
     selectCategory(catId);
-  });
-  menu.querySelector('#ccmInstallments').addEventListener('click', () => {
-    menu.classList.add('hidden');
-    openInstallmentModal(catId);
   });
   menu.querySelector('#ccmRename').addEventListener('click', () => {
     menu.classList.add('hidden');
@@ -1265,6 +1249,7 @@ function buildItem(e) {
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
+      ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amt-right">
@@ -1869,6 +1854,9 @@ function bindEvents() {
   });
   document.getElementById('itemOptionsDuplicate').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); duplicateExpense(id);
+  });
+  document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
   });
   document.getElementById('itemOptionsDelete').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
