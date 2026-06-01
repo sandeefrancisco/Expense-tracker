@@ -1473,16 +1473,26 @@ function openDuplicateMonthModal() {
 
 function updateMovePickerUI() {
   const isDup = moveModalMode === 'duplicate';
-  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : 'Move allocations to…';
-  document.getElementById('moveMonthLabel').textContent = getMonthLabel(movePickerYear, movePickerMonth);
+  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : 'Move to…';
+
+  const sel = document.getElementById('moveMonthSelect');
+  sel.innerHTML = '';
+  const now = new Date();
+  for (let i = -12; i <= 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const opt = document.createElement('option');
+    opt.value = `${y}-${m}`;
+    opt.textContent = getMonthLabel(y, m);
+    sel.appendChild(opt);
+  }
+  sel.value = `${movePickerYear}-${movePickerMonth}`;
+
   const isSame     = movePickerYear === currentYear && movePickerMonth === currentMonth;
-  const count      = getMonthExpenses().length;
   const confirmBtn = document.getElementById('confirmMoveBtn');
   confirmBtn.disabled      = isSame && !isDup;
   confirmBtn.style.opacity = (isSame && !isDup) ? '0.35' : '';
-  confirmBtn.textContent   = isDup
-    ? `Duplicate ${count} ${count === 1 ? 'expense' : 'expenses'}`
-    : `Move ${count} ${count === 1 ? 'allocation' : 'allocations'}`;
+  confirmBtn.textContent   = isDup ? 'Duplicate' : 'Move';
 }
 
 async function handleMoveConfirm() {
@@ -1833,13 +1843,10 @@ function bindEvents() {
     } catch (err) { showToast('Error: ' + err.message, true); }
   });
 
-  // Move modal
-  document.getElementById('movePrevMonth').addEventListener('click', () => {
-    movePickerMonth--; if (movePickerMonth < 0) { movePickerMonth = 11; movePickerYear--; }
-    updateMovePickerUI();
-  });
-  document.getElementById('moveNextMonth').addEventListener('click', () => {
-    movePickerMonth++; if (movePickerMonth > 11) { movePickerMonth = 0; movePickerYear++; }
+  // Move / Duplicate modal
+  document.getElementById('moveMonthSelect').addEventListener('change', e => {
+    const [y, m] = e.target.value.split('-').map(Number);
+    movePickerYear = y; movePickerMonth = m;
     updateMovePickerUI();
   });
   document.getElementById('confirmMoveBtn').addEventListener('click', () => {
