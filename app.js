@@ -635,23 +635,26 @@ function renderCardBreakdown(list) {
     return s;
   };
 
-  topLevel.forEach((item, idx) => {
+  topLevel.forEach(item => {
+    const tile = document.createElement('div');
+    tile.className = 'sum-tile';
+    el.appendChild(tile);
+
     if (item.type === 'group') {
       const isExpanded = expandedCardGroups.has(item.prefix);
-      const groupTotal = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
 
       const gh = document.createElement('div');
-      gh.className = 'sum-row sum-grp-row' + (idx === 0 ? ' sum-row-first' : '');
+      gh.className = 'sum-row sum-grp-row';
       const chev = mkChevron();
       if (!isExpanded) chev.classList.add('collapsed');
       gh.appendChild(chev);
       gh.innerHTML += `<div class="sum-row-name sum-grp-name">${escHtml(item.prefix)}</div>
         <div class="sum-row-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
-      el.appendChild(gh);
+      tile.appendChild(gh);
 
       const grpBody = document.createElement('div');
       grpBody.className = 'sum-body' + (isExpanded ? '' : ' collapsed');
-      el.appendChild(grpBody);
+      tile.appendChild(grpBody);
 
       gh.addEventListener('click', () => {
         const now = expandedCardGroups.has(item.prefix);
@@ -667,6 +670,10 @@ function renderCardBreakdown(list) {
           const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
           const isCatExp = expandedCardCats.has(catId);
 
+          const subTile = document.createElement('div');
+          subTile.className = 'sum-sub-tile';
+          grpBody.appendChild(subTile);
+
           const sh = document.createElement('div');
           sh.className = 'sum-row sum-sub-row';
           const sc = mkChevron();
@@ -674,12 +681,12 @@ function renderCardBreakdown(list) {
           sh.appendChild(sc);
           sh.innerHTML += `<span class="sum-dot" style="background:${cat.color}"></span>
             <div class="sum-row-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
-            <div class="sum-row-total sum-sub-total">${fmtCat(total, catId)}</div>`;
-          grpBody.appendChild(sh);
+            <div class="sum-row-total">${fmtCat(total, catId)}</div>`;
+          subTile.appendChild(sh);
 
           const ibody = document.createElement('div');
           ibody.className = 'sum-body sum-items' + (isCatExp ? '' : ' collapsed');
-          grpBody.appendChild(ibody);
+          subTile.appendChild(ibody);
 
           sh.addEventListener('click', e => {
             e.stopPropagation();
@@ -705,18 +712,18 @@ function renderCardBreakdown(list) {
       const isCatExp = expandedCardCats.has(item.catId);
 
       const header = document.createElement('div');
-      header.className = 'sum-row sum-cat-row' + (idx === 0 ? ' sum-row-first' : '');
+      header.className = 'sum-row sum-cat-row';
       const chev = mkChevron();
       if (!isCatExp) chev.classList.add('collapsed');
       header.appendChild(chev);
       header.innerHTML += `<span class="sum-dot" style="background:${cat.color}"></span>
         <div class="sum-row-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
         <div class="sum-row-total">${fmtCat(total, item.catId)}</div>`;
-      el.appendChild(header);
+      tile.appendChild(header);
 
       const ibody = document.createElement('div');
       ibody.className = 'sum-body sum-items' + (isCatExp ? '' : ' collapsed');
-      el.appendChild(ibody);
+      tile.appendChild(ibody);
 
       header.addEventListener('click', () => {
         const now = expandedCardCats.has(item.catId);
