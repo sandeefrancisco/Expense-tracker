@@ -68,6 +68,7 @@ let selectedCatShared   = false;
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
+let moveModalMode       = 'move'; // 'move' | 'duplicate'
 let rateCache           = {}; // { 'PHP': 0.01612 } — fromCode → primary currency multiplier
 const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
@@ -714,6 +715,7 @@ function updateCardMenu(earned, totalAll) {
   }
   if (totalAll > 0) {
     rows.push(`<button class="card-menu-item" id="cmMoveTo">Move to…</button>`);
+    rows.push(`<button class="card-menu-item" id="cmDuplicateTo">Duplicate to…</button>`);
   }
   menu.innerHTML = rows.join('');
   const close = () => menu.classList.add('hidden');
@@ -721,6 +723,7 @@ function updateCardMenu(earned, totalAll) {
   menu.querySelector('#cmEditIncome')?.addEventListener('click',   () => { close(); openIncomeModal(); });
   menu.querySelector('#cmToggleDone')?.addEventListener('click',   () => { close(); toggleMonthDone(); });
   menu.querySelector('#cmMoveTo')?.addEventListener('click',       () => { close(); openMoveModal(); });
+  menu.querySelector('#cmDuplicateTo')?.addEventListener('click',  () => { close(); openDuplicateMonthModal(); });
 }
 
 
@@ -1451,6 +1454,16 @@ async function handleFormSubmit(ev) {
 
 /* ─── Move Month Modal ──────────────────────────────────── */
 function openMoveModal() {
+  moveModalMode = 'move';
+  let y = currentYear, m = currentMonth + 1;
+  if (m > 11) { m = 0; y++; }
+  movePickerYear = y; movePickerMonth = m;
+  updateMovePickerUI();
+  openModal('moveModal');
+}
+
+function openDuplicateMonthModal() {
+  moveModalMode = 'duplicate';
   let y = currentYear, m = currentMonth + 1;
   if (m > 11) { m = 0; y++; }
   movePickerYear = y; movePickerMonth = m;
@@ -1459,13 +1472,17 @@ function openMoveModal() {
 }
 
 function updateMovePickerUI() {
+  const isDup = moveModalMode === 'duplicate';
+  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : 'Move allocations to…';
   document.getElementById('moveMonthLabel').textContent = getMonthLabel(movePickerYear, movePickerMonth);
   const isSame     = movePickerYear === currentYear && movePickerMonth === currentMonth;
   const count      = getMonthExpenses().length;
   const confirmBtn = document.getElementById('confirmMoveBtn');
-  confirmBtn.disabled    = isSame;
-  confirmBtn.style.opacity = isSame ? '0.35' : '';
-  confirmBtn.textContent = `Move ${count} ${count === 1 ? 'allocation' : 'allocations'}`;
+  confirmBtn.disabled      = isSame && !isDup;
+  confirmBtn.style.opacity = (isSame && !isDup) ? '0.35' : '';
+  confirmBtn.textContent   = isDup
+    ? `Duplicate ${count} ${count === 1 ? 'expense' : 'expenses'}`
+    : `Move ${count} ${count === 1 ? 'allocation' : 'allocations'}`;
 }
 
 async function handleMoveConfirm() {
@@ -1498,6 +1515,49 @@ async function handleMoveConfirm() {
     currentMonth = srcMonth;
     renderAll();
     showToast('Could not move — ' + err.message, true);
+  }
+}
+
+async function handleDuplicateMonthConfirm() {
+  const list = getMonthExpenses();
+  if (!list.length) { closeModal('moveModal'); return; }
+
+  const targetYear  = movePickerYear;
+  const targetMonth = movePickerMonth;
+  const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+
+  closeModal('moveModal');
+
+  const copies = list.map(e => ({
+    user_id: e.user_id, profile_id: e.profile_id,
+    amount: e.amount, description: e.description,
+    bank: e.bank, category: e.category,
+    date: targetDate, note: e.note,
+    sort_order: e.sort_order, checked: false,
+  }));
+
+  const tmpIds = copies.map((_, i) => 'tmp_dup_' + Date.now() + '_' + i);
+  const optimistic = copies.map((c, i) => ({ ...c, id: tmpIds[i] }));
+  const prevExpenses = [...expenses];
+
+  currentYear  = targetYear;
+  currentMonth = targetMonth;
+  saveViewMonth();
+  expenses = [...expenses, ...optimistic];
+  renderAll();
+  showToast(`Duplicated ${list.length} expense${list.length !== 1 ? 's' : ''} to ${getMonthLabel(targetYear, targetMonth)}`);
+
+  try {
+    const { data: rows, error } = await sb.from('expenses').insert(copies).select();
+    if (error) throw error;
+    tmpIds.forEach(tid => { expenses = expenses.filter(e => e.id !== tid); });
+    rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
+    renderAll();
+  } catch (err) {
+    expenses     = prevExpenses;
+    currentYear  = currentYear; // already navigated
+    renderAll();
+    showToast('Could not duplicate — ' + err.message, true);
   }
 }
 
@@ -1782,7 +1842,9 @@ function bindEvents() {
     movePickerMonth++; if (movePickerMonth > 11) { movePickerMonth = 0; movePickerYear++; }
     updateMovePickerUI();
   });
-  document.getElementById('confirmMoveBtn').addEventListener('click', handleMoveConfirm);
+  document.getElementById('confirmMoveBtn').addEventListener('click', () => {
+    moveModalMode === 'duplicate' ? handleDuplicateMonthConfirm() : handleMoveConfirm();
+  });
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
