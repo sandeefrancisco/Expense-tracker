@@ -72,6 +72,8 @@ let movePickerYear      = null;
 let movePickerMonth     = null;
 const collapsedGroups   = new Set(); // prefix keys of collapsed group parents
 const collapsedCats     = new Set(); // catIds of collapsed single/sub categories
+const expandedCardGroups = new Set(); // card breakdown: expanded group prefixes
+const expandedCardCats   = new Set(); // card breakdown: expanded catIds
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -559,6 +561,7 @@ function renderSummary() {
   }
 
   renderCategoryBars(list, totalAll);
+  renderCardBreakdown(list);
 
   const doneRow = document.getElementById('summaryDoneRow');
   if (doneRow) {
@@ -575,6 +578,163 @@ function renderSummary() {
       doneRow.innerHTML = '';
     }
   }
+}
+
+function renderCardBreakdown(list) {
+  const el = document.getElementById('summaryBreakdown');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!list.length) return;
+
+  const byCat = {};
+  list.forEach(e => {
+    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0 };
+    byCat[e.category].items.push(e);
+    byCat[e.category].total += effectiveAmount(e);
+  });
+
+  const catIds = Object.keys(byCat);
+  const prefixGroups = detectPrefixGroups(catIds);
+  const inGroup = new Set(Object.values(prefixGroups).flat());
+  const seenPrefixes = new Set();
+  const topLevel = [];
+  catIds.forEach(catId => {
+    const firstWord = getCat(catId).name.split(/\s+/)[0];
+    if (inGroup.has(catId)) {
+      if (!seenPrefixes.has(firstWord)) {
+        seenPrefixes.add(firstWord);
+        const groupIds = prefixGroups[firstWord];
+        topLevel.push({ type: 'group', prefix: firstWord, catIds: groupIds });
+      }
+    } else {
+      topLevel.push({ type: 'single', catId });
+    }
+  });
+  topLevel.sort((a, b) => {
+    const ta = a.type === 'group'
+      ? a.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0)
+      : byCat[a.catId].total;
+    const tb = b.type === 'group'
+      ? b.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0)
+      : byCat[b.catId].total;
+    return tb - ta;
+  });
+
+  const mkChevron = () => {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('class', 'cat-chevron');
+    s.setAttribute('viewBox', '0 0 16 16');
+    s.setAttribute('fill', 'none');
+    s.setAttribute('stroke', 'currentColor');
+    s.setAttribute('stroke-width', '2');
+    s.setAttribute('stroke-linecap', 'round');
+    s.setAttribute('stroke-linejoin', 'round');
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    p.setAttribute('points', '4,6 8,10 12,6');
+    s.appendChild(p);
+    return s;
+  };
+
+  topLevel.forEach((item, idx) => {
+    if (item.type === 'group') {
+      const isExpanded = expandedCardGroups.has(item.prefix);
+      const groupTotal = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
+
+      const gh = document.createElement('div');
+      gh.className = 'sum-row sum-grp-row' + (idx === 0 ? ' sum-row-first' : '');
+      const chev = mkChevron();
+      if (!isExpanded) chev.classList.add('collapsed');
+      gh.appendChild(chev);
+      gh.innerHTML += `<div class="sum-row-name sum-grp-name">${escHtml(item.prefix)}</div>
+        <div class="sum-row-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      el.appendChild(gh);
+
+      const grpBody = document.createElement('div');
+      grpBody.className = 'sum-body' + (isExpanded ? '' : ' collapsed');
+      el.appendChild(grpBody);
+
+      gh.addEventListener('click', () => {
+        const now = expandedCardGroups.has(item.prefix);
+        if (now) expandedCardGroups.delete(item.prefix); else expandedCardGroups.add(item.prefix);
+        grpBody.classList.toggle('collapsed', now);
+        gh.querySelector('.cat-chevron').classList.toggle('collapsed', now);
+      });
+
+      item.catIds.filter(id => byCat[id]).sort((a, b) => byCat[b].total - byCat[a].total)
+        .forEach(catId => {
+          const cat = getCat(catId);
+          const { items, total } = byCat[catId];
+          const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
+          const isCatExp = expandedCardCats.has(catId);
+
+          const sh = document.createElement('div');
+          sh.className = 'sum-row sum-sub-row';
+          const sc = mkChevron();
+          if (!isCatExp) sc.classList.add('collapsed');
+          sh.appendChild(sc);
+          sh.innerHTML += `<span class="sum-dot" style="background:${cat.color}"></span>
+            <div class="sum-row-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+            <div class="sum-row-total sum-sub-total">${fmtCat(total, catId)}</div>`;
+          grpBody.appendChild(sh);
+
+          const ibody = document.createElement('div');
+          ibody.className = 'sum-body sum-items' + (isCatExp ? '' : ' collapsed');
+          grpBody.appendChild(ibody);
+
+          sh.addEventListener('click', e => {
+            e.stopPropagation();
+            const now = expandedCardCats.has(catId);
+            if (now) expandedCardCats.delete(catId); else expandedCardCats.add(catId);
+            ibody.classList.toggle('collapsed', now);
+            sh.querySelector('.cat-chevron').classList.toggle('collapsed', now);
+          });
+
+          items.sort((a, b) => b.amount - a.amount).forEach(e => {
+            const row = document.createElement('div');
+            row.className = 'sum-item';
+            row.innerHTML = `<div class="sum-item-name">${escHtml(e.description || '—')}</div>
+              <div class="sum-item-amt">${fmtCat(e.amount, e.category)}${getCat(e.category).shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
+            row.addEventListener('click', ev => { ev.stopPropagation(); openEditModal(e); });
+            ibody.appendChild(row);
+          });
+        });
+
+    } else {
+      const cat = getCat(item.catId);
+      const { items, total } = byCat[item.catId];
+      const isCatExp = expandedCardCats.has(item.catId);
+
+      const header = document.createElement('div');
+      header.className = 'sum-row sum-cat-row' + (idx === 0 ? ' sum-row-first' : '');
+      const chev = mkChevron();
+      if (!isCatExp) chev.classList.add('collapsed');
+      header.appendChild(chev);
+      header.innerHTML += `<span class="sum-dot" style="background:${cat.color}"></span>
+        <div class="sum-row-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
+        <div class="sum-row-total">${fmtCat(total, item.catId)}</div>`;
+      el.appendChild(header);
+
+      const ibody = document.createElement('div');
+      ibody.className = 'sum-body sum-items' + (isCatExp ? '' : ' collapsed');
+      el.appendChild(ibody);
+
+      header.addEventListener('click', () => {
+        const now = expandedCardCats.has(item.catId);
+        if (now) expandedCardCats.delete(item.catId); else expandedCardCats.add(item.catId);
+        ibody.classList.toggle('collapsed', now);
+        header.querySelector('.cat-chevron').classList.toggle('collapsed', now);
+      });
+
+      items.sort((a, b) => b.amount - a.amount).forEach(e => {
+        const row = document.createElement('div');
+        row.className = 'sum-item';
+        row.innerHTML = `<div class="sum-item-name">${escHtml(e.description || '—')}</div>
+          <div class="sum-item-amt">${fmtCat(e.amount, e.category)}${getCat(e.category).shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
+        row.addEventListener('click', ev => { ev.stopPropagation(); openEditModal(e); });
+        ibody.appendChild(row);
+      });
+    }
+  });
 }
 
 function renderCategoryBars(list, total) {

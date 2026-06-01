@@ -393,6 +393,47 @@ body.modal-open { overflow: hidden; }
   height: 100%; border-radius: 99px; transition: width 0.4s ease;
 }
 
+/* ─── Summary Card Breakdown ──────────────────────────── */
+.summary-breakdown { margin-top: 10px; }
+
+.sum-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 0; cursor: pointer;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  user-select: none;
+}
+.sum-row-first { border-top: none; }
+.sum-row .cat-chevron { color: rgba(255,255,255,0.4); flex-shrink: 0; }
+.sum-row-name { flex: 1; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7); }
+.sum-row-total { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.95); }
+
+.sum-grp-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.95); letter-spacing: 0.2px; }
+.sum-grp-row .sum-row-total { font-size: 14px; }
+
+.sum-sub-row { padding: 7px 0 7px 8px; }
+.sum-sub-total { font-size: 12px; font-weight: 600; }
+
+.sum-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Collapsible bodies */
+.sum-body {
+  overflow: hidden; max-height: 9999px; opacity: 1;
+  transition: max-height 0.22s ease, opacity 0.18s ease;
+}
+.sum-body.collapsed { max-height: 0; opacity: 0; }
+
+/* Individual item rows inside expanded category */
+.sum-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 0 6px 24px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+}
+.sum-item:active { opacity: 0.7; }
+.sum-item-name { flex: 1; font-size: 11px; color: rgba(255,255,255,0.55); }
+.sum-item-amt { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); white-space: nowrap; }
+.sum-items .sum-item:first-child { border-top: none; }
+
 /* ─── Month Done Button ────────────────────────────────── */
 .summary-done-row { display: flex; justify-content: flex-end; margin-top: 14px; }
 .summary-done-btn {
