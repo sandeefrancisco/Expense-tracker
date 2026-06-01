@@ -58,22 +58,43 @@ let authMode          = 'signin';
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-  const now   = new Date();
+  const now    = new Date();
   currentYear  = now.getFullYear();
   currentMonth = now.getMonth();
 
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) { currentUser = session.user; await loadUserData(); showApp(); }
-  else               { showAuth(); }
-
-  hideLoading();
-  buildCategoryGrid();
+  // Bind events first so the auth form always works before any async work
   bindEvents();
 
+  // getSession() reads the stored JWT from localStorage — no network round-trip
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session?.user) {
+    currentUser = session.user;
+    await loadUserData();   // fetch all tables before showing anything
+    buildCategoryGrid();
+    showApp();
+  } else {
+    showAuth();
+  }
+
+  // Hide the loading screen only after data is ready (or the auth form is ready)
+  hideLoading();
+
+  // Supabase v2 fires onAuthStateChange with SIGNED_IN (or INITIAL_SESSION) even
+  // for a plain session restore on page load.  Without this guard that second event
+  // would call loadUserData() again, wiping any optimistic state already set above.
+  const bootstrappedUserId = session?.user?.id ?? null;
+
   sb.auth.onAuthStateChange(async (event, session) => {
+    // INITIAL_SESSION = v2's dedicated "session restored" event — already handled
+    if (event === 'INITIAL_SESSION') return;
+
     if (event === 'SIGNED_IN' && session?.user) {
+      // Same user getSession() already loaded → skip the redundant second load
+      if (session.user.id === bootstrappedUserId) return;
       currentUser = session.user;
       await loadUserData();
+      buildCategoryGrid();
       showApp();
     } else if (event === 'SIGNED_OUT') {
       currentUser      = null;
