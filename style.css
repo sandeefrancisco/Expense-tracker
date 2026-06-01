@@ -666,29 +666,22 @@ body.modal-open { overflow: hidden; }
 /* ─── Pinned-layout modal (sticky header + footer) ──────── */
 .modal-pinned {
   padding: 0;
-  overflow: hidden;
-  display: flex; flex-direction: column;
+  /* Modal itself scrolls normally; header/footer use position:sticky */
 }
-.modal-pinned form {
-  display: flex; flex-direction: column;
-  flex: 1; overflow: hidden; width: 100%;
-}
+.modal-pinned form { width: 100%; }
 .modal-sticky-top {
-  padding: 10px 20px 0;
-  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 10;
   background: var(--surface);
+  padding: 10px 20px 0;
 }
 .modal-sticky-top .modal-handle { margin-bottom: 14px; }
 .modal-sticky-top .modal-header { margin-bottom: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
-.modal-body {
-  flex: 1; overflow-y: auto; padding: 16px 20px 4px;
-  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-}
+.modal-body { padding: 16px 20px 4px; }
 .modal-sticky-footer {
-  padding: 12px 20px max(24px, env(safe-area-inset-bottom, 16px));
+  position: sticky; bottom: 0; z-index: 10;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  padding: 12px 20px max(24px, env(safe-area-inset-bottom, 16px));
 }
 .modal-sticky-footer .submit-btn { margin-top: 0; }
 
