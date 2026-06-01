@@ -287,6 +287,33 @@ body.modal-open { overflow: hidden; }
   letter-spacing: -1.5px; line-height: 1; margin-bottom: 12px;
 }
 
+/* Multi-currency breakdown inside summary card */
+.mc-row {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-bottom: 6px;
+}
+.mc-row:last-child { margin-bottom: 12px; }
+.mc-code {
+  font-size: 11px; font-weight: 700; opacity: 0.45;
+  letter-spacing: 0.5px; min-width: 32px;
+}
+.mc-val {
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -1px; line-height: 1;
+}
+
+/* Currency badge in category settings list */
+.cat-currency-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  background: rgba(26,26,46,0.08); color: var(--muted);
+  padding: 1px 5px; border-radius: 4px; letter-spacing: 0.3px;
+  vertical-align: middle; margin-left: 2px;
+}
+
+/* Category modal currency picker — compact wrap */
+.cat-currency-options { flex-wrap: wrap; gap: 4px; }
+
 /* Income + Spent row */
 .summary-income-row {
   display: flex; align-items: center; gap: 0;

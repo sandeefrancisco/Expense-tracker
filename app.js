@@ -8,6 +8,20 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ─── Bank definitions ──────────────────────────────────── */
 const BANKS = ['BDO', 'BPI', 'N26', 'Commerzbank'];
 
+/* ─── Currency definitions ──────────────────────────────── */
+const CURRENCIES = [
+  { code: 'EUR', symbol: '€',  label: '€ EUR' },
+  { code: 'USD', symbol: '$',  label: '$ USD' },
+  { code: 'PHP', symbol: '₱',  label: '₱ PHP' },
+  { code: 'GBP', symbol: '£',  label: '£ GBP' },
+  { code: 'JPY', symbol: '¥',  label: '¥ JPY' },
+  { code: 'INR', symbol: '₹',  label: '₹ INR' },
+  { code: 'AUD', symbol: 'A$', label: 'A$ AUD' },
+  { code: 'CAD', symbol: 'C$', label: 'C$ CAD' },
+  { code: 'CHF', symbol: 'Fr', label: 'Fr CHF' },
+  { code: 'SGD', symbol: 'S$', label: 'S$ SGD' },
+];
+
 function buildBankGrid(current) {
   const grid = document.getElementById('bankGrid');
   if (!grid) return;
@@ -50,9 +64,10 @@ let currentYear, currentMonth;
 let pendingDeleteId   = null;
 let selectedCategory  = null;
 let selectedBank      = null;
-let selectedCatColor  = CATEGORY_COLORS[0];
-let selectedCatShared = false;
-let authMode          = 'signin';
+let selectedCatColor    = CATEGORY_COLORS[0];
+let selectedCatShared   = false;
+let selectedCatCurrency = null; // null → inherit global; { code, symbol } → override
+let authMode            = 'signin';
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -236,11 +251,27 @@ async function loadUserData() {
 /* ─── Helpers ───────────────────────────────────────────── */
 function getCat(id) {
   const c = categories.find(c => c.id === id) || { id: 'other', name: 'Other', color: '#868e96', shared: false };
-  // Auto-detect shared if name contains "shared" (case-insensitive)
   if (!c.shared && /shared/i.test(c.name)) return { ...c, shared: true };
   return c;
 }
+function getCatCurrency(catId) {
+  const c = getCat(catId);
+  return (c.currency_code && c.currency_symbol)
+    ? { code: c.currency_code, symbol: c.currency_symbol }
+    : settings.currency;
+}
 function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
+function fmtCat(n, catId) { const { symbol } = getCatCurrency(catId); return `${symbol}${parseFloat(n).toFixed(2)}`; }
+function fmtGroupTotal(catIds, byCat) {
+  const acc = {};
+  catIds.forEach(id => {
+    if (!byCat[id]) return;
+    const { code, symbol } = getCatCurrency(id);
+    if (!acc[code]) acc[code] = { symbol, total: 0 };
+    acc[code].total += byCat[id].total;
+  });
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
+}
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
 
@@ -466,31 +497,53 @@ function renderHeader() {
 }
 
 function renderSummary() {
-  const list    = getMonthExpenses();
-  const income  = getMonthIncome();
-  const allocated = list.reduce((s, e) => s + effectiveAmount(e), 0);
-  const earned    = income.reduce((s, r) => s + r.amount, 0);
-  const saved     = earned - allocated;
-  const hasIncome = earned > 0;
+  const list   = getMonthExpenses();
+  const income = getMonthIncome();
+  const earned = income.reduce((s, r) => s + r.amount, 0);
+
+  // Group effective amounts by currency code
+  const byCur = {};
+  list.forEach(e => {
+    const cur = getCatCurrency(e.category);
+    if (!byCur[cur.code]) byCur[cur.code] = { symbol: cur.symbol, total: 0 };
+    byCur[cur.code].total += effectiveAmount(e);
+  });
+  const curEntries = Object.entries(byCur);
+  const totalAll   = curEntries.reduce((s, [, v]) => s + v.total, 0);
+  const isMultiCur = curEntries.length > 1;
 
   const heroEl  = document.getElementById('summaryHero');
   const labelEl = document.getElementById('summaryLabel');
+  heroEl.style.color = '';
 
-  if (hasIncome) {
-    labelEl.textContent = saved >= 0 ? 'Saved this month' : 'Over income';
-    heroEl.textContent  = fmt(Math.abs(saved));
-    heroEl.style.color  = saved >= 0 ? '#86efac' : '#fca5a5';
-  } else {
+  if (isMultiCur) {
     labelEl.textContent = 'Total allocated';
-    heroEl.textContent  = fmt(allocated);
-    heroEl.style.color  = '';
+    heroEl.innerHTML = curEntries
+      .map(([code, { symbol, total }]) =>
+        `<div class="mc-row"><span class="mc-code">${escHtml(code)}</span><span class="mc-val">${escHtml(symbol)}${total.toFixed(2)}</span></div>`)
+      .join('');
+  } else {
+    heroEl.innerHTML = '';
+    const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
+    const allocated = curEntries[0]?.[1].total  ?? 0;
+    if (earned > 0) {
+      const saved = earned - allocated;
+      labelEl.textContent = saved >= 0 ? 'Saved this month' : 'Over income';
+      heroEl.textContent  = `${sym}${Math.abs(saved).toFixed(2)}`;
+      heroEl.style.color  = saved >= 0 ? '#86efac' : '#fca5a5';
+    } else {
+      labelEl.textContent = 'Total allocated';
+      heroEl.textContent  = `${sym}${allocated.toFixed(2)}`;
+    }
   }
 
   const incomeRow = document.getElementById('incomeRow');
   const metaRow   = document.getElementById('summaryMeta');
-  if (hasIncome) {
+  if (earned > 0 && !isMultiCur) {
+    const sym       = curEntries[0]?.[1].symbol ?? settings.currency.symbol;
+    const allocated = curEntries[0]?.[1].total  ?? 0;
     document.getElementById('earnedVal').textContent = fmt(earned);
-    document.getElementById('spentVal').textContent  = fmt(allocated);
+    document.getElementById('spentVal').textContent  = `${sym}${allocated.toFixed(2)}`;
     incomeRow.classList.remove('hidden');
     metaRow.classList.add('hidden');
   } else {
@@ -501,13 +554,12 @@ function renderSummary() {
       n === 0 ? '0 items' : n === 1 ? '1 item' : `${n} items`;
   }
 
-  renderCategoryBars(list, allocated);
+  renderCategoryBars(list, totalAll);
 
-  // Mark-done button
   const doneRow = document.getElementById('summaryDoneRow');
   if (doneRow) {
     const done = isMonthDone(currentYear, currentMonth);
-    if (allocated > 0 || done) {
+    if (totalAll > 0 || done) {
       doneRow.innerHTML = `<button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? 'Done · Undo' : 'Mark as done'}</button>`;
       doneRow.querySelector('#toggleDoneBtn').addEventListener('click', toggleMonthDone);
     } else {
@@ -593,7 +645,7 @@ function renderListView() {
       ph.className = 'cat-group-header cat-group-parent';
       ph.innerHTML = `
         <div class="cat-group-name">${escHtml(item.prefix)}</div>
-        <div class="cat-group-total">${fmt(item.total)}</div>`;
+        <div class="cat-group-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
       container.appendChild(ph);
 
       // Sub-category headers + items
@@ -612,7 +664,7 @@ function renderListView() {
         sh.innerHTML = `
           <span class="cat-group-dot" style="background:${cat.color}"></span>
           <div class="cat-group-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
-          <div class="cat-group-total">${fmt(total)}</div>`;
+          <div class="cat-group-total">${fmtCat(total, catId)}</div>`;
         container.appendChild(sh);
 
         items.sort((a, b) => b.amount - a.amount).forEach(e => {
@@ -628,7 +680,7 @@ function renderListView() {
       header.innerHTML = `
         <span class="cat-group-dot" style="background:${cat.color}"></span>
         <div class="cat-group-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</div>
-        <div class="cat-group-total">${fmt(total)}</div>`;
+        <div class="cat-group-total">${fmtCat(total, item.catId)}</div>`;
       container.appendChild(header);
 
       items.sort((a, b) => b.amount - a.amount).forEach(e => {
@@ -651,7 +703,7 @@ function buildItem(e) {
       <div class="expense-desc">${escHtml(e.description)}</div>
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
-    <div class="expense-amount">${fmt(e.amount)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
+    <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>`;
   el.addEventListener('click', ev => {
     if (ev.target.closest('.item-check-btn')) return;
     openItemOptions(e.id);
@@ -698,13 +750,35 @@ function selectCategory(id) {
 
 /* ─── Category Management ───────────────────────────────── */
 function openAddCategoryModal() {
-  selectedCatColor  = CATEGORY_COLORS[0];
+  selectedCatColor    = CATEGORY_COLORS[0];
+  selectedCatCurrency = null;
   document.getElementById('catNameInput').value = '';
   document.getElementById('catFormError').classList.add('hidden');
   document.getElementById('toggleShared').checked = false;
   buildColorPicker();
+  buildCatCurrencyPicker();
   openModal('categoryModal');
   setTimeout(() => document.getElementById('catNameInput').focus(), 300);
+}
+
+function buildCatCurrencyPicker() {
+  const el = document.getElementById('catCurrencyPicker');
+  if (!el) return;
+  el.innerHTML = '';
+  const defBtn = document.createElement('button');
+  defBtn.type = 'button';
+  defBtn.className = 'currency-btn' + (!selectedCatCurrency ? ' active' : '');
+  defBtn.textContent = 'Default';
+  defBtn.addEventListener('click', () => { selectedCatCurrency = null; buildCatCurrencyPicker(); });
+  el.appendChild(defBtn);
+  CURRENCIES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'currency-btn' + (selectedCatCurrency?.code === c.code ? ' active' : '');
+    btn.textContent = c.label;
+    btn.addEventListener('click', () => { selectedCatCurrency = { code: c.code, symbol: c.symbol }; buildCatCurrencyPicker(); });
+    el.appendChild(btn);
+  });
 }
 
 function buildColorPicker() {
@@ -730,9 +804,11 @@ async function handleAddCategory(e) {
   if (!name) { errEl.textContent = 'Enter a name.'; errEl.classList.remove('hidden'); return; }
   errEl.classList.add('hidden');
 
-  const shared = document.getElementById('toggleShared').checked;
+  const shared      = document.getElementById('toggleShared').checked;
+  const cur_code    = selectedCatCurrency?.code   || null;
+  const cur_symbol  = selectedCatCurrency?.symbol || null;
   const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared });
+  categories.push({ id: tmp, user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol });
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
@@ -740,7 +816,7 @@ async function handleAddCategory(e) {
 
   try {
     const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared }).select().single();
+      .insert({ user_id: currentUser.id, name, color: selectedCatColor, shared, currency_code: cur_code, currency_symbol: cur_symbol }).select().single();
     if (error) throw error;
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
@@ -772,9 +848,10 @@ function renderCategorySettings() {
   categories.forEach(cat => {
     const row = document.createElement('div');
     row.className = 'profile-settings-row';
+    const curBadge = cat.currency_code ? ` <span class="cat-currency-badge">${escHtml(cat.currency_code)}</span>` : '';
     row.innerHTML = `
       <span class="cat-settings-dot" style="background:${cat.color}"></span>
-      <span class="profile-settings-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
+      <span class="profile-settings-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${curBadge}</span>
       <div class="cat-row-actions">
         <button class="icon-btn cat-rename-btn" aria-label="Rename">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
