@@ -251,7 +251,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Main ─────────────────────────────────────────────── */
 .main {
   flex: 1;
-  padding: 16px 16px 100px;
+  padding: 16px 16px 32px;
   display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto;
 }
@@ -724,21 +724,24 @@ body.modal-open { overflow: hidden; }
 .breakdown-bar-track { height: 6px; background: var(--tint); border-radius: 99px; overflow: hidden; }
 .breakdown-bar-fill  { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
 
-/* ─── FAB ──────────────────────────────────────────────── */
-.fab {
-  position: fixed; bottom: 24px;
-  left: 50%; transform: translateX(-50%);
-  height: 50px; padding: 0 24px; border-radius: 99px;
-  background: var(--accent); border: none; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 8px;
-  color: #fff; box-shadow: var(--shadow-fab); z-index: 30;
-  font-size: 16px; font-weight: 700; font-family: 'Figtree', sans-serif;
-  white-space: nowrap;
-  transition: transform 0.1s, background var(--t);
+/* ─── List section header ──────────────────────────────── */
+.list-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
 }
-.fab:hover  { background: var(--accent-hover); }
-.fab:active { transform: translateX(-50%) scale(0.95); }
-.fab svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; flex-shrink: 0; }
+.list-section-title {
+  font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.4px;
+}
+.list-add-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 16px; border-radius: 99px;
+  background: var(--accent); border: none; cursor: pointer;
+  color: #fff; font-size: 14px; font-weight: 700;
+  font-family: 'Figtree', sans-serif; white-space: nowrap;
+  transition: background var(--t), transform 0.1s;
+}
+.list-add-btn:hover  { background: var(--accent-hover); }
+.list-add-btn:active { transform: scale(0.95); }
 
 /* ─── Bottom Nav ───────────────────────────────────────── */
 .bottom-nav {
