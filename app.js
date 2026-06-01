@@ -552,10 +552,19 @@ function renderProfilesList() {
   container.innerHTML = '';
   profiles.forEach(p => {
     const row = document.createElement('div');
-    row.className = 'profile-settings-row';
+    row.className = 'settings-row';
     row.innerHTML = `
-      <span class="profile-settings-name">${escHtml(p.name)}</span>
-      ${profiles.length > 1 ? `<button class="danger-btn profile-del-btn" data-id="${p.id}">Delete</button>` : '<span class="profile-only-label">Default</span>'}`;
+      <div class="settings-row-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="settings-row-main">
+        <div class="settings-row-title">${escHtml(p.name)}</div>
+      </div>
+      ${profiles.length > 1
+        ? `<button class="settings-icon-btn danger profile-del-btn" aria-label="Delete ${escHtml(p.name)}">
+             <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+           </button>`
+        : '<span class="settings-row-badge">Only profile</span>'}`;
     if (profiles.length > 1) {
       row.querySelector('.profile-del-btn').addEventListener('click', () => deleteProfile(p.id));
     }
@@ -1159,25 +1168,29 @@ function renderCategorySettings() {
   container.innerHTML = '';
   categories.forEach(cat => {
     const row = document.createElement('div');
-    row.className = 'profile-settings-row';
+    row.className = 'settings-row';
     const curBadge = cat.currency_code ? ` <span class="cat-currency-badge">${escHtml(cat.currency_code)}</span>` : '';
     row.innerHTML = `
-      <span class="cat-settings-dot" style="background:${cat.color}"></span>
-      <span class="profile-settings-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${curBadge}</span>
-      <div class="cat-row-actions">
-        <button class="icon-btn cat-rename-btn" aria-label="Rename">
+      <div class="cat-settings-dot-lg" style="background:${cat.color}"></div>
+      <div class="settings-row-main">
+        <div class="settings-row-title">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}${curBadge}</div>
+      </div>
+      <div class="settings-row-actions">
+        <button class="settings-icon-btn cat-rename-btn" aria-label="Rename ${escHtml(cat.name)}">
           <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="danger-btn cat-del-btn">Delete</button>
+        <button class="settings-icon-btn danger cat-del-btn" aria-label="Delete ${escHtml(cat.name)}">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>`;
 
     row.querySelector('.cat-del-btn').addEventListener('click', () => deleteCategoryById(cat.id));
     row.querySelector('.cat-rename-btn').addEventListener('click', () => {
-      const nameSpan = row.querySelector('.profile-settings-name');
+      const titleEl = row.querySelector('.settings-row-title');
       const input = document.createElement('input');
       input.type = 'text'; input.value = cat.name;
       input.className = 'form-input cat-rename-input';
-      nameSpan.replaceWith(input);
+      titleEl.replaceWith(input);
       input.focus(); input.select();
 
       const commit = async () => {
@@ -1526,6 +1539,8 @@ function bindEvents() {
   // Settings
   document.getElementById('openSettings').addEventListener('click', () => { renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
+  document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
+  document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
   // Profile trigger + sheet
   document.getElementById('profileTrigger').addEventListener('click', () => { renderProfileBar(); openModal('profileSheet'); });

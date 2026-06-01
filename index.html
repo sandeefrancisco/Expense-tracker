@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=53" />
+  <link rel="stylesheet" href="style.css?v=54" />
 </head>
 <body>
 
@@ -238,40 +238,72 @@
         </button>
       </div>
       <div class="settings-content">
-        <div class="settings-section">
-          <div class="settings-label">Account</div>
-          <div class="account-row">
+        <!-- Account -->
+        <div class="settings-card">
+          <div class="settings-row account-info-row">
             <div class="account-avatar" id="accountAvatar"></div>
-            <div class="account-email" id="accountEmail"></div>
+            <div class="settings-row-main">
+              <div class="settings-row-title" id="accountEmail"></div>
+              <div class="settings-row-sub">Signed in</div>
+            </div>
           </div>
-          <button class="secondary-btn" id="signOutBtn">Sign out</button>
+          <button class="settings-signout-btn" id="signOutBtn">Sign out</button>
         </div>
-        <div class="settings-section">
-          <div class="settings-label">People</div>
-          <div id="profilesList" class="profiles-list"></div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-label">Currency</div>
-          <div class="currency-options" id="currencyOptions">
-            <button class="currency-btn" data-symbol="$"  data-code="USD">$ USD</button>
-            <button class="currency-btn active" data-symbol="€"  data-code="EUR">€ EUR</button>
-            <button class="currency-btn" data-symbol="₱"  data-code="PHP">₱ PHP</button>
-            <button class="currency-btn" data-symbol="£"  data-code="GBP">£ GBP</button>
-            <button class="currency-btn" data-symbol="¥"  data-code="JPY">¥ JPY</button>
-            <button class="currency-btn" data-symbol="₹"  data-code="INR">₹ INR</button>
-            <button class="currency-btn" data-symbol="A$" data-code="AUD">A$ AUD</button>
-            <button class="currency-btn" data-symbol="C$" data-code="CAD">C$ CAD</button>
-            <button class="currency-btn" data-symbol="Fr" data-code="CHF">Fr CHF</button>
-            <button class="currency-btn" data-symbol="S$" data-code="SGD">S$ SGD</button>
+
+        <!-- People -->
+        <div class="settings-group">
+          <div class="settings-group-label">People</div>
+          <div class="settings-card">
+            <div id="profilesList"></div>
+            <button class="settings-add-row" id="addPersonSettingsBtn">
+              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              Add person
+            </button>
           </div>
         </div>
-        <div class="settings-section">
-          <div class="settings-label">Categories</div>
-          <div id="categoriesList" class="categories-list"></div>
+
+        <!-- Currency -->
+        <div class="settings-group">
+          <div class="settings-group-label">Currency</div>
+          <div class="settings-card settings-card-pad">
+            <div class="currency-options" id="currencyOptions">
+              <button class="currency-btn" data-symbol="$"  data-code="USD">$ USD</button>
+              <button class="currency-btn active" data-symbol="€"  data-code="EUR">€ EUR</button>
+              <button class="currency-btn" data-symbol="₱"  data-code="PHP">₱ PHP</button>
+              <button class="currency-btn" data-symbol="£"  data-code="GBP">£ GBP</button>
+              <button class="currency-btn" data-symbol="¥"  data-code="JPY">¥ JPY</button>
+              <button class="currency-btn" data-symbol="₹"  data-code="INR">₹ INR</button>
+              <button class="currency-btn" data-symbol="A$" data-code="AUD">A$ AUD</button>
+              <button class="currency-btn" data-symbol="C$" data-code="CAD">C$ CAD</button>
+              <button class="currency-btn" data-symbol="Fr" data-code="CHF">Fr CHF</button>
+              <button class="currency-btn" data-symbol="S$" data-code="SGD">S$ SGD</button>
+            </div>
+          </div>
         </div>
-        <div class="settings-section danger-zone">
-          <div class="settings-label">Data</div>
-          <button class="danger-btn" id="clearDataBtn">Clear all my data</button>
+
+        <!-- Categories -->
+        <div class="settings-group">
+          <div class="settings-group-label">Categories</div>
+          <div class="settings-card">
+            <div id="categoriesList"></div>
+            <button class="settings-add-row" id="addCategorySettingsBtn">
+              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              New category
+            </button>
+          </div>
+        </div>
+
+        <!-- Data -->
+        <div class="settings-group">
+          <div class="settings-group-label">Data</div>
+          <div class="settings-card">
+            <button class="settings-danger-row" id="clearDataBtn">
+              <div class="settings-row-icon" style="background:#FEE2E2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </div>
+              <span>Clear all my data</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -396,6 +428,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=53"></script>
+  <script src="app.js?v=54"></script>
 </body>
 </html>

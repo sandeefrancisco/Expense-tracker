@@ -891,14 +891,99 @@ body.modal-open { overflow: hidden; }
 .income-row-fields { display: flex; gap: 10px; }
 
 /* ─── Settings ─────────────────────────────────────────── */
-.settings-content { display: flex; flex-direction: column; gap: 24px; }
-.settings-section  { display: flex; flex-direction: column; gap: 10px; }
-.settings-label    { font-size: 12px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); }
+/* ─── Settings Redesign ────────────────────────────────── */
+.settings-label  { font-size: 12px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); } /* kept for income modal */
+.settings-content { display: flex; flex-direction: column; gap: 20px; }
+.settings-group  { display: flex; flex-direction: column; gap: 6px; }
+.settings-group-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.7px;
+  color: var(--muted); text-transform: uppercase; padding: 0 4px;
+}
+.settings-card {
+  background: var(--surface); border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden; box-shadow: var(--shadow-card);
+}
+.settings-card-pad { padding: 14px; }
 
-.account-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--tint); border-radius: var(--r-input); border: 1px solid var(--border-subtle); }
-.account-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
-.account-email  { font-size: 14px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; min-height: 52px;
+  border-top: 1px solid var(--border-subtle);
+}
+.settings-row:first-child, .account-info-row { border-top: none; }
+.settings-row-main  { flex: 1; min-width: 0; }
+.settings-row-title { font-size: 15px; font-weight: 500; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-row-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.settings-row-badge { font-size: 12px; color: var(--muted); font-weight: 500; flex-shrink: 0; }
+.settings-row-icon  {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--tint);
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+}
+.settings-row-icon svg { width: 17px; height: 17px; }
+.settings-row-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
+/* Account avatar */
+.account-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+
+/* Sign out row */
+.settings-signout-btn {
+  all: unset; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; padding: 14px;
+  font-size: 15px; font-weight: 600; color: var(--error);
+  border-top: 1px solid var(--border-subtle);
+  cursor: pointer; transition: opacity var(--t);
+  font-family: 'Figtree', sans-serif;
+}
+.settings-signout-btn:hover { opacity: 0.7; }
+
+/* Add row (bottom of card) */
+.settings-add-row {
+  all: unset; box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 12px 16px; min-height: 52px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 15px; font-weight: 500; color: var(--accent);
+  cursor: pointer; transition: opacity var(--t);
+  font-family: 'Figtree', sans-serif;
+}
+.settings-add-row:hover { opacity: 0.7; }
+.settings-add-icon {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-tint); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-add-icon svg { width: 14px; height: 14px; stroke: var(--accent); }
+
+/* Danger row */
+.settings-danger-row {
+  all: unset; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 12px 16px; min-height: 52px;
+  font-size: 15px; font-weight: 600; color: var(--error);
+  cursor: pointer; transition: opacity var(--t);
+  font-family: 'Figtree', sans-serif;
+}
+.settings-danger-row:hover { opacity: 0.7; }
+
+/* Icon-only buttons inside settings rows */
+.settings-icon-btn {
+  all: unset; box-sizing: border-box;
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted); flex-shrink: 0;
+  transition: all var(--t);
+}
+.settings-icon-btn:hover  { background: var(--tint); color: var(--ink); }
+.settings-icon-btn.danger { color: var(--error); }
+.settings-icon-btn.danger:hover { background: #FEE2E2; }
+.settings-icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+
+/* Category color dot in settings */
+.cat-settings-dot-lg { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+/* Currency */
 .currency-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .currency-btn {
   padding: 8px 14px; border-radius: var(--r-btn);
@@ -908,15 +993,6 @@ body.modal-open { overflow: hidden; }
 }
 .currency-btn:hover  { border-color: var(--ink); color: var(--ink); }
 .currency-btn.active { border-color: var(--accent); background: var(--accent); color: #fff; }
-
-.danger-zone { padding-top: 12px; border-top: 1px solid var(--border); }
-.danger-btn  {
-  padding: 13px 16px; background: #FEE2E2; color: var(--error);
-  border: none; border-radius: var(--r-input); font-size: 15px; font-weight: 600;
-  font-family: 'Figtree', sans-serif; cursor: pointer; width: 100%;
-  text-align: left; min-height: 50px; transition: opacity var(--t);
-}
-.danger-btn:hover { opacity: 0.8; }
 
 /* ─── Confirm Modal ────────────────────────────────────── */
 .confirm-modal {
