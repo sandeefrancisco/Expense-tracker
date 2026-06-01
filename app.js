@@ -70,6 +70,7 @@ let selectedCatCurrency = null; // null → inherit global; { code, symbol } →
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
+let rateCache           = {}; // { 'PHP': 0.01612 } — fromCode → primary currency multiplier
 const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
 let   listViewMonth      = null;      // "YYYY-M" — tracks month for auto-expand reset
@@ -255,6 +256,8 @@ async function loadUserData() {
     if (!error && rows) categories = rows;
   }
 
+  await loadExchangeRates();
+
   const savedProfileId = localStorage.getItem('activeProfileId');
   if (savedProfileId && profiles.find(p => p.id === savedProfileId)) {
     currentProfileId = savedProfileId;
@@ -265,6 +268,48 @@ async function loadUserData() {
 
   if (!selectedCategory || !categories.find(c => c.id === selectedCategory))
     selectedCategory = categories[0]?.id || null;
+}
+
+/* ─── Exchange Rates (Wise daily, cached per-day) ───────── */
+async function fetchRate(fromCode, toCode) {
+  if (fromCode === toCode) return 1;
+  const today  = new Date().toISOString().slice(0, 10);
+  const lsKey  = `er_${fromCode}_${toCode}_${today}`;
+  const cached = localStorage.getItem(lsKey);
+  if (cached) return parseFloat(cached);
+
+  // Try Wise first, fall back to Frankfurter (ECB)
+  const urls = [
+    `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
+    `https://api.frankfurter.app/latest?from=${fromCode}&to=${toCode}`,
+  ];
+  for (const url of urls) {
+    try {
+      const json = await (await fetch(url)).json();
+      // Wise: [{rate}], Frankfurter: {rates:{EUR:x}}
+      const rate = json[0]?.rate ?? json.rates?.[toCode];
+      if (rate) { localStorage.setItem(lsKey, String(rate)); return rate; }
+    } catch { /* try next */ }
+  }
+  return null; // rate unavailable
+}
+
+async function loadExchangeRates() {
+  const primary = settings.currency.code;
+  const used    = new Set(categories.map(c => c.currency_code).filter(Boolean));
+  used.delete(primary);
+  rateCache = {};
+  await Promise.all([...used].map(async code => {
+    const r = await fetchRate(code, primary);
+    if (r != null) rateCache[code] = r;
+  }));
+}
+
+// Returns amount converted to primary currency, or null if rate unknown
+function toBase(amount, code) {
+  if (code === settings.currency.code) return amount;
+  const rate = rateCache[code];
+  return rate != null ? amount * rate : null;
 }
 
 /* ─── Helpers ───────────────────────────────────────────── */
@@ -542,20 +587,21 @@ function renderSummary() {
   const primaryCode = settings.currency.code;
   const primarySym  = settings.currency.symbol;
 
+  // Convert every currency bucket to primary; track what can't be converted
+  let totalBase = 0;
+  let allConverted = true;
+  curEntries.forEach(([code, { total }]) => {
+    const b = toBase(total, code);
+    if (b != null) totalBase += b;
+    else { allConverted = false; totalBase += (code === primaryCode ? total : 0); }
+  });
+
   if (earned > 0) {
-    // Savings hero is always in the primary (income) currency.
-    // Other-currency allocations show in the sub line only.
-    const primaryAllocated = byCur[primaryCode]?.total ?? 0;
-    const saved  = earned - primaryAllocated;
+    const saved  = earned - totalBase;
     const isOver = saved < 0;
     labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
     heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
-
-    // Sub: "of €X earned · €Y spent [· ₱Z spent]"
-    const spentParts = curEntries
-      .sort((a, b) => (a[0] === primaryCode ? -1 : b[0] === primaryCode ? 1 : b[1].total - a[1].total))
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)} spent`);
-    subEl.textContent = [`of ${primarySym}${earned.toFixed(2)} earned`, ...spentParts].join(' · ');
+    subEl.textContent   = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
@@ -565,8 +611,16 @@ function renderSummary() {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${symbol}${total.toFixed(2)}`;
     subEl.textContent   = itemStr;
+  } else if (allConverted) {
+    // Multi-currency, no income — show total in primary; original breakdown in sub
+    const breakdown = curEntries
+      .sort((a, b) => (a[0] === primaryCode ? -1 : b[0] === primaryCode ? 1 : b[1].total - a[1].total))
+      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
+    labelEl.textContent = 'Tracked this month';
+    heroEl.textContent  = `${primarySym}${totalBase.toFixed(2)}`;
+    subEl.textContent   = `${breakdown} · ${itemStr}`;
   } else {
-    // Multi-currency, no income: primary currency as hero (or largest if primary absent)
+    // Fallback: primary or largest as hero, rest in sub
     const heroEntry = byCur[primaryCode]
       ? [primaryCode, byCur[primaryCode]]
       : curEntries.sort((a, b) => b[1].total - a[1].total)[0];
