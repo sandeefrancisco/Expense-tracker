@@ -278,17 +278,28 @@ async function fetchRate(fromCode, toCode) {
   const cached = localStorage.getItem(lsKey);
   if (cached) return parseFloat(cached);
 
-  // Try Wise first, fall back to Frankfurter (ECB)
-  const urls = [
-    `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
-    `https://api.frankfurter.app/latest?from=${fromCode}&to=${toCode}`,
+  // Each entry: { url, extract(json) → rate (fromCode per 1 toCode, then we invert) }
+  // We always fetch base=toCode and divide: fromCode→toCode = 1 / (toCode per fromCode)
+  const apis = [
+    // Wise public — direct from→to rate
+    { url: `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
+      extract: j => j[0]?.rate },
+    // ExchangeRate-API free tier (no key, CORS, supports PHP)
+    { url: `https://open.er-api.com/v6/latest/${toCode}`,
+      extract: j => j.rates?.[fromCode] > 0 ? 1 / j.rates[fromCode] : null },
+    // fawazahmed0 on jsDelivr — no limits, CORS
+    { url: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${toCode.toLowerCase()}.min.json`,
+      extract: j => {
+        const v = j[toCode.toLowerCase()]?.[fromCode.toLowerCase()];
+        return v > 0 ? 1 / v : null;
+      } },
   ];
-  for (const url of urls) {
+
+  for (const { url, extract } of apis) {
     try {
       const json = await (await fetch(url)).json();
-      // Wise: [{rate}], Frankfurter: {rates:{EUR:x}}
-      const rate = json[0]?.rate ?? json.rates?.[toCode];
-      if (rate) { localStorage.setItem(lsKey, String(rate)); return rate; }
+      const rate = extract(json);
+      if (rate > 0) { localStorage.setItem(lsKey, String(rate)); return rate; }
     } catch { /* try next */ }
   }
   return null; // rate unavailable
@@ -601,7 +612,13 @@ function renderSummary() {
     const isOver = saved < 0;
     labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
     heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
-    subEl.textContent   = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
+    // Show total spent in primary, then list any foreign original amounts
+    const foreignParts = curEntries
+      .filter(([code]) => code !== primaryCode && rateCache[code] != null)
+      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`);
+    const spentStr = `${primarySym}${totalBase.toFixed(2)} spent`;
+    const foreignStr = foreignParts.length ? ` (${foreignParts.join(' + ')} converted)` : '';
+    subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${spentStr}${foreignStr}`;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
