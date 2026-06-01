@@ -410,6 +410,32 @@ body.modal-open { overflow: hidden; }
   color: #86efac;
 }
 
+/* ─── Summary Actions Row (done + move) ───────────────── */
+.summary-actions-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 14px; gap: 8px;
+}
+.summary-actions-row .summary-done-btn { flex: 1; }
+.summary-move-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.6);
+  font-size: 12px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  padding: 5px 14px; border-radius: 99px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.summary-move-btn:hover { background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.9); }
+
+/* ─── Move Month Picker ────────────────────────────────── */
+.move-month-picker {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin: 20px 0 8px;
+}
+.move-month-label {
+  flex: 1; text-align: center;
+  font-size: 17px; font-weight: 700; color: var(--ink);
+}
+
 /* ─── Segmented Tabs ───────────────────────────────────── */
 .view-toggle {
   display: flex; background: rgba(26,26,46,.08);

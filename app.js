@@ -68,6 +68,8 @@ let selectedCatColor    = CATEGORY_COLORS[0];
 let selectedCatShared   = false;
 let selectedCatCurrency = null; // null → inherit global; { code, symbol } → override
 let authMode            = 'signin';
+let movePickerYear      = null;
+let movePickerMonth     = null;
 
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
@@ -560,8 +562,13 @@ function renderSummary() {
   if (doneRow) {
     const done = isMonthDone(currentYear, currentMonth);
     if (totalAll > 0 || done) {
-      doneRow.innerHTML = `<button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? 'Done · Undo' : 'Mark as done'}</button>`;
+      doneRow.innerHTML = `
+        <div class="summary-actions-row">
+          <button class="summary-done-btn${done ? ' done' : ''}" id="toggleDoneBtn">${done ? 'Done · Undo' : 'Mark as done'}</button>
+          ${totalAll > 0 ? '<button class="summary-move-btn" id="openMoveBtn">Move to…</button>' : ''}
+        </div>`;
       doneRow.querySelector('#toggleDoneBtn').addEventListener('click', toggleMonthDone);
+      if (totalAll > 0) doneRow.querySelector('#openMoveBtn').addEventListener('click', openMoveModal);
     } else {
       doneRow.innerHTML = '';
     }
@@ -972,6 +979,57 @@ async function handleFormSubmit(ev) {
   }
 }
 
+/* ─── Move Month Modal ──────────────────────────────────── */
+function openMoveModal() {
+  let y = currentYear, m = currentMonth + 1;
+  if (m > 11) { m = 0; y++; }
+  movePickerYear = y; movePickerMonth = m;
+  updateMovePickerUI();
+  openModal('moveModal');
+}
+
+function updateMovePickerUI() {
+  document.getElementById('moveMonthLabel').textContent = getMonthLabel(movePickerYear, movePickerMonth);
+  const isSame     = movePickerYear === currentYear && movePickerMonth === currentMonth;
+  const count      = getMonthExpenses().length;
+  const confirmBtn = document.getElementById('confirmMoveBtn');
+  confirmBtn.disabled    = isSame;
+  confirmBtn.style.opacity = isSame ? '0.35' : '';
+  confirmBtn.textContent = `Move ${count} ${count === 1 ? 'allocation' : 'allocations'}`;
+}
+
+async function handleMoveConfirm() {
+  const srcYear  = currentYear;
+  const srcMonth = currentMonth;
+  const list     = getMonthExpenses();
+  if (!list.length) { closeModal('moveModal'); return; }
+
+  const targetYear  = movePickerYear;
+  const targetMonth = movePickerMonth;
+  const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+  const ids         = list.map(e => e.id);
+
+  const prevExpenses = expenses.map(e => ({ ...e }));
+  expenses = expenses.map(e => ids.includes(e.id) ? { ...e, date: targetDate } : e);
+
+  closeModal('moveModal');
+  currentYear  = targetYear;
+  currentMonth = targetMonth;
+  renderAll();
+  showToast(`Moved to ${getMonthLabel(targetYear, targetMonth)}`);
+
+  try {
+    const { error } = await sb.from('expenses').update({ date: targetDate }).in('id', ids);
+    if (error) throw error;
+  } catch (err) {
+    expenses     = prevExpenses;
+    currentYear  = srcYear;
+    currentMonth = srcMonth;
+    renderAll();
+    showToast('Could not move — ' + err.message, true);
+  }
+}
+
 /* ─── Income Modal ──────────────────────────────────────── */
 function openIncomeModal() {
   document.getElementById('incomeModalTitle').textContent     = `Income · ${getMonthLabel(currentYear, currentMonth)}`;
@@ -1084,7 +1142,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -1178,8 +1236,20 @@ function bindEvents() {
     } catch (err) { showToast('Error: ' + err.message, true); }
   });
 
+  // Move modal
+  document.getElementById('movePrevMonth').addEventListener('click', () => {
+    movePickerMonth--; if (movePickerMonth < 0) { movePickerMonth = 11; movePickerYear--; }
+    updateMovePickerUI();
+  });
+  document.getElementById('moveNextMonth').addEventListener('click', () => {
+    movePickerMonth++; if (movePickerMonth > 11) { movePickerMonth = 0; movePickerYear++; }
+    updateMovePickerUI();
+  });
+  document.getElementById('confirmMoveBtn').addEventListener('click', handleMoveConfirm);
+  document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
+
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
