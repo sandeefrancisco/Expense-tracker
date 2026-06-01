@@ -509,40 +509,50 @@ body.modal-open { overflow: hidden; }
 .view-section.hidden { display: none; }
 
 /* ─── Budget List ──────────────────────────────────────── */
-.expense-list { display: flex; flex-direction: column; gap: 2px; }
+.expense-list { display: flex; flex-direction: column; gap: 8px; }
 
-/* Category group header */
-.cat-group-header {
+/* List tile — card wrapper for each group or category */
+.list-tile {
+  background: var(--surface); border-radius: 14px;
+  border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.list-tile-grp .list-tile-hdr { padding: 14px 14px; }
+
+/* Tile header row (clickable) */
+.list-tile-hdr {
   display: flex; align-items: center; gap: 10px;
-  padding: 14px 4px 6px; margin-top: 6px;
-  cursor: pointer; user-select: none;
+  padding: 13px 14px; cursor: pointer; user-select: none;
+  transition: background 0.12s;
 }
-.cat-group-header:first-child { margin-top: 0; }
-.cat-group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.cat-group-name {
-  flex: 1; font-size: 12px; font-weight: 700;
-  letter-spacing: 0.2px; color: var(--muted);
+.list-tile-hdr:active { background: var(--tint); }
+.list-tile-hdr .cat-chevron { color: var(--muted); flex-shrink: 0; }
+.list-hdr-name {
+  flex: 1; font-size: 13px; font-weight: 700; color: var(--ink);
 }
-.cat-group-total {
-  font-size: 14px; font-weight: 700; color: var(--ink);
+.list-hdr-total { font-size: 14px; font-weight: 700; color: var(--ink); }
+.list-tile-grp .list-hdr-name { font-size: 14px; letter-spacing: 0.1px; }
+
+/* Sub-category inside a group tile */
+.list-sub-tile { border-top: 1px solid var(--border-subtle); }
+.list-sub-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px 11px 20px; cursor: pointer; user-select: none;
+  transition: background 0.12s;
 }
-/* Prefix parent header (e.g. "Berlin") */
-.cat-group-parent {
-  padding: 16px 4px 4px; margin-top: 10px;
-  border-bottom: 1.5px solid var(--border-subtle);
+.list-sub-hdr:active { background: var(--tint); }
+.list-sub-hdr .cat-chevron { color: var(--muted); flex-shrink: 0; }
+.list-sub-name { font-size: 12px; font-weight: 600; color: var(--muted); }
+.list-sub-total { font-size: 13px; font-weight: 600; }
+
+/* Keep dot size */
+.cat-group-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* Expense items inside a tile lose their outer card border */
+.list-tile .expense-item {
+  border-radius: 0; border: none; border-top: 1px solid var(--border-subtle);
+  box-shadow: none; margin: 0;
 }
-.cat-group-parent .cat-group-name {
-  font-size: 13px; letter-spacing: 0.5px; color: var(--ink);
-}
-.cat-group-parent .cat-group-total {
-  font-size: 15px;
-}
-/* Sub-category header (e.g. "Personal", "Shared") */
-.cat-group-sub {
-  padding: 10px 4px 4px 20px; margin-top: 2px;
-}
-.cat-group-sub .cat-group-dot { width: 8px; height: 8px; }
-.cat-group-sub .cat-group-total { font-size: 13px; font-weight: 600; }
 
 /* Chevron indicator */
 .cat-chevron {
