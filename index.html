@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=79" />
+  <link rel="stylesheet" href="style.css?v=80" />
 </head>
 <body>
 
@@ -330,11 +330,11 @@
   <div class="modal-backdrop hidden" id="deleteModal">
     <div class="modal confirm-modal">
       <div class="confirm-icon danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
-      <h3 class="confirm-title">Remove allocation?</h3>
-      <p class="confirm-desc">This action cannot be undone.</p>
+      <h3 class="confirm-title" id="deleteModalTitle">Remove allocation?</h3>
+      <p class="confirm-desc" id="deleteModalDesc">This action cannot be undone.</p>
       <div class="confirm-actions">
         <button class="cancel-btn" id="cancelDelete">Cancel</button>
-        <button class="delete-btn" id="confirmDelete">Remove</button>
+        <button class="delete-btn" id="confirmDelete" data-label="Remove">Remove</button>
       </div>
     </div>
   </div>
@@ -470,6 +470,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=79"></script>
+  <script src="app.js?v=80"></script>
 </body>
 </html>

@@ -377,6 +377,7 @@ body.modal-open { overflow: hidden; }
 .card-menu-item + .card-menu-item { border-top: 1px solid var(--border); }
 .card-menu-item.cm-done { color: #16a34a; }
 .card-menu-item.cm-undone { color: var(--muted); }
+.card-menu-item.cm-danger { color: #EF4444; }
 
 
 /* Budget Pill */

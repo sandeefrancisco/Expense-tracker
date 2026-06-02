@@ -788,6 +788,7 @@ function updateCardMenu(earned, totalAll) {
   if (totalAll > 0) {
     rows.push(`<button class="card-menu-item" id="cmMoveTo">Move to…</button>`);
     rows.push(`<button class="card-menu-item" id="cmDuplicateTo">Duplicate to…</button>`);
+    rows.push(`<button class="card-menu-item cm-danger" id="cmDeleteMonth">Delete month…</button>`);
   }
   menu.innerHTML = rows.join('');
   const close = () => menu.classList.add('hidden');
@@ -796,6 +797,7 @@ function updateCardMenu(earned, totalAll) {
   menu.querySelector('#cmToggleDone')?.addEventListener('click',   () => { close(); toggleMonthDone(); });
   menu.querySelector('#cmMoveTo')?.addEventListener('click',       () => { close(); openMoveModal(); });
   menu.querySelector('#cmDuplicateTo')?.addEventListener('click',  () => { close(); openDuplicateMonthModal(); });
+  menu.querySelector('#cmDeleteMonth')?.addEventListener('click',  () => { close(); openDeleteMonthConfirm(); });
 }
 
 
@@ -1759,7 +1761,58 @@ async function handleIncomeSubmit(e) {
 }
 
 /* ─── Delete ────────────────────────────────────────────── */
-function openDeleteConfirm(id) { pendingDeleteId = id; openModal('deleteModal'); }
+let pendingDeleteMonth = false;
+
+function setDeleteModalContent(title, desc, btnLabel) {
+  const t = document.getElementById('deleteModalTitle');
+  const d = document.getElementById('deleteModalDesc');
+  const b = document.getElementById('confirmDelete');
+  if (t) t.textContent = title;
+  if (d) d.textContent = desc;
+  if (b) b.textContent = btnLabel;
+}
+
+function openDeleteConfirm(id) {
+  pendingDeleteMonth = false;
+  setDeleteModalContent('Remove allocation?', 'This action cannot be undone.', 'Remove');
+  pendingDeleteId = id;
+  openModal('deleteModal');
+}
+
+function openDeleteMonthConfirm() {
+  const monthExpenses = getMonthExpenses();
+  const n = monthExpenses.length;
+  const label = getMonthLabel(currentYear, currentMonth);
+  pendingDeleteMonth = true;
+  pendingDeleteId = null;
+  setDeleteModalContent(
+    `Delete ${label}?`,
+    `This will permanently remove all ${n} expense${n === 1 ? '' : 's'} in ${label}. This cannot be undone.`,
+    'Delete all'
+  );
+  openModal('deleteModal');
+}
+
+async function handleDeleteMonth() {
+  const toDelete = getMonthExpenses();
+  if (toDelete.length === 0) return;
+  const saved = [...toDelete];
+  expenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return !(d.getFullYear() === currentYear && d.getMonth() === currentMonth);
+  });
+  closeModal('deleteModal');
+  pendingDeleteMonth = false;
+  renderAll();
+  showToast(`Deleted ${saved.length} expense${saved.length === 1 ? '' : 's'}`);
+  try {
+    await Promise.all(saved.map(e => dbRemoveExpense(e.id)));
+  } catch (err) {
+    saved.forEach(e => expenses.push(e));
+    renderAll();
+    showToast('Could not delete — ' + err.message, true);
+  }
+}
 
 /* ─── Item Options Sheet ────────────────────────────────── */
 let pendingOptionsId = null;
@@ -1791,6 +1844,7 @@ async function duplicateExpense(id) {
 }
 
 async function handleConfirmDelete() {
+  if (pendingDeleteMonth) { await handleDeleteMonth(); return; }
   if (!pendingDeleteId) return;
   const id      = pendingDeleteId;
   const deleted = expenses.find(e => e.id === id);
