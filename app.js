@@ -718,28 +718,6 @@ function renderSummary() {
     heroIsPrimary = heroCode === primaryCode;
   }
 
-  // Converted-amount line below hero — shows the non-primary group total in its own currency
-  const convEl = document.getElementById('summaryConv');
-  if (convEl) {
-    if (heroIsPrimary && totalBase > 0) {
-      // Hero in primary (EUR) → show each non-primary group total as-is (e.g. ≈ ₱261,808)
-      const parts = Object.keys(byCur)
-        .filter(code => code !== primaryCode)
-        .map(code => {
-          const cur = CURRENCIES.find(x => x.code === code) || { symbol: code };
-          const val = byCur[code].total;
-          return `${cur.symbol}${fmtNum(val)}`;
-        });
-      convEl.textContent   = parts.length ? '≈ ' + parts.join(' · ') : '';
-      convEl.style.display = parts.length ? '' : 'none';
-    } else if (!heroIsPrimary && allConverted && totalBase > 0) {
-      // Hero in non-primary (all PHP) → show primary equivalent
-      convEl.textContent   = `≈ ${primarySym}${fmtNum(totalBase)}`;
-      convEl.style.display = '';
-    } else {
-      convEl.style.display = 'none';
-    }
-  }
 
   // Progress bar
   const paidCount = list.filter(e => e.checked).length;
@@ -999,6 +977,9 @@ function renderListView() {
   }
   if (sectionHdr) sectionHdr.style.display = '';
 
+  const primaryCode = settings.currency.code;
+  const primarySym  = settings.currency.symbol;
+
   // Group expenses by category
   const byCat = {};
   list.forEach(e => {
@@ -1073,6 +1054,16 @@ function renderListView() {
       const grpLeftHtml  = grpUnpaidAmt > 0
         ? `<div class="list-hdr-left">${fmtGroupTotal(item.catIds, byCat)} left</div>`
         : grpPaid > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+      const grpBaseTotal = item.catIds.reduce((s, id) => {
+        if (!byCat[id]) return s;
+        const { code } = getCatCurrency(id);
+        const amt = (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+        const b = toBase(amt, code);
+        return b != null ? s + b : s;
+      }, 0);
+      const grpHasNonPrimary = item.catIds.some(id => getCatCurrency(id).code !== primaryCode);
+      const grpConvHtml = grpHasNonPrimary && grpBaseTotal > 0
+        ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(grpBaseTotal)}</div>` : '';
       hdr.innerHTML = `
         <div class="cat-icon-box" style="background:${grpColor}">
           <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
@@ -1085,6 +1076,7 @@ function renderListView() {
         <div class="list-hdr-right">
           <div class="list-hdr-total">${fmtGroupGrandTotal(item.catIds, byCat)}</div>
           ${grpLeftHtml}
+          ${grpConvHtml}
         </div>
         <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
@@ -1165,6 +1157,10 @@ function renderListView() {
       const leftHtml   = total > 0
         ? `<div class="list-hdr-left">${fmtCat(total, item.catId)} left</div>`
         : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+      const { code: catCode } = getCatCurrency(item.catId);
+      const catBaseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
+      const catConvHtml  = catBaseTotal != null
+        ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(catBaseTotal)}</div>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       hdr.innerHTML = `
@@ -1179,6 +1175,7 @@ function renderListView() {
         <div class="list-hdr-right">
           <div class="list-hdr-total">${fmtCat(grandTotal, item.catId)}</div>
           ${leftHtml}
+          ${catConvHtml}
         </div>
         <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>

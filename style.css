@@ -309,10 +309,6 @@ body.modal-open { overflow: hidden; }
   letter-spacing: -1px; line-height: 1; margin-bottom: 4px;
   color: var(--ink);
 }
-.summary-conv {
-  font-size: 14px; font-weight: 600; color: var(--muted);
-  margin-bottom: 6px;
-}
 
 /* Multi-currency breakdown inside summary card */
 .mc-row {
@@ -524,6 +520,7 @@ body.modal-open { overflow: hidden; }
 .list-hdr-total { font-size: 17px; font-weight: 700; color: var(--ink); white-space: nowrap; }
 .list-hdr-left  { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .list-hdr-left--done { color: #16a34a; }
+.list-hdr-conv  { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
 
 /* ⋮ options button on category tile */
 .cat-opts-btn {
