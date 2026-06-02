@@ -92,12 +92,6 @@ async function init() {
   const savedMonth = parseInt(localStorage.getItem('viewMonth'), 10);
   currentYear  = !isNaN(savedYear)  ? savedYear  : now.getFullYear();
   currentMonth = !isNaN(savedMonth) ? savedMonth : now.getMonth();
-  // clamp: never let the saved view exceed the current real month
-  if (currentYear > now.getFullYear() ||
-      (currentYear === now.getFullYear() && currentMonth > now.getMonth())) {
-    currentYear  = now.getFullYear();
-    currentMonth = now.getMonth();
-  }
 
   bindEvents();
 
@@ -606,15 +600,6 @@ function renderProfilesList() {
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
-  const now         = new Date();
-  const nowStr      = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const viewStr     = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-  const hasFuture   = expenses.some(e => e.date && e.date.slice(0, 7) > viewStr);
-  // Allow forward if not yet at today's month, OR there is data beyond the current view
-  const canGoForward = viewStr < nowStr || hasFuture;
-  const btn = document.getElementById('nextMonth');
-  btn.style.opacity = canGoForward ? '1' : '0.3';
-  btn.disabled = !canGoForward;
 }
 
 function renderSummary() {
