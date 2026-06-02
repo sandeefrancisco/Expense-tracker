@@ -1000,12 +1000,7 @@ function renderListView() {
         <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M8 13h5"/></svg></div>
         <p>No allocations yet</p>
         <span>Tap + to add your first budget item</span>
-        <button class="list-add-btn empty-add-btn">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Add expense
-        </button>
       </div>`;
-    container.querySelector('.empty-add-btn').addEventListener('click', openAddModal);
     return;
   }
   if (sectionHdr) sectionHdr.style.display = '';

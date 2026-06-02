@@ -737,16 +737,23 @@ body.modal-open { overflow: hidden; }
 .list-section-title {
   font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.4px;
 }
-.list-add-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 36px; padding: 0 16px; border-radius: 99px;
+
+/* ─── Floating Add Button (FAB) ────────────────────────── */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 16px);
+  right: max(16px, calc(50vw - 240px + 16px));
+  width: 56px; height: 56px; border-radius: 50%;
   background: var(--accent); border: none; cursor: pointer;
-  color: #fff; font-size: 14px; font-weight: 700;
-  font-family: 'Figtree', sans-serif; white-space: nowrap;
-  transition: background var(--t), transform 0.1s;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(37,99,235,.40);
+  z-index: 19;
+  transition: background var(--t), transform 0.12s, box-shadow 0.12s;
 }
-.list-add-btn:hover  { background: var(--accent-hover); }
-.list-add-btn:active { transform: scale(0.95); }
+.fab:hover  { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(37,99,235,.50); }
+.fab:active { transform: scale(0.92); }
+
+/* ─── Bottom Nav ───────────────────────────────────────── */
 
 /* ─── Bottom Nav ───────────────────────────────────────── */
 .bottom-nav {
