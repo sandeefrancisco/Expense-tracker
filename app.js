@@ -1670,13 +1670,15 @@ async function handleDuplicateMonthConfirm() {
 
   closeModal('moveModal');
 
-  const copies = list.map(e => {
+  const copies = list.flatMap(e => {
     let installCurrent = e.installment_current || null;
     if (e.installment_total && e.installment_current) {
-      installCurrent = Math.max(1, Math.min(e.installment_total, e.installment_current + monthDelta));
+      const next = e.installment_current + monthDelta;
+      if (next < 1) return []; // no earlier installment exists — skip
+      installCurrent = Math.min(e.installment_total, next);
     }
     const installDone = installCurrent != null && installCurrent >= (e.installment_total || Infinity);
-    return {
+    return [{
       user_id: e.user_id, profile_id: e.profile_id,
       amount: e.amount, description: e.description,
       bank: e.bank, category: e.category,
@@ -1685,7 +1687,7 @@ async function handleDuplicateMonthConfirm() {
       installment_total:   e.installment_total   || null,
       installment_current: installCurrent,
       installment_due_day: e.installment_due_day || null,
-    };
+    }];
   });
 
   const tmpIds = copies.map((_, i) => 'tmp_dup_' + Date.now() + '_' + i);
