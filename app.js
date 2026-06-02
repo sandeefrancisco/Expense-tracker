@@ -266,39 +266,39 @@ async function loadUserData() {
     selectedCategory = categories[0]?.id || null;
 }
 
-/* ─── Exchange Rates (Wise daily, cached per-day) ───────── */
+/* ─── Exchange Rates (Wise-sourced, cached per-hour) ────── */
 async function fetchRate(fromCode, toCode) {
   if (fromCode === toCode) return 1;
-  const today  = new Date().toISOString().slice(0, 10);
-  const lsKey  = `er_${fromCode}_${toCode}_${today}`;
+  const hour  = new Date().toISOString().slice(0, 13); // "2026-06-02T14" — hourly bucket
+  const lsKey = `er_${fromCode}_${toCode}_${hour}`;
+  const srcKey = lsKey + '_src';
   const cached = localStorage.getItem(lsKey);
   if (cached) return parseFloat(cached);
 
-  // Each entry: { url, extract(json) → rate (fromCode per 1 toCode, then we invert) }
-  // We always fetch base=toCode and divide: fromCode→toCode = 1 / (toCode per fromCode)
   const apis = [
-    // Wise public — direct from→to rate
-    { url: `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
-      extract: j => j[0]?.rate },
-    // ExchangeRate-API free tier (no key, CORS, supports PHP)
-    { url: `https://open.er-api.com/v6/latest/${toCode}`,
+    { name: 'Wise',
+      url: `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
+      extract: j => Array.isArray(j) ? j[0]?.rate : null },
+    { name: 'ER-API',
+      url: `https://open.er-api.com/v6/latest/${toCode}`,
       extract: j => j.rates?.[fromCode] > 0 ? 1 / j.rates[fromCode] : null },
-    // fawazahmed0 on jsDelivr — no limits, CORS
-    { url: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${toCode.toLowerCase()}.min.json`,
-      extract: j => {
-        const v = j[toCode.toLowerCase()]?.[fromCode.toLowerCase()];
-        return v > 0 ? 1 / v : null;
-      } },
+    { name: 'fawazahmed0',
+      url: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${toCode.toLowerCase()}.min.json`,
+      extract: j => { const v = j[toCode.toLowerCase()]?.[fromCode.toLowerCase()]; return v > 0 ? 1 / v : null; } },
   ];
 
-  for (const { url, extract } of apis) {
+  for (const { name, url, extract } of apis) {
     try {
       const json = await (await fetch(url)).json();
       const rate = extract(json);
-      if (rate > 0) { localStorage.setItem(lsKey, String(rate)); return rate; }
+      if (rate > 0) {
+        localStorage.setItem(lsKey,  String(rate));
+        localStorage.setItem(srcKey, name);
+        return rate;
+      }
     } catch { /* try next */ }
   }
-  return null; // rate unavailable
+  return null;
 }
 
 async function loadExchangeRates() {
@@ -310,6 +310,38 @@ async function loadExchangeRates() {
     const r = await fetchRate(code, primary);
     if (r != null) rateCache[code] = r;
   }));
+}
+
+async function renderRates() {
+  const panel = document.getElementById('ratesDisplay');
+  if (!panel) return;
+  const primary = settings.currency;
+  const used = [...new Set(categories.map(c => c.currency_code).filter(Boolean))].filter(c => c !== primary.code);
+  if (used.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const hour = new Date().toISOString().slice(0, 13);
+  const rows = used.map(code => {
+    const cur    = CURRENCIES.find(x => x.code === code) || { code, symbol: code };
+    const lsKey  = `er_${code}_${primary.code}_${hour}`;
+    const cached = localStorage.getItem(lsKey);
+    const src    = localStorage.getItem(lsKey + '_src') || '';
+    const rate   = cached ? parseFloat(cached) : null;
+    const rateStr = rate ? `${cur.symbol}1 = ${primary.symbol}${rate.toFixed(4)}` : '—';
+    return `<div class="rate-row"><span class="rate-pair">${rateStr}</span><span class="rate-src">${src ? 'via ' + src : ''}</span></div>`;
+  }).join('');
+  panel.innerHTML = `<div class="rates-header"><span class="rates-label">Live Rates</span><button class="rates-refresh-btn" id="ratesRefreshBtn">↻ Refresh</button></div><div>${rows}</div>`;
+  document.getElementById('ratesRefreshBtn').addEventListener('click', async () => {
+    const h = new Date().toISOString().slice(0, 13);
+    used.forEach(code => {
+      const k = `er_${code}_${primary.code}_${h}`;
+      localStorage.removeItem(k);
+      localStorage.removeItem(k + '_src');
+    });
+    rateCache = {};
+    panel.innerHTML = `<div class="rates-header"><span class="rates-label">Live Rates</span><span class="rate-src">Fetching…</span></div>`;
+    await loadExchangeRates();
+    renderRates();
+  });
 }
 
 // Returns amount converted to primary currency, or null if rate unknown
@@ -1858,7 +1890,7 @@ function bindEvents() {
   document.getElementById('installmentCancel').addEventListener('click', () => closeModal('installmentModal'));
 
   // Settings
-  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
+  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); renderRates(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
   document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);

@@ -997,6 +997,13 @@ body.modal-open { overflow: hidden; }
   overflow: hidden; box-shadow: var(--shadow-card);
 }
 .settings-card-pad { padding: 14px; }
+.rates-display { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.rates-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.rates-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.rates-refresh-btn { font-size: 12px; font-weight: 600; color: var(--accent); background: none; border: none; padding: 0; cursor: pointer; }
+.rate-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid var(--border-subtle); }
+.rate-pair { font-size: 14px; font-weight: 600; }
+.rate-src { font-size: 11px; font-weight: 500; color: var(--muted); }
 
 .settings-row {
   display: flex; align-items: center; gap: 12px;
