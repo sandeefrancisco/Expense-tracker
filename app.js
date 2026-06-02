@@ -699,7 +699,10 @@ function renderSummary() {
   if (earned > 0) {
     const saved  = earned - totalBase;
     const isOver = saved < 0;
-    labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
+    const now = new Date();
+    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+    const monthName = new Date(currentYear, currentMonth, 1).toLocaleDateString('en-US', { month: 'long' });
+    labelEl.textContent = isOver ? 'Over budget' : (isCurrentMonth ? 'Saved this month' : `Saved · ${monthName}`);
     heroEl.textContent  = `${primarySym}${fmtNum(Math.abs(saved))}`;
     subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
     heroIsPrimary = true;
