@@ -421,9 +421,13 @@ function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.
 function ordinal(n) { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
 function expenseInstallmentHtml(e) {
   if (!e.installment_total || !e.installment_current) return '';
-  const due  = e.installment_due_day ? ` · due ${ordinal(e.installment_due_day)}` : '';
-  const done = e.installment_current >= e.installment_total;
-  return `<div class="expense-installment${done ? ' expense-installment--done' : ''}">${e.installment_current}/${e.installment_total}${due}</div>`;
+  const due   = e.installment_due_day ? ` · due ${ordinal(e.installment_due_day)}` : '';
+  const done  = e.installment_current >= e.installment_total;
+  const final = e.installment_complete ? ' · final' : '';
+  const cls   = e.installment_complete
+    ? 'expense-installment expense-installment--final'
+    : `expense-installment${done ? ' expense-installment--done' : ''}`;
+  return `<div class="${cls}">${e.installment_current}/${e.installment_total}${due}${final}</div>`;
 }
 
 /* Returns a map of first-word-prefix → [catId, ...] for prefixes shared by 2+ categories */
