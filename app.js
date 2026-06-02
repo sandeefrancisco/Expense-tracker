@@ -1676,6 +1676,12 @@ async function handleDuplicateMonthConfirm() {
   expenses = [...expenses, ...optimistic];
   renderAll();
   showToast(`Duplicated ${list.length} expense${list.length !== 1 ? 's' : ''} to ${getMonthLabel(targetYear, targetMonth)}`);
+  const doneInstallments = copies.filter(c => c.installment_total && c.installment_current >= c.installment_total);
+  if (doneInstallments.length > 0) {
+    const names = doneInstallments.slice(0, 2).map(c => c.description).join(', ');
+    const extra = doneInstallments.length > 2 ? ` +${doneInstallments.length - 2} more` : '';
+    setTimeout(() => showToast(`${doneInstallments.length} installment${doneInstallments.length > 1 ? 's' : ''} already done: ${names}${extra} — remove?`, true), 2500);
+  }
 
   try {
     const { data: rows, error } = await sb.from('expenses').insert(copies).select();
