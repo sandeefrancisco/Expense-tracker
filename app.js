@@ -1825,8 +1825,6 @@ function bindEvents() {
     saveViewMonth(); renderAll();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
-    const now = new Date();
-    if (currentYear === now.getFullYear() && currentMonth === now.getMonth()) return;
     currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     saveViewMonth(); renderAll();
   });
