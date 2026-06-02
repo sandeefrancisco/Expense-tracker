@@ -1313,7 +1313,7 @@ function buildItem(e) {
   el.dataset.dragId = e.id;
   let amtSub = '';
   if (e.checked) {
-    amtSub = `<div class="expense-amt-sub expense-amt-paid">${e.installment_complete ? '✓ fully paid' : '✓ paid'}</div>`;
+    amtSub = `<div class="expense-amt-sub expense-amt-paid">${e.installment_complete ? '✓ installment complete' : '✓ paid'}</div>`;
   } else if (cat.shared) {
     amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
   }
@@ -1683,7 +1683,7 @@ async function handleDuplicateMonthConfirm() {
       amount: e.amount, description: e.description,
       bank: e.bank, category: e.category,
       date: targetDate, note: e.note,
-      sort_order: e.sort_order, checked: installDone,
+      sort_order: e.sort_order, checked: false,
       installment_total:    e.installment_total   || null,
       installment_current:  installCurrent,
       installment_due_day:  e.installment_due_day || null,
