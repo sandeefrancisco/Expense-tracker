@@ -1527,7 +1527,7 @@ function clearInstallmentInline() {
   document.getElementById('inlineInstallCurrent').value = '';
   document.getElementById('inlineInstallDue').value     = '';
   document.getElementById('installmentInline').classList.add('hidden');
-  document.getElementById('installmentToggleBtn').classList.remove('active');
+  document.getElementById('installmentToggleBtn').checked = false;
 }
 
 function openAddModal() {
@@ -1562,7 +1562,7 @@ function openEditModal(id) {
     document.getElementById('inlineInstallCurrent').value = e.installment_current || '';
     document.getElementById('inlineInstallDue').value     = e.installment_due_day || '';
     document.getElementById('installmentInline').classList.remove('hidden');
-    document.getElementById('installmentToggleBtn').classList.add('active');
+    document.getElementById('installmentToggleBtn').checked = true;
   } else {
     clearInstallmentInline();
   }
@@ -2001,13 +2001,13 @@ function bindEvents() {
   document.getElementById('openAdd').addEventListener('click', openAddModal);
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
-  document.getElementById('installmentToggleBtn').addEventListener('click', () => {
+  document.getElementById('installmentToggleBtn').addEventListener('change', function() {
     const inline = document.getElementById('installmentInline');
-    const btn    = document.getElementById('installmentToggleBtn');
-    const opening = inline.classList.toggle('hidden');
-    btn.classList.toggle('active', !opening);
-    if (!opening) document.getElementById('inlineInstallTotal').focus();
-    if (opening) { // closed → clear values
+    if (this.checked) {
+      inline.classList.remove('hidden');
+      document.getElementById('inlineInstallTotal').focus();
+    } else {
+      inline.classList.add('hidden');
       document.getElementById('inlineInstallTotal').value   = '';
       document.getElementById('inlineInstallCurrent').value = '';
       document.getElementById('inlineInstallDue').value     = '';
