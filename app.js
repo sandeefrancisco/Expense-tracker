@@ -1672,12 +1672,13 @@ async function handleDuplicateMonthConfirm() {
     if (e.installment_total && e.installment_current) {
       installCurrent = Math.max(1, Math.min(e.installment_total, e.installment_current + monthDelta));
     }
+    const installDone = installCurrent != null && installCurrent >= (e.installment_total || Infinity);
     return {
       user_id: e.user_id, profile_id: e.profile_id,
       amount: e.amount, description: e.description,
       bank: e.bank, category: e.category,
       date: targetDate, note: e.note,
-      sort_order: e.sort_order, checked: false,
+      sort_order: e.sort_order, checked: installDone,
       installment_total:   e.installment_total   || null,
       installment_current: installCurrent,
       installment_due_day: e.installment_due_day || null,
@@ -1694,12 +1695,6 @@ async function handleDuplicateMonthConfirm() {
   expenses = [...expenses, ...optimistic];
   renderAll();
   showToast(`Duplicated ${list.length} expense${list.length !== 1 ? 's' : ''} to ${getMonthLabel(targetYear, targetMonth)}`);
-  const doneInstallments = copies.filter(c => c.installment_total && c.installment_current >= c.installment_total);
-  if (doneInstallments.length > 0) {
-    const names = doneInstallments.slice(0, 2).map(c => c.description).join(', ');
-    const extra = doneInstallments.length > 2 ? ` +${doneInstallments.length - 2} more` : '';
-    setTimeout(() => showToast(`${doneInstallments.length} installment${doneInstallments.length > 1 ? 's' : ''} already done: ${names}${extra} — remove?`, true), 2500);
-  }
 
   try {
     const { data: rows, error } = await sb.from('expenses').insert(copies).select();
