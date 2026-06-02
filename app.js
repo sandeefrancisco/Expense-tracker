@@ -715,29 +715,27 @@ function renderSummary() {
     heroIsPrimary = heroCode === primaryCode;
   }
 
-  // Converted-amount line below hero
+  // Converted-amount line below hero — shows the non-primary group total in its own currency
   const convEl = document.getElementById('summaryConv');
-  if (convEl && totalBase > 0) {
-    if (heroIsPrimary) {
-      // Hero in primary (EUR) → show non-primary equivalents (PHP, etc.)
+  if (convEl) {
+    if (heroIsPrimary && totalBase > 0) {
+      // Hero in primary (EUR) → show each non-primary group total as-is (e.g. ≈ ₱261,808)
       const parts = Object.keys(byCur)
-        .filter(code => code !== primaryCode && rateCache[code])
+        .filter(code => code !== primaryCode)
         .map(code => {
           const cur = CURRENCIES.find(x => x.code === code) || { symbol: code };
-          const val = totalBase / rateCache[code];
+          const val = byCur[code].total;
           return `${cur.symbol}${val >= 1000 ? Math.round(val).toLocaleString() : val.toFixed(2)}`;
         });
-      convEl.textContent  = parts.length ? '≈ ' + parts.join(' · ') : '';
+      convEl.textContent   = parts.length ? '≈ ' + parts.join(' · ') : '';
       convEl.style.display = parts.length ? '' : 'none';
-    } else if (allConverted) {
-      // Hero in non-primary → show primary equivalent
-      convEl.textContent  = `≈ ${primarySym}${totalBase.toFixed(2)}`;
+    } else if (!heroIsPrimary && allConverted && totalBase > 0) {
+      // Hero in non-primary (all PHP) → show primary equivalent
+      convEl.textContent   = `≈ ${primarySym}${totalBase.toFixed(2)}`;
       convEl.style.display = '';
     } else {
       convEl.style.display = 'none';
     }
-  } else if (convEl) {
-    convEl.style.display = 'none';
   }
 
   // Progress bar
