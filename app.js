@@ -1543,7 +1543,6 @@ function openAddModal() {
   clearInstallmentInline();
   clearFormError();
   openModal('expenseModal');
-  setTimeout(() => document.getElementById('amountInput').focus(), 300);
 }
 
 function openEditModal(id) {
@@ -1998,7 +1997,10 @@ function bindEvents() {
   });
 
   // Allocation form
-  document.getElementById('openAdd').addEventListener('click', openAddModal);
+  document.getElementById('openAdd').addEventListener('click', () => {
+    openAddModal();
+    document.getElementById('amountInput').focus();
+  });
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
   document.getElementById('installmentToggleBtn').addEventListener('change', function() {
