@@ -326,7 +326,7 @@ async function renderRates() {
     const cached = localStorage.getItem(lsKey);
     const src    = localStorage.getItem(lsKey + '_src') || '';
     const rate   = cached ? parseFloat(cached) : null;
-    const rateStr = rate ? `${cur.symbol}1 = ${primary.symbol}${rate.toFixed(4)}` : '—';
+    const rateStr = rate ? `${primary.symbol}1 = ${cur.symbol}${(1 / rate).toFixed(2)}` : '—';
     return `<div class="rate-row"><span class="rate-pair">${rateStr}</span><span class="rate-src">${src ? 'via ' + src : ''}</span></div>`;
   }).join('');
   panel.innerHTML = `<div class="rates-header"><span class="rates-label">Live Rates</span><button class="rates-refresh-btn" id="ratesRefreshBtn">↻ Refresh</button></div><div>${rows}</div>`;
@@ -671,21 +671,26 @@ function renderSummary() {
     else { allConverted = false; totalBase += (code === primaryCode ? total : 0); }
   });
 
+  let heroIsPrimary = false;
+
   if (earned > 0) {
     const saved  = earned - totalBase;
     const isOver = saved < 0;
     labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
     heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
     subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
+    heroIsPrimary = true;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
     subEl.textContent   = itemStr;
+    heroIsPrimary = true;
   } else if (curEntries.length === 1) {
-    const [, { symbol, total }] = curEntries[0];
+    const [soleCode, { symbol, total }] = curEntries[0];
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${symbol}${total.toFixed(2)}`;
     subEl.textContent   = itemStr;
+    heroIsPrimary = soleCode === primaryCode;
   } else if (allConverted) {
     // Multi-currency, no income — show total in primary; original breakdown in sub
     const breakdown = curEntries
@@ -694,6 +699,7 @@ function renderSummary() {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}${totalBase.toFixed(2)}`;
     subEl.textContent   = `${breakdown} · ${itemStr}`;
+    heroIsPrimary = true;
   } else {
     // Fallback: primary or largest as hero, rest in sub
     const heroEntry = byCur[primaryCode]
@@ -706,6 +712,32 @@ function renderSummary() {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${hSym}${hTotal.toFixed(2)}`;
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
+    heroIsPrimary = heroCode === primaryCode;
+  }
+
+  // Converted-amount line below hero
+  const convEl = document.getElementById('summaryConv');
+  if (convEl && totalBase > 0) {
+    if (heroIsPrimary) {
+      // Hero in primary (EUR) → show non-primary equivalents (PHP, etc.)
+      const parts = Object.keys(byCur)
+        .filter(code => code !== primaryCode && rateCache[code])
+        .map(code => {
+          const cur = CURRENCIES.find(x => x.code === code) || { symbol: code };
+          const val = totalBase / rateCache[code];
+          return `${cur.symbol}${val >= 1000 ? Math.round(val).toLocaleString() : val.toFixed(2)}`;
+        });
+      convEl.textContent  = parts.length ? '≈ ' + parts.join(' · ') : '';
+      convEl.style.display = parts.length ? '' : 'none';
+    } else if (allConverted) {
+      // Hero in non-primary → show primary equivalent
+      convEl.textContent  = `≈ ${primarySym}${totalBase.toFixed(2)}`;
+      convEl.style.display = '';
+    } else {
+      convEl.style.display = 'none';
+    }
+  } else if (convEl) {
+    convEl.style.display = 'none';
   }
 
   // Progress bar

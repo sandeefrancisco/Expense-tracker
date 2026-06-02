@@ -306,8 +306,12 @@ body.modal-open { overflow: hidden; }
 
 .summary-amount {
   font-size: 28px; font-weight: 800;
-  letter-spacing: -1px; line-height: 1; margin-bottom: 8px;
+  letter-spacing: -1px; line-height: 1; margin-bottom: 4px;
   color: var(--ink);
+}
+.summary-conv {
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  margin-bottom: 6px;
 }
 
 /* Multi-currency breakdown inside summary card */
