@@ -1038,11 +1038,14 @@ function renderListView() {
   const monthKey = `${currentYear}-${currentMonth}`;
   if (listViewMonth !== monthKey) {
     listViewMonth = monthKey;
-    if (!loadExpandState() && topLevel.length > 0) {
+    if (!loadExpandState()) {
       expandedListCats.clear(); expandedListGroups.clear();
-      const top = topLevel[0];
-      if (top.type === 'group') expandedListGroups.add(top.prefix);
-      else expandedListCats.add(top.catId);
+      if (topLevel.length > 0) {
+        const top = topLevel[0];
+        if (top.type === 'group') expandedListGroups.add(top.prefix);
+        else expandedListCats.add(top.catId);
+      }
+      saveExpandState();
     }
   }
 
