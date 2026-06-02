@@ -1313,7 +1313,8 @@ function buildItem(e) {
   el.dataset.dragId = e.id;
   let amtSub = '';
   if (e.checked) {
-    amtSub = '<div class="expense-amt-sub expense-amt-paid">✓ paid</div>';
+    const fullyPaid = e.installment_total && e.installment_current >= e.installment_total;
+    amtSub = `<div class="expense-amt-sub expense-amt-paid">${fullyPaid ? '✓ fully paid' : '✓ paid'}</div>`;
   } else if (cat.shared) {
     amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
   }
