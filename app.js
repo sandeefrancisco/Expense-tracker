@@ -1645,16 +1645,26 @@ async function handleDuplicateMonthConfirm() {
   const targetYear  = movePickerYear;
   const targetMonth = movePickerMonth;
   const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+  const monthDelta  = (targetYear * 12 + targetMonth) - (currentYear * 12 + currentMonth);
 
   closeModal('moveModal');
 
-  const copies = list.map(e => ({
-    user_id: e.user_id, profile_id: e.profile_id,
-    amount: e.amount, description: e.description,
-    bank: e.bank, category: e.category,
-    date: targetDate, note: e.note,
-    sort_order: e.sort_order, checked: false,
-  }));
+  const copies = list.map(e => {
+    let installCurrent = e.installment_current || null;
+    if (e.installment_total && e.installment_current) {
+      installCurrent = Math.max(1, Math.min(e.installment_total, e.installment_current + monthDelta));
+    }
+    return {
+      user_id: e.user_id, profile_id: e.profile_id,
+      amount: e.amount, description: e.description,
+      bank: e.bank, category: e.category,
+      date: targetDate, note: e.note,
+      sort_order: e.sort_order, checked: false,
+      installment_total:   e.installment_total   || null,
+      installment_current: installCurrent,
+      installment_due_day: e.installment_due_day || null,
+    };
+  });
 
   const tmpIds = copies.map((_, i) => 'tmp_dup_' + Date.now() + '_' + i);
   const optimistic = copies.map((c, i) => ({ ...c, id: tmpIds[i] }));
