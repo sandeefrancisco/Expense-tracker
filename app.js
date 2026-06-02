@@ -75,6 +75,22 @@ const expandedListGroups = new Set(); // prefix keys of expanded group parents i
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
 let   listViewMonth      = null;      // "YYYY-M" — tracks month for auto-expand reset
 
+function saveExpandState() {
+  localStorage.setItem(`exState_${currentYear}_${currentMonth}`,
+    JSON.stringify({ g: [...expandedListGroups], c: [...expandedListCats] }));
+}
+function loadExpandState() {
+  try {
+    const raw = localStorage.getItem(`exState_${currentYear}_${currentMonth}`);
+    if (!raw) return false;
+    const { g = [], c = [] } = JSON.parse(raw);
+    expandedListGroups.clear(); expandedListCats.clear();
+    g.forEach(x => expandedListGroups.add(x));
+    c.forEach(x => expandedListCats.add(x));
+    return true;
+  } catch { return false; }
+}
+
 const DND_HANDLE = `<div class="drag-handle" aria-label="Drag to reorder"><svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><circle cx="5" cy="3.5" r="1.4"/><circle cx="11" cy="3.5" r="1.4"/><circle cx="5" cy="7.5" r="1.4"/><circle cx="11" cy="7.5" r="1.4"/><circle cx="5" cy="11.5" r="1.4"/><circle cx="11" cy="11.5" r="1.4"/></svg></div>`;
 
 
@@ -1018,13 +1034,12 @@ function renderListView() {
   });
   topLevel.sort((a, b) => a.sortKey - b.sortKey || b.total - a.total);
 
-  // When navigating to a new month: reset expand state and pre-expand top item
+  // When navigating to a new month: restore saved expand state, or default to first item
   const monthKey = `${currentYear}-${currentMonth}`;
   if (listViewMonth !== monthKey) {
     listViewMonth = monthKey;
-    expandedListCats.clear();
-    expandedListGroups.clear();
-    if (topLevel.length > 0) {
+    if (!loadExpandState() && topLevel.length > 0) {
+      expandedListCats.clear(); expandedListGroups.clear();
       const top = topLevel[0];
       if (top.type === 'group') expandedListGroups.add(top.prefix);
       else expandedListCats.add(top.catId);
@@ -1094,6 +1109,7 @@ function renderListView() {
         else expandedListGroups.add(item.prefix);
         grpBody.classList.toggle('collapsed', nowExpanded);
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        saveExpandState();
       });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
 
@@ -1140,6 +1156,7 @@ function renderListView() {
           else expandedListCats.add(catId);
           itemsBody.classList.toggle('collapsed', nowExpanded);
           sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+          saveExpandState();
         });
 
         renderItemsBody(items, itemsBody);
@@ -1193,6 +1210,7 @@ function renderListView() {
         else expandedListCats.add(item.catId);
         itemsBody.classList.toggle('collapsed', nowExpanded);
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        saveExpandState();
       });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
 
