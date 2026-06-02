@@ -1573,11 +1573,11 @@ async function handleFormSubmit(ev) {
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, date };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory };
     renderAll();
-    showToast('Updated'); // optimistic — fires the moment the modal closes
+    showToast('Updated');
     try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, date });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory });
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
