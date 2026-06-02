@@ -831,6 +831,26 @@ body.modal-open { overflow: hidden; }
 .form-label  { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); margin-bottom: 8px; }
 .optional    { font-weight: 500; letter-spacing: 0; color: var(--border); }
 
+.installment-toggle-row { margin-bottom: 16px; }
+.installment-toggle-btn {
+  all: unset; box-sizing: border-box;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  padding: 7px 12px; border-radius: 99px;
+  border: 1.5px solid var(--accent); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.installment-toggle-btn:active { background: var(--tint); }
+.installment-toggle-btn.active {
+  background: var(--accent); color: #fff;
+}
+.installment-toggle-btn.active svg { stroke: #fff; }
+.installment-inline { margin-bottom: 4px; }
+.installment-inline.hidden { display: none; }
+.installment-inline-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+}
+
 .form-input {
   width: 100%; padding: 13px 16px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);

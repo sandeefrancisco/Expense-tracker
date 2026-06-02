@@ -1527,6 +1527,14 @@ function showFormError(msg) {
 }
 
 
+function clearInstallmentInline() {
+  document.getElementById('inlineInstallTotal').value   = '';
+  document.getElementById('inlineInstallCurrent').value = '';
+  document.getElementById('inlineInstallDue').value     = '';
+  document.getElementById('installmentInline').classList.add('hidden');
+  document.getElementById('installmentToggleBtn').classList.remove('active');
+}
+
 function openAddModal() {
   buildCategoryGrid();
   selectedBank     = null; buildBankGrid(null);
@@ -1537,6 +1545,7 @@ function openAddModal() {
   document.getElementById('descInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  clearInstallmentInline();
   clearFormError();
   openModal('expenseModal');
   setTimeout(() => document.getElementById('amountInput').focus(), 300);
@@ -1552,6 +1561,16 @@ function openEditModal(id) {
   document.getElementById('amountInput').value = parseFloat(e.amount).toFixed(2);
   document.getElementById('descInput').value   = e.description;
   document.getElementById('editId').value      = e.id;
+  // Populate installment fields if present
+  if (e.installment_total) {
+    document.getElementById('inlineInstallTotal').value   = e.installment_total;
+    document.getElementById('inlineInstallCurrent').value = e.installment_current || '';
+    document.getElementById('inlineInstallDue').value     = e.installment_due_day || '';
+    document.getElementById('installmentInline').classList.remove('hidden');
+    document.getElementById('installmentToggleBtn').classList.add('active');
+  } else {
+    clearInstallmentInline();
+  }
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
   openModal('expenseModal');
@@ -1567,17 +1586,34 @@ async function handleFormSubmit(ev) {
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
   if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
 
+  // Read optional inline installment fields
+  const installInlineVisible = !document.getElementById('installmentInline').classList.contains('hidden');
+  const installTotal   = installInlineVisible ? parseInt(document.getElementById('inlineInstallTotal').value,   10) || null : null;
+  const installCurrent = installInlineVisible ? parseInt(document.getElementById('inlineInstallCurrent').value, 10) || null : null;
+  const installDue     = installInlineVisible ? parseInt(document.getElementById('inlineInstallDue').value,     10) || null : null;
+  if (installInlineVisible && installTotal) {
+    if (!installCurrent || installCurrent < 1 || installCurrent > installTotal) {
+      showFormError('Enter a valid current installment number (1–' + installTotal + ').'); return;
+    }
+  }
+  const installFields = {
+    installment_total:   installTotal   || null,
+    installment_current: installCurrent || null,
+    installment_due_day: installDue     || null,
+    installment_complete: false,
+  };
+
   const date = monthStartISO();
   closeModal('expenseModal');
 
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields };
     renderAll();
     showToast('Updated');
     try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields });
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -1586,11 +1622,11 @@ async function handleFormSubmit(ev) {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder, ...installFields });
     renderAll();
-    showToast('Added'); // optimistic — fires the moment the modal closes
+    showToast('Added');
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
     } catch (err) {
@@ -1970,6 +2006,18 @@ function bindEvents() {
   document.getElementById('openAdd').addEventListener('click', openAddModal);
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
+  document.getElementById('installmentToggleBtn').addEventListener('click', () => {
+    const inline = document.getElementById('installmentInline');
+    const btn    = document.getElementById('installmentToggleBtn');
+    const opening = inline.classList.toggle('hidden');
+    btn.classList.toggle('active', !opening);
+    if (!opening) document.getElementById('inlineInstallTotal').focus();
+    if (opening) { // closed → clear values
+      document.getElementById('inlineInstallTotal').value   = '';
+      document.getElementById('inlineInstallCurrent').value = '';
+      document.getElementById('inlineInstallDue').value     = '';
+    }
+  });
   document.getElementById('amountInput').addEventListener('input', clearFormError);
   document.getElementById('descInput').addEventListener('input', clearFormError);
 

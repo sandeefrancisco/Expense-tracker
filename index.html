@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=97" />
+  <link rel="stylesheet" href="style.css?v=98" />
 </head>
 <body>
 
@@ -213,6 +213,29 @@
           </div>
           <input type="hidden" id="editId" value="" />
           <div class="form-error hidden" id="formError"></div>
+          <!-- Optional installment section -->
+          <div class="installment-toggle-row">
+            <button type="button" class="installment-toggle-btn" id="installmentToggleBtn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Installment
+            </button>
+          </div>
+          <div class="installment-inline hidden" id="installmentInline">
+            <div class="installment-inline-grid">
+              <div class="form-group">
+                <label class="form-label">Total</label>
+                <input type="number" id="inlineInstallTotal" class="form-input" placeholder="e.g. 12" min="2" max="360" inputmode="numeric" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Current #</label>
+                <input type="number" id="inlineInstallCurrent" class="form-input" placeholder="e.g. 1" min="1" max="360" inputmode="numeric" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due day <span class="optional">(opt.)</span></label>
+                <input type="number" id="inlineInstallDue" class="form-input" placeholder="e.g. 15" min="1" max="31" inputmode="numeric" />
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-sticky-footer">
           <button type="submit" class="submit-btn" id="submitBtn">Add Allocation</button>
@@ -472,6 +495,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=97"></script>
+  <script src="app.js?v=98"></script>
 </body>
 </html>
