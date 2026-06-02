@@ -363,8 +363,11 @@ function getCatCurrency(catId) {
     ? { code: c.currency_code, symbol: c.currency_symbol }
     : settings.currency;
 }
-function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
-function fmtCat(n, catId) { const { symbol } = getCatCurrency(catId); return `${symbol}${parseFloat(n).toFixed(2)}`; }
+function fmtNum(n) {
+  return parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmt(n)      { return `${settings.currency.symbol}${fmtNum(n)}`; }
+function fmtCat(n, catId) { const { symbol } = getCatCurrency(catId); return `${symbol}${fmtNum(n)}`; }
 function fmtGroupTotal(catIds, byCat) {
   const acc = {};
   catIds.forEach(id => {
@@ -373,7 +376,7 @@ function fmtGroupTotal(catIds, byCat) {
     if (!acc[code]) acc[code] = { symbol, total: 0 };
     acc[code].total += byCat[id].total;
   });
-  return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`).join(' · ');
 }
 function fmtGroupGrandTotal(catIds, byCat) {
   const acc = {};
@@ -383,7 +386,7 @@ function fmtGroupGrandTotal(catIds, byCat) {
     if (!acc[code]) acc[code] = { symbol, total: 0 };
     acc[code].total += (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
   });
-  return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`).join(' · ');
 }
 function fmtGroupDoneTotal(catIds, byCat) {
   const acc = {};
@@ -393,7 +396,7 @@ function fmtGroupDoneTotal(catIds, byCat) {
     if (!acc[code]) acc[code] = { symbol, total: 0 };
     acc[code].total += byCat[id].paidTotal;
   });
-  const parts = Object.values(acc).filter(v => v.total > 0).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`);
+  const parts = Object.values(acc).filter(v => v.total > 0).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`);
   return parts.join(' · ');
 }
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
@@ -677,8 +680,8 @@ function renderSummary() {
     const saved  = earned - totalBase;
     const isOver = saved < 0;
     labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
-    heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
-    subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
+    heroEl.textContent  = `${primarySym}${fmtNum(Math.abs(saved))}`;
+    subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
     heroIsPrimary = true;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
@@ -688,16 +691,16 @@ function renderSummary() {
   } else if (curEntries.length === 1) {
     const [soleCode, { symbol, total }] = curEntries[0];
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${symbol}${total.toFixed(2)}`;
+    heroEl.textContent  = `${symbol}${fmtNum(total)}`;
     subEl.textContent   = itemStr;
     heroIsPrimary = soleCode === primaryCode;
   } else if (allConverted) {
     // Multi-currency, no income — show total in primary; original breakdown in sub
     const breakdown = curEntries
       .sort((a, b) => (a[0] === primaryCode ? -1 : b[0] === primaryCode ? 1 : b[1].total - a[1].total))
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
+      .map(([, { symbol, total }]) => `${symbol}${fmtNum(total)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${primarySym}${totalBase.toFixed(2)}`;
+    heroEl.textContent  = `${primarySym}${fmtNum(totalBase)}`;
     subEl.textContent   = `${breakdown} · ${itemStr}`;
     heroIsPrimary = true;
   } else {
@@ -708,9 +711,9 @@ function renderSummary() {
     const [heroCode, { symbol: hSym, total: hTotal }] = heroEntry;
     const rest = curEntries
       .filter(([code]) => code !== heroCode)
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
+      .map(([, { symbol, total }]) => `${symbol}${fmtNum(total)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${hSym}${hTotal.toFixed(2)}`;
+    heroEl.textContent  = `${hSym}${fmtNum(hTotal)}`;
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
     heroIsPrimary = heroCode === primaryCode;
   }
@@ -725,13 +728,13 @@ function renderSummary() {
         .map(code => {
           const cur = CURRENCIES.find(x => x.code === code) || { symbol: code };
           const val = byCur[code].total;
-          return `${cur.symbol}${val >= 1000 ? Math.round(val).toLocaleString() : val.toFixed(2)}`;
+          return `${cur.symbol}${fmtNum(val)}`;
         });
       convEl.textContent   = parts.length ? '≈ ' + parts.join(' · ') : '';
       convEl.style.display = parts.length ? '' : 'none';
     } else if (!heroIsPrimary && allConverted && totalBase > 0) {
       // Hero in non-primary (all PHP) → show primary equivalent
-      convEl.textContent   = `≈ ${primarySym}${totalBase.toFixed(2)}`;
+      convEl.textContent   = `≈ ${primarySym}${fmtNum(totalBase)}`;
       convEl.style.display = '';
     } else {
       convEl.style.display = 'none';
@@ -759,9 +762,9 @@ function renderSummary() {
     const b   = toBase(amt, cur.code) ?? (cur.code === primaryCode ? amt : 0);
     if (e.checked) paidBase += b; else dueBase += b;
   });
-  const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 10000
-    ? `${primarySym}${(v / 1000).toFixed(1)}k`
-    : `${primarySym}${v.toFixed(0)}`;
+  const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 100000
+    ? `${primarySym}${(v / 1000).toFixed(0)}k`
+    : `${primarySym}${Math.round(v).toLocaleString('en-US')}`;
   const statItems = document.getElementById('scStatItems');
   const statCats  = document.getElementById('scStatCats');
   if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
@@ -1831,7 +1834,7 @@ async function duplicateExpense(id) {
   renderAll();
   showToast('Duplicated');
   try {
-    const payload = { user_id: src.user_id, profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder };
+    const payload = { user_id: src.user_id, profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder, installment_total: src.installment_total || null, installment_current: src.installment_current || null, installment_due_day: src.installment_due_day || null };
     const row = await dbSaveExpense(payload);
     const idx = expenses.findIndex(e => e.id === tmp);
     if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
