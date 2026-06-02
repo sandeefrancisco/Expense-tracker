@@ -461,6 +461,16 @@ function getMonthIncome() {
   );
 }
 
+function getEffectiveIncome() {
+  const current = getMonthIncome();
+  if (current.length > 0) return current;
+  const all = incomeEntries.filter(r => r.profile_id === currentProfileId);
+  if (all.length === 0) return [];
+  const sorted = [...all].sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+  const { year: ly, month: lm } = sorted[0];
+  return all.filter(r => r.year === ly && r.month === lm);
+}
+
 function getMonthLabel(y, m) {
   return new Date(y, m, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
@@ -659,7 +669,7 @@ function renderHeader() {
 
 function renderSummary() {
   const list   = getMonthExpenses();
-  const income = getMonthIncome();
+  const income = getEffectiveIncome();
   const earned = income.reduce((s, r) => s + r.amount, 0);
 
   // Group effective amounts by currency code
