@@ -816,7 +816,7 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Category Detail Screen ──────────────────────────── */
 .detail-screen {
-  position: fixed; inset: 0; z-index: 15;
+  position: fixed; inset: 0; z-index: 25;
   background: var(--bg);
   display: flex; flex-direction: column;
   transform: translateX(100%);
@@ -824,7 +824,7 @@ body.modal-open { overflow: hidden; }
   overflow: hidden;
 }
 .detail-screen.open { transform: translateX(0); }
-.detail-screen--top { z-index: 16; }
+.detail-screen--top { z-index: 26; }
 
 .detail-back-btn {
   all: unset; box-sizing: border-box;

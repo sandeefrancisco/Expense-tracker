@@ -1028,8 +1028,6 @@ function renderGroupDetailView() {
   const monthExpenses = getMonthExpenses();
   const primaryCode   = settings.currency.code;
   const primarySym    = settings.currency.symbol;
-  const chevHTML = (exp) =>
-    `<svg class="cat-chevron${exp ? '' : ' collapsed'}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>`;
 
   currentDetailGroupCatIds.forEach(catId => {
     const cat = getCat(catId);
@@ -1047,42 +1045,26 @@ function renderGroupDetailView() {
     const baseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
     const convHtml  = baseTotal != null ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(baseTotal)}</div>` : '';
 
-    const isExp = expandedListCats.has(catId);
-    const tile  = document.createElement('div');
+    const tile = document.createElement('div');
     tile.className = 'list-tile';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'list-tile-hdr';
-    hdr.innerHTML = `
-      <div class="cat-icon-box" style="background:${cat.color}">
-        <span class="cat-icon-letter">${escHtml(sublabel.charAt(0).toUpperCase())}</span>
-      </div>
-      <div class="list-tile-main">
-        <div class="list-hdr-name">
-          <span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
-          ${chevHTML(isExp)}
+    tile.innerHTML = `
+      <div class="list-tile-hdr">
+        <div class="cat-icon-box" style="background:${cat.color}">
+          <span class="cat-icon-letter">${escHtml(sublabel.charAt(0).toUpperCase())}</span>
         </div>
-        <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
-      </div>
-      <div class="list-hdr-right">
-        <div class="list-hdr-total">${fmtCat(grandTotal, catId)}</div>
-        ${leftHtml}${convHtml}
+        <div class="list-tile-main">
+          <div class="list-hdr-name">
+            <span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
+            <svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+        </div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtCat(grandTotal, catId)}</div>
+          ${leftHtml}${convHtml}
+        </div>
       </div>`;
-    tile.appendChild(hdr);
-
-    const itemsBody = document.createElement('div');
-    itemsBody.className = 'cat-items-body' + (isExp ? '' : ' collapsed');
-    tile.appendChild(itemsBody);
-
-    hdr.addEventListener('click', () => {
-      const nowExp = expandedListCats.has(catId);
-      if (nowExp) expandedListCats.delete(catId);
-      else expandedListCats.add(catId);
-      itemsBody.classList.toggle('collapsed', nowExp);
-      hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExp);
-    });
-
-    renderItemsBody(items, itemsBody);
+    tile.querySelector('.list-tile-hdr').addEventListener('click', () => showCategoryDetail(catId));
     body.appendChild(tile);
   });
 }
