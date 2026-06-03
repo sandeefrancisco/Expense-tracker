@@ -212,8 +212,9 @@ body.modal-open { overflow: hidden; }
 .hdr-month-nav {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 2px;
 }
+.hdr-spacer { width: 40px; flex-shrink: 0; }
 
-/* Profile button */
+/* Profile button (header legacy + bottom nav) */
 .hdr-profile-btn {
   display: flex; align-items: center; gap: 7px;
   padding: 6px 10px 6px 6px; border-radius: 99px;
@@ -233,6 +234,18 @@ body.modal-open { overflow: hidden; }
   overflow: hidden; text-overflow: ellipsis;
 }
 .hdr-profile-btn svg { color: var(--muted); flex-shrink: 0; }
+
+/* Bottom nav profile button */
+.bottom-profile-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px 8px 10px; border-radius: 99px;
+  border: none; background: transparent; cursor: pointer;
+  transition: background var(--t); min-height: 44px; flex-shrink: 0;
+}
+.bottom-profile-btn:active { background: var(--tint); }
+.bottom-profile-btn .hdr-avatar { width: 34px; height: 34px; font-size: 14px; }
+.bottom-profile-btn .hdr-profile-name { font-size: 15px; }
+.bottom-profile-btn svg { color: var(--muted); flex-shrink: 0; }
 
 /* Month navigation */
 .month-display { text-align: center; }
@@ -273,7 +286,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Main ─────────────────────────────────────────────── */
 .main {
   flex: 1;
-  padding: 16px 16px 32px;
+  padding: 16px 16px calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 24px);
   display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto;
 }
@@ -763,7 +776,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Floating Add Button (FAB) ────────────────────────── */
 .fab {
   position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
   right: max(16px, calc(50vw - 240px + 16px));
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--accent); border: none; cursor: pointer;

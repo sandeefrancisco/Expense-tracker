@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=101" />
+  <link rel="stylesheet" href="style.css?v=102" />
 </head>
 <body>
 
@@ -118,11 +118,7 @@
   <div id="app" class="hidden">
 
     <header class="header">
-      <button class="hdr-profile-btn" id="profileTrigger" aria-label="Switch profile">
-        <div class="hdr-avatar" id="profileAvatarEl">M</div>
-        <span class="hdr-profile-name" id="profileTriggerLabel">Me</span>
-        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
+      <div class="hdr-spacer"></div>
       <div class="hdr-month-nav">
         <button class="icon-btn" id="prevMonth" aria-label="Previous month">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -507,6 +503,15 @@
       <button class="cancel-btn" id="profileSheetCancel" style="width:100%;margin-top:8px;">Cancel</button>
     </div>
   </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="bottom-profile-btn" id="profileTrigger" aria-label="Switch profile">
+      <div class="hdr-avatar" id="profileAvatarEl">M</div>
+      <span class="hdr-profile-name" id="profileTriggerLabel">Me</span>
+      <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </nav>
 
   <!-- Floating Add Button -->
   <button class="fab" id="openAdd" aria-label="Add expense">
