@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=105" />
+  <link rel="stylesheet" href="style.css?v=106" />
 </head>
 <body>
 
@@ -189,8 +189,23 @@
 
     </main>
 
+    <!-- ── Group Detail Screen ── -->
+    <div class="detail-screen" id="groupDetailView">
+      <header class="header">
+        <button class="detail-back-btn" id="groupDetailBackBtn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back
+        </button>
+        <div class="detail-hdr-center">
+          <span class="detail-hdr-name" id="groupDetailName"></span>
+        </div>
+        <div class="hdr-spacer"></div>
+      </header>
+      <div class="detail-body" id="groupDetailBody"></div>
+    </div>
+
     <!-- ── Category Detail Screen ── -->
-    <div class="detail-screen" id="categoryDetailView">
+    <div class="detail-screen detail-screen--top" id="categoryDetailView">
       <header class="header">
         <button class="detail-back-btn" id="detailBackBtn" aria-label="Back">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -560,6 +575,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=105"></script>
+  <script src="app.js?v=106"></script>
 </body>
 </html>

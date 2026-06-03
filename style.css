@@ -824,6 +824,7 @@ body.modal-open { overflow: hidden; }
   overflow: hidden;
 }
 .detail-screen.open { transform: translateX(0); }
+.detail-screen--top { z-index: 16; }
 
 .detail-back-btn {
   all: unset; box-sizing: border-box;

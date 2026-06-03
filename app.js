@@ -64,6 +64,8 @@ let currentYear, currentMonth;
 let pendingDeleteId          = null;
 let pendingInstallmentCatId  = null;
 let currentDetailCatId       = null;
+let currentDetailGroupPrefix = null;
+let currentDetailGroupCatIds = [];
 let selectedCategory  = null;
 let selectedBank      = null;
 let selectedCatShared   = false;
@@ -556,6 +558,7 @@ function renderAll() {
   renderProfileBar();
   renderSummary();
   renderListView();
+  if (currentDetailGroupPrefix) renderGroupDetailView();
   if (currentDetailCatId) renderDetailView();
   syncSettingsUI();
 }
@@ -575,6 +578,7 @@ function renderProfileBar() {
         currentProfileId = p.id;
         localStorage.setItem('activeProfileId', p.id);
         hideCategoryDetail();
+        hideGroupDetail();
         renderAll();
       });
       tabs.appendChild(btn);
@@ -1002,6 +1006,69 @@ function renderItemsBody(items, container) {
   }
 }
 
+/* ─── Group Detail Screen ────────────────────────────────── */
+function showGroupDetail(prefix, catIds) {
+  currentDetailGroupPrefix = prefix;
+  currentDetailGroupCatIds = [...catIds];
+  renderGroupDetailView();
+  document.getElementById('groupDetailView').classList.add('open');
+}
+
+function hideGroupDetail() {
+  document.getElementById('groupDetailView').classList.remove('open');
+  currentDetailGroupPrefix = null;
+  currentDetailGroupCatIds = [];
+}
+
+function renderGroupDetailView() {
+  if (!currentDetailGroupPrefix) return;
+  document.getElementById('groupDetailName').textContent = currentDetailGroupPrefix;
+  const body = document.getElementById('groupDetailBody');
+  body.innerHTML = '';
+  const monthExpenses  = getMonthExpenses();
+  const primaryCode    = settings.currency.code;
+  const primarySym     = settings.currency.symbol;
+
+  currentDetailGroupCatIds.forEach(catId => {
+    const cat = getCat(catId);
+    if (!cat) return;
+    const items     = monthExpenses.filter(e => e.category === catId);
+    const total     = items.filter(e => !e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
+    const paidTotal = items.filter(e =>  e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
+    const paidCount = items.filter(e =>  e.checked).length;
+    const grandTotal = total + paidTotal;
+    const sublabel   = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
+    const leftHtml   = total > 0
+      ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
+      : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+    const { code: catCode } = getCatCurrency(catId);
+    const baseTotal  = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
+    const convHtml   = baseTotal != null ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(baseTotal)}</div>` : '';
+
+    const tile = document.createElement('div');
+    tile.className = 'list-tile';
+    tile.innerHTML = `
+      <div class="list-tile-hdr" style="cursor:pointer">
+        <div class="cat-icon-box" style="background:${cat.color}">
+          <span class="cat-icon-letter">${escHtml(sublabel.charAt(0).toUpperCase())}</span>
+        </div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name">
+            <span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
+            <svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+        </div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtCat(grandTotal, catId)}</div>
+          ${leftHtml}${convHtml}
+        </div>
+      </div>`;
+    tile.addEventListener('click', () => showCategoryDetail(catId));
+    body.appendChild(tile);
+  });
+}
+
 /* ─── Category Detail Screen ─────────────────────────────── */
 function showCategoryDetail(catId) {
   currentDetailCatId = catId;
@@ -1164,7 +1231,7 @@ function renderListView() {
           ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
-          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span></div>
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1177,47 +1244,11 @@ function renderListView() {
         </button>`;
       tile.appendChild(hdr);
 
-      const grpBody = document.createElement('div');
-      grpBody.className = 'cat-group-body';
-      tile.appendChild(grpBody);
-
-      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
-
-      const sortedSubs = item.catIds
-        .filter(id => byCat[id])
-        .sort((a, b) => (getCat(a).sort_order ?? 99999) - (getCat(b).sort_order ?? 99999));
-
-      sortedSubs.forEach(catId => {
-        const cat = getCat(catId);
-        const { items, total, paidTotal } = byCat[catId];
-        const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
-
-        const subTile = document.createElement('div');
-        subTile.className = 'list-sub-tile';
-        grpBody.appendChild(subTile);
-
-        const subPaid    = items.filter(e => e.checked).length;
-        const subGrand   = total + paidTotal;
-        const subLeftHtml = total > 0
-          ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
-          : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
-        const sh = document.createElement('div');
-        sh.className = 'list-sub-hdr';
-        sh.innerHTML = `
-          <div class="list-sub-dot" style="background:${cat.color}"></div>
-          <div class="list-tile-main">
-            <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span></div>
-            <div class="list-sub-count">${subPaid}/${items.length}</div>
-          </div>
-          <div class="list-sub-right">
-            <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
-            ${subLeftHtml}
-          </div>
-          <svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;
-        subTile.appendChild(sh);
-
-        sh.addEventListener('click', () => showCategoryDetail(catId));
+      hdr.addEventListener('click', ev => {
+        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
+        showGroupDetail(item.prefix, item.catIds);
       });
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
 
     } else {
       const cat = getCat(item.catId);
@@ -2056,6 +2087,7 @@ function bindEvents() {
   });
 
   // Detail screen
+  document.getElementById('groupDetailBackBtn').addEventListener('click', hideGroupDetail);
   document.getElementById('detailBackBtn').addEventListener('click', hideCategoryDetail);
   document.getElementById('detailCatOptsBtn').addEventListener('click', ev => {
     if (currentDetailCatId) openCatCtxMenu(ev.currentTarget, currentDetailCatId);
