@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=60" />
+  <link rel="stylesheet" href="style.css?v=61" />
 </head>
 <body>
 
@@ -122,34 +122,91 @@
 
       <!-- Summary Card -->
       <section class="summary-card">
-        <button class="card-menu-btn" id="cardMenuBtn" aria-label="Month actions">
-          <svg viewBox="0 0 24 24" width="18" height="18">
-            <circle cx="12" cy="5"  r="1.8" fill="currentColor"/>
-            <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
-            <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
-          </svg>
-        </button>
+
+        <div class="sc-prog-row">
+          <span class="sc-prog-text" id="scProgText">0 of 0 paid</span>
+          <div class="sc-prog-track"><div class="sc-prog-fill" id="scProgFill" style="width:0%"></div></div>
+          <span class="sc-prog-pct" id="scProgPct">0%</span>
+          <button class="card-menu-btn" id="cardMenuBtn" aria-label="Month actions">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <circle cx="12" cy="5"  r="1.8" fill="currentColor"/>
+              <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+              <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="sc-rule"></div>
 
         <div class="summary-label" id="summaryLabel">Tracked this month</div>
         <div class="summary-amount" id="summaryHero">—</div>
         <div class="summary-sub" id="summarySub"></div>
+
+        <div class="sc-rule"></div>
+
+        <div class="sc-stats">
+          <div class="sc-stat">
+            <div class="sc-stat-n" id="scStatItems">—</div>
+            <div class="sc-stat-lbl">PAID</div>
+          </div>
+          <div class="sc-stat-sep"></div>
+          <div class="sc-stat">
+            <div class="sc-stat-n" id="scStatCats">—</div>
+            <div class="sc-stat-lbl">DUE</div>
+          </div>
+        </div>
 
       </section>
 
       <!-- Card actions dropdown -->
       <div class="card-menu hidden" id="cardMenu"></div>
 
+      <!-- Profile tabs (above category cards) -->
+      <div class="profile-tabs" id="profileTabs"></div>
+
       <!-- Budget list -->
       <section class="view-section" id="listView">
+        <div class="list-section-hdr">
+          <span class="list-section-title">Expenses</span>
+        </div>
         <div id="expenseList" class="expense-list"></div>
       </section>
 
     </main>
 
-    <button class="fab" id="openAdd" aria-label="Add allocation">
-      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-      <span>Add</span>
-    </button>
+    <!-- ── Group Detail Screen ── -->
+    <div class="detail-screen" id="groupDetailView">
+      <header class="header">
+        <button class="detail-back-btn" id="groupDetailBackBtn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back
+        </button>
+        <div class="detail-hdr-center">
+          <span class="detail-hdr-name" id="groupDetailName"></span>
+        </div>
+        <div class="hdr-spacer"></div>
+      </header>
+      <div class="detail-body" id="groupDetailBody"></div>
+    </div>
+
+    <!-- ── Category Detail Screen ── -->
+    <div class="detail-screen detail-screen--top" id="categoryDetailView">
+      <header class="header">
+        <button class="detail-back-btn" id="detailBackBtn" aria-label="Back">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back
+        </button>
+        <div class="detail-hdr-center">
+          <div class="detail-hdr-icon" id="detailCatIcon"></div>
+          <span class="detail-hdr-name" id="detailCatName"></span>
+        </div>
+        <button class="cat-opts-btn" id="detailCatOptsBtn" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>
+      </header>
+      <div class="detail-stat-bar" id="detailStatBar"></div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
 
   </div>
 
@@ -185,6 +242,29 @@
           </div>
           <input type="hidden" id="editId" value="" />
           <div class="form-error hidden" id="formError"></div>
+          <div class="installment-toggle-row">
+            <span class="installment-toggle-label">Installment</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="installmentToggleBtn">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="installment-inline hidden" id="installmentInline">
+            <div class="installment-inline-grid">
+              <div class="form-group">
+                <label class="form-label">Total</label>
+                <input type="number" id="inlineInstallTotal" class="form-input" placeholder="e.g. 12" min="2" max="360" inputmode="numeric" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Current #</label>
+                <input type="number" id="inlineInstallCurrent" class="form-input" placeholder="e.g. 1" min="1" max="360" inputmode="numeric" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due day <span class="optional">(opt.)</span></label>
+                <input type="number" id="inlineInstallDue" class="form-input" placeholder="e.g. 15" min="1" max="31" inputmode="numeric" />
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-sticky-footer">
           <button type="submit" class="submit-btn" id="submitBtn">Add Allocation</button>
@@ -268,6 +348,7 @@
           <div class="settings-group-label">Currency</div>
           <div class="settings-card settings-card-pad">
             <select id="currencySelect" class="form-select"></select>
+            <div id="ratesDisplay" class="rates-display" style="display:none"></div>
           </div>
         </div>
 
@@ -303,11 +384,11 @@
   <div class="modal-backdrop hidden" id="deleteModal">
     <div class="modal confirm-modal">
       <div class="confirm-icon danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
-      <h3 class="confirm-title">Remove allocation?</h3>
-      <p class="confirm-desc">This action cannot be undone.</p>
+      <h3 class="confirm-title" id="deleteModalTitle">Remove allocation?</h3>
+      <p class="confirm-desc" id="deleteModalDesc">This action cannot be undone.</p>
       <div class="confirm-actions">
         <button class="cancel-btn" id="cancelDelete">Cancel</button>
-        <button class="delete-btn" id="confirmDelete">Remove</button>
+        <button class="delete-btn" id="confirmDelete" data-label="Remove">Remove</button>
       </div>
     </div>
   </div>
@@ -360,6 +441,31 @@
     </div>
   </div>
 
+  <!-- ── Category Options Sheet ── -->
+  <div class="modal-backdrop hidden" id="catOptionsSheet">
+    <div class="modal item-options-modal">
+      <div class="modal-handle"></div>
+      <div class="item-options-desc" id="catOptionsTitle"></div>
+      <button class="option-row-btn" id="cosAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        <span id="cosAddLabel">Add to category</span>
+      </button>
+      <button class="option-row-btn" id="cosRename">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Rename
+      </button>
+      <button class="option-row-btn hidden" id="cosMoveUp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Move up
+      </button>
+      <button class="option-row-btn hidden" id="cosMoveDown">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Move down
+      </button>
+      <button class="cancel-btn" id="catOptionsCancel" style="width:100%;margin-top:4px;">Cancel</button>
+    </div>
+  </div>
+
   <!-- ── Item Options Sheet ── -->
   <div class="modal-backdrop hidden" id="itemOptionsModal">
     <div class="modal item-options-modal">
@@ -369,6 +475,14 @@
         <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit
       </button>
+      <button class="option-row-btn" id="itemOptionsDuplicate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Duplicate
+      </button>
+      <button class="option-row-btn" id="itemOptionsInstallments">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        Installments…
+      </button>
       <button class="option-row-btn option-row-danger" id="itemOptionsDelete">
         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         Remove
@@ -377,24 +491,42 @@
     </div>
   </div>
 
+  <!-- ── Installment Modal ── -->
+  <div class="modal-backdrop hidden" id="installmentModal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title">Installments</h3>
+      <p class="modal-hint" id="installmentCatName"></p>
+      <div class="form-group">
+        <label class="form-label">Total installments</label>
+        <input type="number" id="installmentTotal" class="form-input" placeholder="e.g. 12" min="2" max="360" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current installment #</label>
+        <input type="number" id="installmentCurrent" class="form-input" placeholder="e.g. 3" min="1" max="360" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Due day <span class="optional">(opt.)</span></label>
+        <input type="number" id="installmentDueDay" class="form-input" placeholder="e.g. 15" min="1" max="31" />
+      </div>
+      <div class="form-error hidden" id="installmentError"></div>
+      <div class="confirm-actions" style="margin-top:4px">
+        <button type="button" class="cancel-btn" id="installmentCancel">Cancel</button>
+        <button type="button" class="submit-btn" id="installmentSave" style="flex:1">Save</button>
+      </div>
+      <button type="button" class="option-row-btn option-row-danger" id="installmentClear" style="width:100%;margin-top:8px;justify-content:center;display:none">Remove installments</button>
+    </div>
+  </div>
+
   <!-- ── Move Month Modal ── -->
   <div class="modal-backdrop hidden" id="moveModal">
-    <div class="modal confirm-modal">
+    <div class="modal">
       <div class="modal-handle"></div>
-      <h3 class="confirm-title">Move allocations to…</h3>
-      <p class="confirm-desc" id="moveCountLabel">All allocations this month will be moved.</p>
-      <div class="move-month-picker">
-        <button class="icon-btn" id="movePrevMonth" aria-label="Previous month">
-          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <div class="move-month-label" id="moveMonthLabel">June 2026</div>
-        <button class="icon-btn" id="moveNextMonth" aria-label="Next month">
-          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-        </button>
-      </div>
-      <div class="confirm-actions">
+      <h3 class="modal-title" id="moveModalTitle">Duplicate list to…</h3>
+      <select class="form-input move-month-select" id="moveMonthSelect" style="margin-top:16px"></select>
+      <div class="confirm-actions" style="margin-top:20px">
         <button type="button" class="cancel-btn" id="cancelMove">Cancel</button>
-        <button type="button" class="submit-btn" id="confirmMoveBtn" style="flex:1">Move</button>
+        <button type="button" class="submit-btn" id="confirmMoveBtn" style="flex:1">Duplicate</button>
       </div>
     </div>
   </div>
@@ -413,10 +545,15 @@
     </div>
   </div>
 
+  <!-- Floating Add Button -->
+  <button class="fab" id="openAdd" aria-label="Add expense">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
   <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=60"></script>
+  <script src="app.js?v=61"></script>
 </body>
 </html>

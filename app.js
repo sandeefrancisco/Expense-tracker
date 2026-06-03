@@ -61,17 +61,38 @@ let completedMonths   = [];
 let settings          = { currency: { symbol: '€', code: 'EUR' } };
 let currentUser       = null;
 let currentYear, currentMonth;
-let pendingDeleteId   = null;
+let pendingDeleteId          = null;
+let pendingInstallmentCatId  = null;
+let currentDetailCatId       = null;
+let currentDetailGroupPrefix = null;
+let currentDetailGroupCatIds = [];
 let selectedCategory  = null;
 let selectedBank      = null;
 let selectedCatShared   = false;
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
+let moveModalMode       = 'move'; // 'move' | 'duplicate'
 let rateCache           = {}; // { 'PHP': 0.01612 } — fromCode → primary currency multiplier
 const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
 let   listViewMonth      = null;      // "YYYY-M" — tracks month for auto-expand reset
+
+function saveExpandState() {
+  localStorage.setItem(`exState_${currentYear}_${currentMonth}`,
+    JSON.stringify({ g: [...expandedListGroups], c: [...expandedListCats] }));
+}
+function loadExpandState() {
+  try {
+    const raw = localStorage.getItem(`exState_${currentYear}_${currentMonth}`);
+    if (!raw) return false;
+    const { g = [], c = [] } = JSON.parse(raw);
+    expandedListGroups.clear(); expandedListCats.clear();
+    g.forEach(x => expandedListGroups.add(x));
+    c.forEach(x => expandedListCats.add(x));
+    return true;
+  } catch { return false; }
+}
 
 const DND_HANDLE = `<div class="drag-handle" aria-label="Drag to reorder"><svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><circle cx="5" cy="3.5" r="1.4"/><circle cx="11" cy="3.5" r="1.4"/><circle cx="5" cy="7.5" r="1.4"/><circle cx="11" cy="7.5" r="1.4"/><circle cx="5" cy="11.5" r="1.4"/><circle cx="11" cy="11.5" r="1.4"/></svg></div>`;
 
@@ -90,12 +111,6 @@ async function init() {
   const savedMonth = parseInt(localStorage.getItem('viewMonth'), 10);
   currentYear  = !isNaN(savedYear)  ? savedYear  : now.getFullYear();
   currentMonth = !isNaN(savedMonth) ? savedMonth : now.getMonth();
-  // clamp: never let the saved view exceed the current real month
-  if (currentYear > now.getFullYear() ||
-      (currentYear === now.getFullYear() && currentMonth > now.getMonth())) {
-    currentYear  = now.getFullYear();
-    currentMonth = now.getMonth();
-  }
 
   bindEvents();
 
@@ -270,39 +285,39 @@ async function loadUserData() {
     selectedCategory = categories[0]?.id || null;
 }
 
-/* ─── Exchange Rates (Wise daily, cached per-day) ───────── */
+/* ─── Exchange Rates (Wise-sourced, cached per-hour) ────── */
 async function fetchRate(fromCode, toCode) {
   if (fromCode === toCode) return 1;
-  const today  = new Date().toISOString().slice(0, 10);
-  const lsKey  = `er_${fromCode}_${toCode}_${today}`;
+  const hour  = new Date().toISOString().slice(0, 13); // "2026-06-02T14" — hourly bucket
+  const lsKey = `er_${fromCode}_${toCode}_${hour}`;
+  const srcKey = lsKey + '_src';
   const cached = localStorage.getItem(lsKey);
   if (cached) return parseFloat(cached);
 
-  // Each entry: { url, extract(json) → rate (fromCode per 1 toCode, then we invert) }
-  // We always fetch base=toCode and divide: fromCode→toCode = 1 / (toCode per fromCode)
   const apis = [
-    // Wise public — direct from→to rate
-    { url: `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
-      extract: j => j[0]?.rate },
-    // ExchangeRate-API free tier (no key, CORS, supports PHP)
-    { url: `https://open.er-api.com/v6/latest/${toCode}`,
+    { name: 'Wise',
+      url: `https://api.wise.com/v1/rates?source=${fromCode}&target=${toCode}`,
+      extract: j => Array.isArray(j) ? j[0]?.rate : null },
+    { name: 'ER-API',
+      url: `https://open.er-api.com/v6/latest/${toCode}`,
       extract: j => j.rates?.[fromCode] > 0 ? 1 / j.rates[fromCode] : null },
-    // fawazahmed0 on jsDelivr — no limits, CORS
-    { url: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${toCode.toLowerCase()}.min.json`,
-      extract: j => {
-        const v = j[toCode.toLowerCase()]?.[fromCode.toLowerCase()];
-        return v > 0 ? 1 / v : null;
-      } },
+    { name: 'fawazahmed0',
+      url: `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${toCode.toLowerCase()}.min.json`,
+      extract: j => { const v = j[toCode.toLowerCase()]?.[fromCode.toLowerCase()]; return v > 0 ? 1 / v : null; } },
   ];
 
-  for (const { url, extract } of apis) {
+  for (const { name, url, extract } of apis) {
     try {
       const json = await (await fetch(url)).json();
       const rate = extract(json);
-      if (rate > 0) { localStorage.setItem(lsKey, String(rate)); return rate; }
+      if (rate > 0) {
+        localStorage.setItem(lsKey,  String(rate));
+        localStorage.setItem(srcKey, name);
+        return rate;
+      }
     } catch { /* try next */ }
   }
-  return null; // rate unavailable
+  return null;
 }
 
 async function loadExchangeRates() {
@@ -314,6 +329,38 @@ async function loadExchangeRates() {
     const r = await fetchRate(code, primary);
     if (r != null) rateCache[code] = r;
   }));
+}
+
+async function renderRates() {
+  const panel = document.getElementById('ratesDisplay');
+  if (!panel) return;
+  const primary = settings.currency;
+  const used = [...new Set(categories.map(c => c.currency_code).filter(Boolean))].filter(c => c !== primary.code);
+  if (used.length === 0) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const hour = new Date().toISOString().slice(0, 13);
+  const rows = used.map(code => {
+    const cur    = CURRENCIES.find(x => x.code === code) || { code, symbol: code };
+    const lsKey  = `er_${code}_${primary.code}_${hour}`;
+    const cached = localStorage.getItem(lsKey);
+    const src    = localStorage.getItem(lsKey + '_src') || '';
+    const rate   = cached ? parseFloat(cached) : null;
+    const rateStr = rate ? `${primary.symbol}1 = ${cur.symbol}${(1 / rate).toFixed(2)}` : '—';
+    return `<div class="rate-row"><span class="rate-pair">${rateStr}</span><span class="rate-src">${src ? 'via ' + src : ''}</span></div>`;
+  }).join('');
+  panel.innerHTML = `<div class="rates-header"><span class="rates-label">Live Rates</span><button class="rates-refresh-btn" id="ratesRefreshBtn">↻ Refresh</button></div><div>${rows}</div>`;
+  document.getElementById('ratesRefreshBtn').addEventListener('click', async () => {
+    const h = new Date().toISOString().slice(0, 13);
+    used.forEach(code => {
+      const k = `er_${code}_${primary.code}_${h}`;
+      localStorage.removeItem(k);
+      localStorage.removeItem(k + '_src');
+    });
+    rateCache = {};
+    panel.innerHTML = `<div class="rates-header"><span class="rates-label">Live Rates</span><span class="rate-src">Fetching…</span></div>`;
+    await loadExchangeRates();
+    renderRates();
+  });
 }
 
 // Returns amount converted to primary currency, or null if rate unknown
@@ -335,8 +382,11 @@ function getCatCurrency(catId) {
     ? { code: c.currency_code, symbol: c.currency_symbol }
     : settings.currency;
 }
-function fmt(n)      { return `${settings.currency.symbol}${parseFloat(n).toFixed(2)}`; }
-function fmtCat(n, catId) { const { symbol } = getCatCurrency(catId); return `${symbol}${parseFloat(n).toFixed(2)}`; }
+function fmtNum(n) {
+  return parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmt(n)      { return `${settings.currency.symbol}${fmtNum(n)}`; }
+function fmtCat(n, catId) { const { symbol } = getCatCurrency(catId); return `${symbol}${fmtNum(n)}`; }
 function fmtGroupTotal(catIds, byCat) {
   const acc = {};
   catIds.forEach(id => {
@@ -345,7 +395,17 @@ function fmtGroupTotal(catIds, byCat) {
     if (!acc[code]) acc[code] = { symbol, total: 0 };
     acc[code].total += byCat[id].total;
   });
-  return Object.values(acc).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`).join(' · ');
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`).join(' · ');
+}
+function fmtGroupGrandTotal(catIds, byCat) {
+  const acc = {};
+  catIds.forEach(id => {
+    if (!byCat[id]) return;
+    const { code, symbol } = getCatCurrency(id);
+    if (!acc[code]) acc[code] = { symbol, total: 0 };
+    acc[code].total += (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+  });
+  return Object.values(acc).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`).join(' · ');
 }
 function fmtGroupDoneTotal(catIds, byCat) {
   const acc = {};
@@ -355,11 +415,23 @@ function fmtGroupDoneTotal(catIds, byCat) {
     if (!acc[code]) acc[code] = { symbol, total: 0 };
     acc[code].total += byCat[id].paidTotal;
   });
-  const parts = Object.values(acc).filter(v => v.total > 0).map(({ symbol, total }) => `${symbol}${total.toFixed(2)}`);
+  const parts = Object.values(acc).filter(v => v.total > 0).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`);
   return parts.join(' · ');
 }
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
 function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
+
+function ordinal(n) { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
+function expenseInstallmentHtml(e) {
+  if (!e.installment_total || !e.installment_current) return '';
+  const due   = e.installment_due_day ? ` · due ${ordinal(e.installment_due_day)}` : '';
+  const done  = e.installment_current >= e.installment_total;
+  const final = e.installment_complete ? ' · final' : '';
+  const cls   = e.installment_complete
+    ? 'expense-installment expense-installment--final'
+    : `expense-installment${done ? ' expense-installment--done' : ''}`;
+  return `<div class="${cls}">${e.installment_current}/${e.installment_total}${due}${final}</div>`;
+}
 
 /* Returns a map of first-word-prefix → [catId, ...] for prefixes shared by 2+ categories */
 function detectPrefixGroups(catIds) {
@@ -390,6 +462,16 @@ function getMonthIncome() {
     r.profile_id === currentProfileId &&
     r.year === currentYear && r.month === currentMonth
   );
+}
+
+function getEffectiveIncome() {
+  const current = getMonthIncome();
+  if (current.length > 0) return current;
+  const all = incomeEntries.filter(r => r.profile_id === currentProfileId);
+  if (all.length === 0) return [];
+  const sorted = [...all].sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
+  const { year: ly, month: lm } = sorted[0];
+  return all.filter(r => r.year === ly && r.month === lm);
 }
 
 function getMonthLabel(y, m) {
@@ -476,19 +558,34 @@ function renderAll() {
   renderProfileBar();
   renderSummary();
   renderListView();
+  if (currentDetailGroupPrefix) renderGroupDetailView();
+  if (currentDetailCatId) renderDetailView();
   syncSettingsUI();
 }
 
 /* ─── Profiles ──────────────────────────────────────────── */
 function renderProfileBar() {
-  // Update header trigger label
-  const prof = profiles.find(p => p.id === currentProfileId);
-  const lbl  = document.getElementById('profileTriggerLabel');
-  if (lbl) lbl.textContent = prof?.name ?? 'Me';
-  const av = document.getElementById('profileAvatarEl');
-  if (av) av.textContent = (prof?.name ?? 'M').charAt(0).toUpperCase();
+  // Segmented tabs in bottom nav
+  const tabs = document.getElementById('profileTabs');
+  if (tabs) {
+    tabs.innerHTML = '';
+    profiles.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'profile-tab' + (p.id === currentProfileId ? ' active' : '');
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => {
+        if (currentProfileId === p.id) return;
+        currentProfileId = p.id;
+        localStorage.setItem('activeProfileId', p.id);
+        hideCategoryDetail();
+        hideGroupDetail();
+        renderAll();
+      });
+      tabs.appendChild(btn);
+    });
+  }
 
-  // Populate profile sheet list
+  // Keep sheet list in sync (used by Settings → manage people)
   const sheetList = document.getElementById('profileSheetList');
   if (!sheetList) return;
   sheetList.innerHTML = '';
@@ -586,15 +683,11 @@ function renderProfilesList() {
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
-  const now = new Date();
-  const cur = currentYear === now.getFullYear() && currentMonth === now.getMonth();
-  const btn = document.getElementById('nextMonth');
-  btn.style.opacity = cur ? '0.3' : '1'; btn.disabled = cur;
 }
 
 function renderSummary() {
   const list   = getMonthExpenses();
-  const income = getMonthIncome();
+  const income = getEffectiveIncome();
   const earned = income.reduce((s, r) => s + r.amount, 0);
 
   // Group effective amounts by currency code
@@ -629,29 +722,38 @@ function renderSummary() {
     else { allConverted = false; totalBase += (code === primaryCode ? total : 0); }
   });
 
+  let heroIsPrimary = false;
+
   if (earned > 0) {
     const saved  = earned - totalBase;
     const isOver = saved < 0;
-    labelEl.textContent = isOver ? 'Over budget' : 'Saved this month';
-    heroEl.textContent  = `${primarySym}${Math.abs(saved).toFixed(2)}`;
-    subEl.textContent = `of ${primarySym}${earned.toFixed(2)} earned · ${primarySym}${totalBase.toFixed(2)} spent`;
+    const now = new Date();
+    const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
+    const monthName = new Date(currentYear, currentMonth, 1).toLocaleDateString('en-US', { month: 'long' });
+    labelEl.textContent = isOver ? 'Over budget' : (isCurrentMonth ? 'Saved this month' : `Saved · ${monthName}`);
+    heroEl.textContent  = `${primarySym}${fmtNum(Math.abs(saved))}`;
+    subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
+    heroIsPrimary = true;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
     subEl.textContent   = itemStr;
+    heroIsPrimary = true;
   } else if (curEntries.length === 1) {
-    const [, { symbol, total }] = curEntries[0];
+    const [soleCode, { symbol, total }] = curEntries[0];
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${symbol}${total.toFixed(2)}`;
+    heroEl.textContent  = `${symbol}${fmtNum(total)}`;
     subEl.textContent   = itemStr;
+    heroIsPrimary = soleCode === primaryCode;
   } else if (allConverted) {
     // Multi-currency, no income — show total in primary; original breakdown in sub
     const breakdown = curEntries
       .sort((a, b) => (a[0] === primaryCode ? -1 : b[0] === primaryCode ? 1 : b[1].total - a[1].total))
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
+      .map(([, { symbol, total }]) => `${symbol}${fmtNum(total)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${primarySym}${totalBase.toFixed(2)}`;
+    heroEl.textContent  = `${primarySym}${fmtNum(totalBase)}`;
     subEl.textContent   = `${breakdown} · ${itemStr}`;
+    heroIsPrimary = true;
   } else {
     // Fallback: primary or largest as hero, rest in sub
     const heroEntry = byCur[primaryCode]
@@ -660,11 +762,42 @@ function renderSummary() {
     const [heroCode, { symbol: hSym, total: hTotal }] = heroEntry;
     const rest = curEntries
       .filter(([code]) => code !== heroCode)
-      .map(([, { symbol, total }]) => `${symbol}${total.toFixed(2)}`).join(' · ');
+      .map(([, { symbol, total }]) => `${symbol}${fmtNum(total)}`).join(' · ');
     labelEl.textContent = 'Tracked this month';
-    heroEl.textContent  = `${hSym}${hTotal.toFixed(2)}`;
+    heroEl.textContent  = `${hSym}${fmtNum(hTotal)}`;
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
+    heroIsPrimary = heroCode === primaryCode;
   }
+
+
+  // Progress bar
+  const paidCount = list.filter(e => e.checked).length;
+  const pct = n > 0 ? Math.round(paidCount / n * 100) : 0;
+  const progText = document.getElementById('scProgText');
+  const progFill = document.getElementById('scProgFill');
+  const progPct  = document.getElementById('scProgPct');
+  if (progText) progText.textContent = `${paidCount} of ${n} paid`;
+  if (progFill) progFill.style.width = `${pct}%`;
+  if (progPct) {
+    progPct.textContent  = pct === 100 ? '✓ 100%' : `${pct}%`;
+    progPct.style.color  = pct === 100 ? '#16a34a' : pct > 0 ? 'var(--accent)' : 'var(--muted)';
+  }
+
+  // Stats — paid vs due amounts in primary currency
+  let paidBase = 0, dueBase = 0;
+  list.forEach(e => {
+    const cur = getCatCurrency(e.category);
+    const amt = effectiveAmount(e);
+    const b   = toBase(amt, cur.code) ?? (cur.code === primaryCode ? amt : 0);
+    if (e.checked) paidBase += b; else dueBase += b;
+  });
+  const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 100000
+    ? `${primarySym}${(v / 1000).toFixed(0)}k`
+    : `${primarySym}${Math.round(v).toLocaleString('en-US')}`;
+  const statItems = document.getElementById('scStatItems');
+  const statCats  = document.getElementById('scStatCats');
+  if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
+  if (statCats)  statCats.textContent  = n > 0 ? fmtStat(dueBase)  : '—';
 
   updateCardMenu(earned, totalAll);
 }
@@ -684,6 +817,8 @@ function updateCardMenu(earned, totalAll) {
   }
   if (totalAll > 0) {
     rows.push(`<button class="card-menu-item" id="cmMoveTo">Move to…</button>`);
+    rows.push(`<button class="card-menu-item" id="cmDuplicateTo">Duplicate to…</button>`);
+    rows.push(`<button class="card-menu-item cm-danger" id="cmDeleteMonth">Delete month…</button>`);
   }
   menu.innerHTML = rows.join('');
   const close = () => menu.classList.add('hidden');
@@ -691,6 +826,8 @@ function updateCardMenu(earned, totalAll) {
   menu.querySelector('#cmEditIncome')?.addEventListener('click',   () => { close(); openIncomeModal(); });
   menu.querySelector('#cmToggleDone')?.addEventListener('click',   () => { close(); toggleMonthDone(); });
   menu.querySelector('#cmMoveTo')?.addEventListener('click',       () => { close(); openMoveModal(); });
+  menu.querySelector('#cmDuplicateTo')?.addEventListener('click',  () => { close(); openDuplicateMonthModal(); });
+  menu.querySelector('#cmDeleteMonth')?.addEventListener('click',  () => { close(); openDeleteMonthConfirm(); });
 }
 
 
@@ -869,11 +1006,127 @@ function renderItemsBody(items, container) {
   }
 }
 
+/* ─── Group Detail Screen ────────────────────────────────── */
+function showGroupDetail(prefix, catIds) {
+  currentDetailGroupPrefix = prefix;
+  currentDetailGroupCatIds = [...catIds];
+  renderGroupDetailView();
+  document.getElementById('groupDetailView').classList.add('open');
+}
+
+function hideGroupDetail() {
+  document.getElementById('groupDetailView').classList.remove('open');
+  currentDetailGroupPrefix = null;
+  currentDetailGroupCatIds = [];
+}
+
+function renderGroupDetailView() {
+  if (!currentDetailGroupPrefix) return;
+  document.getElementById('groupDetailName').textContent = currentDetailGroupPrefix;
+  const body = document.getElementById('groupDetailBody');
+  body.innerHTML = '';
+  const monthExpenses = getMonthExpenses();
+  const primaryCode   = settings.currency.code;
+  const primarySym    = settings.currency.symbol;
+
+  currentDetailGroupCatIds.forEach(catId => {
+    const cat = getCat(catId);
+    if (!cat) return;
+    const items     = monthExpenses.filter(e => e.category === catId);
+    const total     = items.filter(e => !e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
+    const paidTotal = items.filter(e =>  e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
+    const paidCount = items.filter(e =>  e.checked).length;
+    const grandTotal = total + paidTotal;
+    const sublabel   = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
+    const leftHtml   = total > 0
+      ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
+      : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+    const { code: catCode } = getCatCurrency(catId);
+    const baseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
+    const convHtml  = baseTotal != null ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(baseTotal)}</div>` : '';
+
+    const tile = document.createElement('div');
+    tile.className = 'list-tile';
+    tile.innerHTML = `
+      <div class="list-tile-hdr">
+        <div class="cat-icon-box" style="background:${cat.color}">
+          <span class="cat-icon-letter">${escHtml(sublabel.charAt(0).toUpperCase())}</span>
+        </div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name">
+            <span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
+            <svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+        </div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtCat(grandTotal, catId)}</div>
+          ${leftHtml}${convHtml}
+        </div>
+      </div>`;
+    tile.querySelector('.list-tile-hdr').addEventListener('click', () => showCategoryDetail(catId));
+    body.appendChild(tile);
+  });
+}
+
+/* ─── Category Detail Screen ─────────────────────────────── */
+function showCategoryDetail(catId) {
+  currentDetailCatId = catId;
+  renderDetailView();
+  document.getElementById('categoryDetailView').classList.add('open');
+}
+
+function hideCategoryDetail() {
+  document.getElementById('categoryDetailView').classList.remove('open');
+  currentDetailCatId = null;
+}
+
+function renderDetailView() {
+  if (!currentDetailCatId) return;
+  const catId = currentDetailCatId;
+  const cat   = getCat(catId);
+  const items = getMonthExpenses().filter(e => e.category === catId);
+
+  // Header
+  const iconEl = document.getElementById('detailCatIcon');
+  iconEl.textContent   = cat?.name?.charAt(0)?.toUpperCase() ?? '?';
+  iconEl.style.background = cat?.color ?? 'var(--accent)';
+  document.getElementById('detailCatName').textContent = cat?.name ?? '';
+
+  // Stat bar
+  const unpaid    = items.filter(e => !e.checked);
+  const paid      = items.filter(e =>  e.checked);
+  const leftAmt   = unpaid.reduce((s, e) => s + effectiveAmount(e), 0);
+  const grandAmt  = items.reduce((s, e) => s + effectiveAmount(e), 0);
+  const bar = document.getElementById('detailStatBar');
+  if (paid.length === items.length && items.length > 0) {
+    bar.innerHTML = `<span class="detail-stat-amt" style="color:#16a34a">✓ All paid</span>
+      <span class="detail-stat-sub">${fmtCat(grandAmt, catId)} total</span>`;
+  } else {
+    bar.innerHTML = `<span class="detail-stat-amt">${fmtCat(leftAmt, catId)}</span>
+      <span class="detail-stat-sub">left · ${paid.length}/${items.length} paid</span>`;
+  }
+
+  // Items — wrapped in a rounded card matching the list view
+  const body = document.getElementById('detailBody');
+  body.innerHTML = '';
+  if (items.length === 0) {
+    body.innerHTML = `<div class="empty-state"><p>No allocations</p><span>Tap + to add one</span></div>`;
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'list-tile';
+  body.appendChild(card);
+  renderItemsBody(items, card);
+}
+
 function renderListView() {
   const container = document.getElementById('expenseList');
   const list = getMonthExpenses();
 
+  const sectionHdr = document.querySelector('.list-section-hdr');
   if (list.length === 0) {
+    if (sectionHdr) sectionHdr.style.display = 'none';
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 9h8M8 13h5"/></svg></div>
@@ -882,6 +1135,10 @@ function renderListView() {
       </div>`;
     return;
   }
+  if (sectionHdr) sectionHdr.style.display = '';
+
+  const primaryCode = settings.currency.code;
+  const primarySym  = settings.currency.symbol;
 
   // Group expenses by category
   const byCat = {};
@@ -921,16 +1178,18 @@ function renderListView() {
   });
   topLevel.sort((a, b) => a.sortKey - b.sortKey || b.total - a.total);
 
-  // When navigating to a new month: reset expand state and pre-expand top item
+  // When navigating to a new month: restore saved expand state, or default to first item
   const monthKey = `${currentYear}-${currentMonth}`;
   if (listViewMonth !== monthKey) {
     listViewMonth = monthKey;
-    expandedListCats.clear();
-    expandedListGroups.clear();
-    if (topLevel.length > 0) {
-      const top = topLevel[0];
-      if (top.type === 'group') expandedListGroups.add(top.prefix);
-      else expandedListCats.add(top.catId);
+    if (!loadExpandState()) {
+      expandedListCats.clear(); expandedListGroups.clear();
+      if (topLevel.length > 0) {
+        const top = topLevel[0];
+        if (top.type === 'group') expandedListGroups.add(top.prefix);
+        else expandedListCats.add(top.catId);
+      }
+      saveExpandState();
     }
   }
 
@@ -942,96 +1201,96 @@ function renderListView() {
     const tile = document.createElement('div');
 
     if (item.type === 'group') {
-      const isExpanded = expandedListGroups.has(item.prefix);
       tile.className = 'list-tile list-tile-grp';
       tile.dataset.dragId = `grp__${item.prefix}`;
       tile.dataset.catIds = JSON.stringify(item.catIds);
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      const grpDoneFmt = fmtGroupDoneTotal(item.catIds, byCat);
-      const grpDoneBadge = grpDoneFmt ? `<span class="done-badge">${grpDoneFmt}</span>` : '';
-      const grpCount = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isExpanded)}<div class="list-hdr-name">${escHtml(item.prefix)}<span class="item-count">(${grpCount})</span>${grpDoneBadge}</div><div class="list-hdr-total">${fmtGroupTotal(item.catIds, byCat)}</div>`;
+      const grpFirstCat = getCat(item.catIds[0]);
+      const grpColor = grpFirstCat?.color || 'var(--accent)';
+      const grpPaid      = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked).length || 0), 0);
+      const grpTotal     = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      const grpUnpaidAmt = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
+      const grpLeftHtml  = grpUnpaidAmt > 0
+        ? `<div class="list-hdr-left">${fmtGroupTotal(item.catIds, byCat)} left</div>`
+        : grpPaid > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+      const grpBaseTotal = item.catIds.reduce((s, id) => {
+        if (!byCat[id]) return s;
+        const { code } = getCatCurrency(id);
+        const amt = (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+        const b = toBase(amt, code);
+        return b != null ? s + b : s;
+      }, 0);
+      const grpHasNonPrimary = item.catIds.some(id => getCatCurrency(id).code !== primaryCode);
+      const grpConvHtml = grpHasNonPrimary && grpBaseTotal > 0
+        ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(grpBaseTotal)}</div>` : '';
+      hdr.innerHTML = `
+        <div class="cat-icon-box" style="background:${grpColor}">
+          <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
+          ${DND_HANDLE}
+        </div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
+        </div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtGroupGrandTotal(item.catIds, byCat)}</div>
+          ${grpLeftHtml}
+          ${grpConvHtml}
+        </div>
+        <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>`;
       tile.appendChild(hdr);
 
-      const grpBody = document.createElement('div');
-      grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
-      tile.appendChild(grpBody);
-
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle')) return;
-        const nowExpanded = expandedListGroups.has(item.prefix);
-        if (nowExpanded) expandedListGroups.delete(item.prefix);
-        else expandedListGroups.add(item.prefix);
-        grpBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
+        showGroupDetail(item.prefix, item.catIds);
       });
-
-      const sortedSubs = item.catIds
-        .filter(id => byCat[id])
-        .sort((a, b) => (getCat(a).sort_order ?? 99999) - (getCat(b).sort_order ?? 99999));
-
-      sortedSubs.forEach(catId => {
-        const cat = getCat(catId);
-        const { items, total } = byCat[catId];
-        const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
-        const isCatExp = expandedListCats.has(catId);
-
-        const subTile = document.createElement('div');
-        subTile.className = 'list-sub-tile';
-        grpBody.appendChild(subTile);
-
-        const paidAmt = byCat[catId]?.paidTotal || 0;
-        const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, catId)}</span>` : '';
-        const sh = document.createElement('div');
-        sh.className = 'list-sub-hdr';
-        sh.innerHTML = `${chevHTML(!isCatExp)}<div class="list-hdr-name list-sub-name">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total list-sub-total">${fmtCat(total, catId)}</div>`;
-        subTile.appendChild(sh);
-
-        const itemsBody = document.createElement('div');
-        itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
-        subTile.appendChild(itemsBody);
-
-        sh.addEventListener('click', () => {
-          const nowExpanded = expandedListCats.has(catId);
-          if (nowExpanded) expandedListCats.delete(catId);
-          else expandedListCats.add(catId);
-          itemsBody.classList.toggle('collapsed', nowExpanded);
-          sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-        });
-
-        renderItemsBody(items, itemsBody);
-      });
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
 
     } else {
       const cat = getCat(item.catId);
-      const { items, total } = byCat[item.catId];
-      const isCatExp = expandedListCats.has(item.catId);
+      const { items, total, paidTotal } = byCat[item.catId];
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
-      const paidAmt = byCat[item.catId]?.paidTotal || 0;
-      const doneBadge = paidAmt > 0 ? `<span class="done-badge">${fmtCat(paidAmt, item.catId)}</span>` : '';
+      const paidCount  = items.filter(e => e.checked).length;
+      const grandTotal = total + paidTotal;
+      const leftHtml   = total > 0
+        ? `<div class="list-hdr-left">${fmtCat(total, item.catId)} left</div>`
+        : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+      const { code: catCode } = getCatCurrency(item.catId);
+      const catBaseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
+      const catConvHtml  = catBaseTotal != null
+        ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(catBaseTotal)}</div>` : '';
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      hdr.innerHTML = `${DND_HANDLE}${chevHTML(!isCatExp)}<div class="list-hdr-name">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}<span class="item-count">(${items.length})</span>${doneBadge}</div><div class="list-hdr-total">${fmtCat(total, item.catId)}</div>`;
+      hdr.innerHTML = `
+        <div class="cat-icon-box" style="background:${cat.color}">
+          <span class="cat-icon-letter">${escHtml(cat.name.charAt(0).toUpperCase())}</span>
+          ${DND_HANDLE}
+        </div>
+        <div class="list-tile-main">
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+        </div>
+        <div class="list-hdr-right">
+          <div class="list-hdr-total">${fmtCat(grandTotal, item.catId)}</div>
+          ${leftHtml}
+          ${catConvHtml}
+        </div>
+        <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>`;
       tile.appendChild(hdr);
 
-      const itemsBody = document.createElement('div');
-      itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
-      tile.appendChild(itemsBody);
-
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle')) return;
-        const nowExpanded = expandedListCats.has(item.catId);
-        if (nowExpanded) expandedListCats.delete(item.catId);
-        else expandedListCats.add(item.catId);
-        itemsBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
+        showCategoryDetail(item.catId);
       });
-
-      renderItemsBody(items, itemsBody);
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
     }
 
     container.appendChild(tile);
@@ -1041,21 +1300,138 @@ function renderListView() {
   setupDrag(container, () => [...container.querySelectorAll(':scope > .list-tile')], saveCategoryOrder);
 }
 
+async function handleRenameCategory(catId, newName) {
+  const idx = categories.findIndex(c => c.id === catId);
+  if (idx === -1) return;
+  const old = categories[idx];
+  categories[idx] = { ...old, name: newName };
+  renderAll();
+  try {
+    const { error } = await sb.from('categories').update({ name: newName }).eq('id', catId);
+    if (error) throw error;
+  } catch (err) {
+    categories[idx] = old;
+    renderAll(); showToast('Could not rename — ' + err.message, true);
+  }
+}
+
+/* ─── Installment modal (expense-level) ─────────────────── */
+function openInstallmentModal(expenseId) {
+  pendingInstallmentCatId = expenseId; // reuse variable; holds expense id
+  const e = expenses.find(x => x.id === expenseId);
+  document.getElementById('installmentCatName').textContent = e?.description ?? '';
+  document.getElementById('installmentTotal').value   = e?.installment_total   || '';
+  document.getElementById('installmentCurrent').value = e?.installment_current || '';
+  document.getElementById('installmentDueDay').value  = e?.installment_due_day || '';
+  document.getElementById('installmentError').classList.add('hidden');
+  document.getElementById('installmentClear').style.display = e?.installment_total ? '' : 'none';
+  openModal('installmentModal');
+}
+async function handleInstallmentSave() {
+  const id     = pendingInstallmentCatId;
+  const total  = parseInt(document.getElementById('installmentTotal').value);
+  const current= parseInt(document.getElementById('installmentCurrent').value);
+  const dueDay = parseInt(document.getElementById('installmentDueDay').value) || null;
+  const errEl  = document.getElementById('installmentError');
+  if (!total || total < 2)   { errEl.textContent = 'Enter total installments (min 2).'; errEl.classList.remove('hidden'); return; }
+  if (!current || current < 1 || current > total) { errEl.textContent = 'Current installment must be between 1 and total.'; errEl.classList.remove('hidden'); return; }
+  const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...expenses[idx] };
+  expenses[idx] = { ...expenses[idx], installment_total: total, installment_current: current, installment_due_day: dueDay };
+  closeModal('installmentModal'); renderAll(); showToast('Installments saved');
+  try { await sb.from('expenses').update({ installment_total: total, installment_current: current, installment_due_day: dueDay }).eq('id', id); }
+  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not save — ' + err.message, true); }
+}
+async function handleInstallmentClear() {
+  const id  = pendingInstallmentCatId;
+  const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
+  const old = { ...expenses[idx] };
+  expenses[idx] = { ...expenses[idx], installment_total: null, installment_current: null, installment_due_day: null };
+  closeModal('installmentModal'); renderAll(); showToast('Installments removed');
+  try { await sb.from('expenses').update({ installment_total: null, installment_current: null, installment_due_day: null }).eq('id', id); }
+  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not remove — ' + err.message, true); }
+}
+
+/* ─── Category context menu ─────────────────────────────── */
+async function moveTileInOrder(dragId, direction) {
+  const cont  = document.getElementById('expenseList');
+  const tiles = [...cont.querySelectorAll(':scope > .list-tile')];
+  const idx   = tiles.findIndex(t => t.dataset.dragId === dragId);
+  if (idx === -1) return;
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= tiles.length) return;
+  if (direction === 'up') cont.insertBefore(tiles[idx], tiles[swapIdx]);
+  else cont.insertBefore(tiles[swapIdx], tiles[idx]);
+  const newOrder = [...cont.querySelectorAll(':scope > .list-tile')].map(t => t.dataset.dragId);
+  await saveCategoryOrder(newOrder);
+}
+
+function openCatCtxMenu(btn, catId) {
+  const cat    = getCat(catId);
+  const tile   = btn.closest('[data-drag-id]');
+  const cont   = document.getElementById('expenseList');
+  const tiles  = [...cont.querySelectorAll(':scope > .list-tile')];
+  const idx    = tile ? tiles.indexOf(tile) : -1;
+  const dragId = tile?.dataset.dragId;
+  const canUp   = idx > 0;
+  const canDown = idx !== -1 && idx < tiles.length - 1;
+
+  document.getElementById('catOptionsTitle').textContent = cat?.name ?? '';
+  document.getElementById('cosAddLabel').textContent = `Add to ${cat?.name ?? 'category'}`;
+  document.getElementById('cosMoveUp').classList.toggle('hidden', !canUp);
+  document.getElementById('cosMoveDown').classList.toggle('hidden', !canDown);
+
+  // Swap listeners by cloning to clear old ones
+  ['cosAdd','cosRename','cosMoveUp','cosMoveDown'].forEach(id => {
+    const el = document.getElementById(id);
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+  });
+
+  document.getElementById('cosAdd').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); openAddModal(); selectCategory(catId);
+  });
+  document.getElementById('cosRename').addEventListener('click', () => {
+    closeModal('catOptionsSheet');
+    const current = cat?.name ?? '';
+    const next = prompt('Rename category:', current);
+    if (next && next.trim() && next.trim() !== current) handleRenameCategory(catId, next.trim());
+  });
+  document.getElementById('cosMoveUp').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); moveTileInOrder(dragId, 'up');
+  });
+  document.getElementById('cosMoveDown').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); moveTileInOrder(dragId, 'down');
+  });
+
+  openModal('catOptionsSheet');
+}
+
 function buildItem(e) {
   const cat = getCat(e.category);
   const el = document.createElement('div');
   el.className = 'expense-item' + (e.checked ? ' checked' : '');
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
+  let amtSub = '';
+  if (e.checked) {
+    amtSub = `<div class="expense-amt-sub expense-amt-paid">${e.installment_complete ? '✓ installment complete' : '✓ paid'}</div>`;
+  } else if (cat.shared) {
+    amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
+  }
   el.innerHTML = `
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
     <div class="expense-info">
       <div class="expense-desc">${escHtml(e.description)}</div>
+      ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
-    <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+    <div class="expense-amt-right">
+      <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+      ${amtSub}
+    </div>
     <button class="item-more-btn" aria-label="More options">
       <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
     </button>`;
@@ -1236,6 +1612,14 @@ function showFormError(msg) {
 }
 
 
+function clearInstallmentInline() {
+  document.getElementById('inlineInstallTotal').value   = '';
+  document.getElementById('inlineInstallCurrent').value = '';
+  document.getElementById('inlineInstallDue').value     = '';
+  document.getElementById('installmentInline').classList.add('hidden');
+  document.getElementById('installmentToggleBtn').checked = false;
+}
+
 function openAddModal() {
   buildCategoryGrid();
   selectedBank     = null; buildBankGrid(null);
@@ -1246,9 +1630,9 @@ function openAddModal() {
   document.getElementById('descInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  clearInstallmentInline();
   clearFormError();
   openModal('expenseModal');
-  setTimeout(() => document.getElementById('amountInput').focus(), 300);
 }
 
 function openEditModal(id) {
@@ -1261,6 +1645,16 @@ function openEditModal(id) {
   document.getElementById('amountInput').value = parseFloat(e.amount).toFixed(2);
   document.getElementById('descInput').value   = e.description;
   document.getElementById('editId').value      = e.id;
+  // Populate installment fields if present
+  if (e.installment_total) {
+    document.getElementById('inlineInstallTotal').value   = e.installment_total;
+    document.getElementById('inlineInstallCurrent').value = e.installment_current || '';
+    document.getElementById('inlineInstallDue').value     = e.installment_due_day || '';
+    document.getElementById('installmentInline').classList.remove('hidden');
+    document.getElementById('installmentToggleBtn').checked = true;
+  } else {
+    clearInstallmentInline();
+  }
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   clearFormError();
   openModal('expenseModal');
@@ -1276,17 +1670,34 @@ async function handleFormSubmit(ev) {
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
   if (!desc)                   { showFormError('Add a label so you know what this is for.'); return; }
 
+  // Read optional inline installment fields
+  const installInlineVisible = !document.getElementById('installmentInline').classList.contains('hidden');
+  const installTotal   = installInlineVisible ? parseInt(document.getElementById('inlineInstallTotal').value,   10) || null : null;
+  const installCurrent = installInlineVisible ? parseInt(document.getElementById('inlineInstallCurrent').value, 10) || null : null;
+  const installDue     = installInlineVisible ? parseInt(document.getElementById('inlineInstallDue').value,     10) || null : null;
+  if (installInlineVisible && installTotal) {
+    if (!installCurrent || installCurrent < 1 || installCurrent > installTotal) {
+      showFormError('Enter a valid current installment number (1–' + installTotal + ').'); return;
+    }
+  }
+  const installFields = {
+    installment_total:   installTotal   || null,
+    installment_current: installCurrent || null,
+    installment_due_day: installDue     || null,
+    installment_complete: false,
+  };
+
   const date = monthStartISO();
   closeModal('expenseModal');
 
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, date };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields };
     renderAll();
-    showToast('Updated'); // optimistic — fires the moment the modal closes
+    showToast('Updated');
     try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, date });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields });
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -1295,11 +1706,11 @@ async function handleFormSubmit(ev) {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder, ...installFields });
     renderAll();
-    showToast('Added'); // optimistic — fires the moment the modal closes
+    showToast('Added');
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
     } catch (err) {
@@ -1311,6 +1722,16 @@ async function handleFormSubmit(ev) {
 
 /* ─── Move Month Modal ──────────────────────────────────── */
 function openMoveModal() {
+  moveModalMode = 'move';
+  let y = currentYear, m = currentMonth + 1;
+  if (m > 11) { m = 0; y++; }
+  movePickerYear = y; movePickerMonth = m;
+  updateMovePickerUI();
+  openModal('moveModal');
+}
+
+function openDuplicateMonthModal() {
+  moveModalMode = 'duplicate';
   let y = currentYear, m = currentMonth + 1;
   if (m > 11) { m = 0; y++; }
   movePickerYear = y; movePickerMonth = m;
@@ -1319,13 +1740,27 @@ function openMoveModal() {
 }
 
 function updateMovePickerUI() {
-  document.getElementById('moveMonthLabel').textContent = getMonthLabel(movePickerYear, movePickerMonth);
+  const isDup = moveModalMode === 'duplicate';
+  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : 'Move to…';
+
+  const sel = document.getElementById('moveMonthSelect');
+  sel.innerHTML = '';
+  const now = new Date();
+  for (let i = -12; i <= 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const opt = document.createElement('option');
+    opt.value = `${y}-${m}`;
+    opt.textContent = getMonthLabel(y, m);
+    sel.appendChild(opt);
+  }
+  sel.value = `${movePickerYear}-${movePickerMonth}`;
+
   const isSame     = movePickerYear === currentYear && movePickerMonth === currentMonth;
-  const count      = getMonthExpenses().length;
   const confirmBtn = document.getElementById('confirmMoveBtn');
-  confirmBtn.disabled    = isSame;
-  confirmBtn.style.opacity = isSame ? '0.35' : '';
-  confirmBtn.textContent = `Move ${count} ${count === 1 ? 'allocation' : 'allocations'}`;
+  confirmBtn.disabled      = isSame && !isDup;
+  confirmBtn.style.opacity = (isSame && !isDup) ? '0.35' : '';
+  confirmBtn.textContent   = isDup ? 'Duplicate' : 'Move';
 }
 
 async function handleMoveConfirm() {
@@ -1358,6 +1793,64 @@ async function handleMoveConfirm() {
     currentMonth = srcMonth;
     renderAll();
     showToast('Could not move — ' + err.message, true);
+  }
+}
+
+async function handleDuplicateMonthConfirm() {
+  const list = getMonthExpenses();
+  if (!list.length) { closeModal('moveModal'); return; }
+
+  const targetYear  = movePickerYear;
+  const targetMonth = movePickerMonth;
+  const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+  const monthDelta  = (targetYear * 12 + targetMonth) - (currentYear * 12 + currentMonth);
+
+  closeModal('moveModal');
+
+  const copies = list.flatMap(e => {
+    let installCurrent = e.installment_current || null;
+    let installComplete = false;
+    if (e.installment_total && e.installment_current) {
+      const next = e.installment_current + monthDelta;
+      if (next < 1) return []; // no earlier installment — skip
+      installComplete = next > e.installment_total; // only when it would exceed (e.g. 6→7 on a /6)
+      installCurrent  = Math.min(e.installment_total, next);
+    }
+    return [{
+      user_id: e.user_id, profile_id: e.profile_id,
+      amount: e.amount, description: e.description,
+      bank: e.bank, category: e.category,
+      date: targetDate, note: e.note,
+      sort_order: e.sort_order, checked: false,
+      installment_total:    e.installment_total   || null,
+      installment_current:  installCurrent,
+      installment_due_day:  e.installment_due_day || null,
+      installment_complete: installComplete,
+    }];
+  });
+
+  const tmpIds = copies.map((_, i) => 'tmp_dup_' + Date.now() + '_' + i);
+  const optimistic = copies.map((c, i) => ({ ...c, id: tmpIds[i] }));
+  const prevExpenses = [...expenses];
+
+  currentYear  = targetYear;
+  currentMonth = targetMonth;
+  saveViewMonth();
+  expenses = [...expenses, ...optimistic];
+  renderAll();
+  showToast(`Duplicated ${list.length} expense${list.length !== 1 ? 's' : ''} to ${getMonthLabel(targetYear, targetMonth)}`);
+
+  try {
+    const { data: rows, error } = await sb.from('expenses').insert(copies).select();
+    if (error) throw error;
+    tmpIds.forEach(tid => { expenses = expenses.filter(e => e.id !== tid); });
+    rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
+    renderAll();
+  } catch (err) {
+    expenses     = prevExpenses;
+    currentYear  = currentYear; // already navigated
+    renderAll();
+    showToast('Could not duplicate — ' + err.message, true);
   }
 }
 
@@ -1439,7 +1932,58 @@ async function handleIncomeSubmit(e) {
 }
 
 /* ─── Delete ────────────────────────────────────────────── */
-function openDeleteConfirm(id) { pendingDeleteId = id; openModal('deleteModal'); }
+let pendingDeleteMonth = false;
+
+function setDeleteModalContent(title, desc, btnLabel) {
+  const t = document.getElementById('deleteModalTitle');
+  const d = document.getElementById('deleteModalDesc');
+  const b = document.getElementById('confirmDelete');
+  if (t) t.textContent = title;
+  if (d) d.textContent = desc;
+  if (b) b.textContent = btnLabel;
+}
+
+function openDeleteConfirm(id) {
+  pendingDeleteMonth = false;
+  setDeleteModalContent('Remove allocation?', 'This action cannot be undone.', 'Remove');
+  pendingDeleteId = id;
+  openModal('deleteModal');
+}
+
+function openDeleteMonthConfirm() {
+  const monthExpenses = getMonthExpenses();
+  const n = monthExpenses.length;
+  const label = getMonthLabel(currentYear, currentMonth);
+  pendingDeleteMonth = true;
+  pendingDeleteId = null;
+  setDeleteModalContent(
+    `Delete ${label}?`,
+    `This will permanently remove all ${n} expense${n === 1 ? '' : 's'} in ${label}. This cannot be undone.`,
+    'Delete all'
+  );
+  openModal('deleteModal');
+}
+
+async function handleDeleteMonth() {
+  const toDelete = getMonthExpenses();
+  if (toDelete.length === 0) return;
+  const saved = [...toDelete];
+  expenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return !(d.getFullYear() === currentYear && d.getMonth() === currentMonth);
+  });
+  closeModal('deleteModal');
+  pendingDeleteMonth = false;
+  renderAll();
+  showToast(`Deleted ${saved.length} expense${saved.length === 1 ? '' : 's'}`);
+  try {
+    await Promise.all(saved.map(e => dbRemoveExpense(e.id)));
+  } catch (err) {
+    saved.forEach(e => expenses.push(e));
+    renderAll();
+    showToast('Could not delete — ' + err.message, true);
+  }
+}
 
 /* ─── Item Options Sheet ────────────────────────────────── */
 let pendingOptionsId = null;
@@ -1450,7 +1994,28 @@ function openItemOptions(id) {
   openModal('itemOptionsModal');
 }
 
+async function duplicateExpense(id) {
+  const src = expenses.find(e => e.id === id); if (!src) return;
+  const tmp = 'tmp_' + Date.now();
+  const catItems = expenses.filter(e => e.category === src.category && !e.checked);
+  const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
+  const copy = { ...src, id: tmp, checked: false, sort_order: newOrder };
+  expenses.unshift(copy);
+  renderAll();
+  showToast('Duplicated');
+  try {
+    const payload = { user_id: src.user_id, profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder, installment_total: src.installment_total || null, installment_current: src.installment_current || null, installment_due_day: src.installment_due_day || null };
+    const row = await dbSaveExpense(payload);
+    const idx = expenses.findIndex(e => e.id === tmp);
+    if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+  } catch (err) {
+    expenses = expenses.filter(e => e.id !== tmp);
+    renderAll(); showToast('Could not duplicate — ' + err.message, true);
+  }
+}
+
 async function handleConfirmDelete() {
+  if (pendingDeleteMonth) { await handleDeleteMonth(); return; }
   if (!pendingDeleteId) return;
   const id      = pendingDeleteId;
   const deleted = expenses.find(e => e.id === id);
@@ -1486,7 +2051,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -1517,16 +2082,37 @@ function bindEvents() {
     saveViewMonth(); renderAll();
   });
   document.getElementById('nextMonth').addEventListener('click', () => {
-    const now = new Date();
-    if (currentYear === now.getFullYear() && currentMonth === now.getMonth()) return;
     currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     saveViewMonth(); renderAll();
   });
 
+  // Detail screen
+  document.getElementById('groupDetailBackBtn').addEventListener('click', hideGroupDetail);
+  document.getElementById('detailBackBtn').addEventListener('click', hideCategoryDetail);
+  document.getElementById('detailCatOptsBtn').addEventListener('click', ev => {
+    if (currentDetailCatId) openCatCtxMenu(ev.currentTarget, currentDetailCatId);
+  });
+
   // Allocation form
-  document.getElementById('openAdd').addEventListener('click', openAddModal);
+  document.getElementById('openAdd').addEventListener('click', () => {
+    openAddModal();
+    if (currentDetailCatId) selectCategory(currentDetailCatId);
+    document.getElementById('amountInput').focus();
+  });
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
+  document.getElementById('installmentToggleBtn').addEventListener('change', function() {
+    const inline = document.getElementById('installmentInline');
+    if (this.checked) {
+      inline.classList.remove('hidden');
+      document.getElementById('inlineInstallTotal').focus();
+    } else {
+      inline.classList.add('hidden');
+      document.getElementById('inlineInstallTotal').value   = '';
+      document.getElementById('inlineInstallCurrent').value = '';
+      document.getElementById('inlineInstallDue').value     = '';
+    }
+  });
   document.getElementById('amountInput').addEventListener('input', clearFormError);
   document.getElementById('descInput').addEventListener('input', clearFormError);
 
@@ -1565,19 +2151,31 @@ function bindEvents() {
   document.getElementById('itemOptionsEdit').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openEditModal(id);
   });
+  document.getElementById('itemOptionsDuplicate').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); duplicateExpense(id);
+  });
+  document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
+  });
   document.getElementById('itemOptionsDelete').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
   });
   document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
+  document.getElementById('catOptionsCancel').addEventListener('click', () => closeModal('catOptionsSheet'));
+
+  // Installment modal
+  document.getElementById('installmentSave').addEventListener('click', handleInstallmentSave);
+  document.getElementById('installmentClear').addEventListener('click', handleInstallmentClear);
+  document.getElementById('installmentCancel').addEventListener('click', () => closeModal('installmentModal'));
 
   // Settings
-  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); openModal('settingsModal'); });
+  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); renderRates(); openModal('settingsModal'); });
   document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
   document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
   // Profile trigger + sheet
-  document.getElementById('profileTrigger').addEventListener('click', () => { renderProfileBar(); openModal('profileSheet'); });
+  // profileSheet is still used by Settings → manage people (profileSheetAdd/Cancel)
   document.getElementById('profileSheetCancel').addEventListener('click', () => closeModal('profileSheet'));
   document.getElementById('profileSheetAdd').addEventListener('click', () => { closeModal('profileSheet'); openAddProfileModal(); });
 
@@ -1610,20 +2208,19 @@ function bindEvents() {
     } catch (err) { showToast('Error: ' + err.message, true); }
   });
 
-  // Move modal
-  document.getElementById('movePrevMonth').addEventListener('click', () => {
-    movePickerMonth--; if (movePickerMonth < 0) { movePickerMonth = 11; movePickerYear--; }
+  // Move / Duplicate modal
+  document.getElementById('moveMonthSelect').addEventListener('change', e => {
+    const [y, m] = e.target.value.split('-').map(Number);
+    movePickerYear = y; movePickerMonth = m;
     updateMovePickerUI();
   });
-  document.getElementById('moveNextMonth').addEventListener('click', () => {
-    movePickerMonth++; if (movePickerMonth > 11) { movePickerMonth = 0; movePickerYear++; }
-    updateMovePickerUI();
+  document.getElementById('confirmMoveBtn').addEventListener('click', () => {
+    moveModalMode === 'duplicate' ? handleDuplicateMonthConfirm() : handleMoveConfirm();
   });
-  document.getElementById('confirmMoveBtn').addEventListener('click', handleMoveConfirm);
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'moveModal', 'profileSheet'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
