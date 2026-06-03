@@ -533,11 +533,6 @@ body.modal-open { overflow: hidden; }
   font-size: 19px; font-weight: 800; color: rgba(255,255,255,0.92);
   pointer-events: none; position: relative; z-index: 0;
 }
-.cat-icon-box .drag-handle {
-  position: absolute; inset: 0; opacity: 0;
-  width: 100%; height: 100%;
-  border-radius: 13px; z-index: 1;
-}
 
 /* Middle: name + count-below stacked column */
 .list-tile-main { flex: 1; min-width: 0; }
@@ -612,20 +607,6 @@ body.modal-open { overflow: hidden; }
 /* Indented items under sub-category headers */
 .cat-items-indented .expense-item { margin-left: 10px; }
 
-/* ─── Drag & Drop ──────────────────────────────────────────── */
-.drag-handle {
-  width: 44px; height: 44px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  cursor: grab; color: var(--muted); opacity: 0.45;
-  touch-action: none; user-select: none; border-radius: 8px;
-  transition: opacity var(--t);
-}
-.drag-handle:active { cursor: grabbing; opacity: 0.8; }
-.drag-source { opacity: 0.25 !important; pointer-events: none !important; }
-.drag-indicator {
-  height: 2px; background: var(--accent); border-radius: 1px;
-  margin: 2px 0; pointer-events: none; flex-shrink: 0;
-}
 
 /* Allocation item */
 .expense-item {
@@ -636,7 +617,7 @@ body.modal-open { overflow: hidden; }
 }
 .expense-item:active { transform: scale(0.985); }
 
-/* Per-item checkbox — 44×44 touch target; also drag initiation zone */
+/* Per-item checkbox — 44×44 touch target */
 .item-check-btn {
   width: 44px; height: 44px; flex-shrink: 0;
   border-radius: 50%; border: none;

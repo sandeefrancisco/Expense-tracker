@@ -91,7 +91,6 @@ function loadExpandState() {
   } catch { return false; }
 }
 
-const DND_HANDLE = `<div class="drag-handle" aria-label="Drag to reorder"><svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><circle cx="5" cy="3.5" r="1.4"/><circle cx="11" cy="3.5" r="1.4"/><circle cx="5" cy="7.5" r="1.4"/><circle cx="11" cy="7.5" r="1.4"/><circle cx="5" cy="11.5" r="1.4"/><circle cx="11" cy="11.5" r="1.4"/></svg></div>`;
 
 
 /* ─── Boot ──────────────────────────────────────────────── */
@@ -837,91 +836,6 @@ function renderCategoryBars(list, total) {
     });
 }
 
-/* ─── Drag & Drop ───────────────────────────────────────────── */
-let dnd = null;
-
-function setupDrag(container, getDraggables, onReorder, handleSelector = '.drag-handle', threshold = 0) {
-  container.addEventListener('pointerdown', ev => {
-    const handle = ev.target.closest(handleSelector);
-    if (!handle) return;
-    const draggable = handle.closest('[data-drag-id]');
-    if (!draggable) return;
-    if (!getDraggables().includes(draggable)) return;
-
-    const doInitDrag = (startEv) => {
-      startEv.preventDefault();
-      startEv.stopPropagation();
-      handle.setPointerCapture(startEv.pointerId);
-
-      const rect = draggable.getBoundingClientRect();
-      const ghost = draggable.cloneNode(true);
-      Object.assign(ghost.style, {
-        position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
-        width: rect.width + 'px', margin: '0', zIndex: '9999',
-        pointerEvents: 'none', opacity: '0.95', borderRadius: '14px',
-        boxShadow: '0 12px 40px rgba(26,26,46,0.28)', transform: 'scale(1.02)',
-      });
-      document.body.appendChild(ghost);
-      draggable.classList.add('drag-source');
-
-      const indicator = document.createElement('div');
-      indicator.className = 'drag-indicator';
-
-      dnd = { draggable, ghost, indicator, container, getDraggables, onReorder,
-              offsetY: startEv.clientY - rect.top, insertBefore: null };
-
-      handle.addEventListener('pointermove', onDndMove, { passive: false });
-      handle.addEventListener('pointerup',   onDndEnd,  { once: true });
-      handle.addEventListener('pointercancel', () => {
-        if (!dnd) return;
-        dnd.ghost.remove(); dnd.indicator.remove();
-        dnd.draggable.classList.remove('drag-source');
-        dnd = null;
-      }, { once: true });
-    };
-
-    if (threshold === 0) {
-      doInitDrag(ev);
-    } else {
-      const startY = ev.clientY;
-      const onPre = (moveEv) => {
-        if (Math.abs(moveEv.clientY - startY) >= threshold) {
-          handle.removeEventListener('pointermove', onPre);
-          doInitDrag(moveEv);
-        }
-      };
-      handle.addEventListener('pointermove', onPre, { passive: false });
-      handle.addEventListener('pointerup', () => handle.removeEventListener('pointermove', onPre), { once: true });
-    }
-  });
-}
-
-function onDndMove(ev) {
-  if (!dnd) return;
-  ev.preventDefault();
-  const { ghost, indicator, container, draggable, getDraggables, offsetY } = dnd;
-  ghost.style.top = (ev.clientY - offsetY) + 'px';
-
-  const siblings = getDraggables().filter(el => el !== draggable);
-  let insertBefore = null;
-  for (const sib of siblings) {
-    const r = sib.getBoundingClientRect();
-    if (ev.clientY < r.top + r.height * 0.5) { insertBefore = sib; break; }
-  }
-  (insertBefore?.parentElement ?? container).insertBefore(indicator, insertBefore ?? null);
-  dnd.insertBefore = insertBefore;
-}
-
-function onDndEnd() {
-  if (!dnd) return;
-  const { draggable, ghost, indicator, container, getDraggables, onReorder, insertBefore } = dnd;
-  dnd = null;
-  ghost.remove();
-  indicator.remove();
-  draggable.classList.remove('drag-source');
-  container.insertBefore(draggable, insertBefore ?? null);
-  onReorder(getDraggables().map(el => el.dataset.dragId));
-}
 
 async function saveExpenseOrder(orderedIds) {
   orderedIds.forEach((id, idx) => {
@@ -972,20 +886,6 @@ function renderItemsBody(items, container) {
   }
   checked.forEach(e => container.appendChild(buildItem(e)));
 
-  if (unchecked.length > 1) {
-    setupDrag(
-      container,
-      () => [...container.querySelectorAll(':scope > .expense-item:not(.checked)')],
-      saveExpenseOrder, '.item-check-btn', 8
-    );
-  }
-  if (checked.length > 1) {
-    setupDrag(
-      container,
-      () => [...container.querySelectorAll(':scope > .expense-item.checked')],
-      saveExpenseOrder, '.item-check-btn', 8
-    );
-  }
 }
 
 function renderListView() {
@@ -1097,7 +997,6 @@ function renderListView() {
       hdr.innerHTML = `
         <div class="cat-icon-box" style="background:${grpColor}">
           <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
-          ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
@@ -1118,7 +1017,7 @@ function renderListView() {
       tile.appendChild(grpBody);
 
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
+        if (ev.target.closest('.cat-opts-btn')) return;
         const nowExpanded = expandedListGroups.has(item.prefix);
         if (nowExpanded) expandedListGroups.delete(item.prefix);
         else expandedListGroups.add(item.prefix);
@@ -1198,7 +1097,6 @@ function renderListView() {
       hdr.innerHTML = `
         <div class="cat-icon-box" style="background:${cat.color}">
           <span class="cat-icon-letter">${escHtml(cat.name.charAt(0).toUpperCase())}</span>
-          ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
@@ -1219,7 +1117,7 @@ function renderListView() {
       tile.appendChild(itemsBody);
 
       hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
+        if (ev.target.closest('.cat-opts-btn')) return;
         const nowExpanded = expandedListCats.has(item.catId);
         if (nowExpanded) expandedListCats.delete(item.catId);
         else expandedListCats.add(item.catId);
@@ -1235,8 +1133,6 @@ function renderListView() {
     container.appendChild(tile);
   });
 
-  // Setup drag-to-reorder for category tiles
-  setupDrag(container, () => [...container.querySelectorAll(':scope > .list-tile')], saveCategoryOrder);
 }
 
 async function handleRenameCategory(catId, newName) {
