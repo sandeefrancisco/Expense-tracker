@@ -212,6 +212,7 @@ body.modal-open { overflow: hidden; }
 /* Brand logo + wordmark */
 .brand { display: flex; align-items: center; gap: 9px; }
 .brand-mark { display: flex; align-items: center; flex-shrink: 0; }
+.brand-icon-img { width: 28px; height: 28px; border-radius: 7px; display: block; }
 .brand-wordmark {
   font-size: 17px; font-weight: 800; color: var(--ink);
   letter-spacing: -0.4px; font-family: 'Figtree', sans-serif;
