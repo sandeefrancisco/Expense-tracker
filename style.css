@@ -199,20 +199,23 @@ body.modal-open { overflow: hidden; }
   display: flex; flex-direction: column;
 }
 
-/* ─── Header ───────────────────────────────────────────── */
 /* ─── Header ────────────────────────────────────────────── */
 .header {
   position: sticky; top: 0; z-index: 20;
   background: var(--surface);
   height: var(--header-height);
-  display: flex; align-items: center;
-  padding: 0 4px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px 0 16px;
   border-bottom: 1px solid var(--border);
 }
-.hdr-month-nav {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 2px;
+
+/* Brand logo + wordmark */
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand-mark { display: flex; align-items: center; flex-shrink: 0; }
+.brand-wordmark {
+  font-size: 17px; font-weight: 800; color: var(--ink);
+  letter-spacing: -0.4px; font-family: 'Figtree', sans-serif;
 }
-.hdr-spacer { width: 40px; flex-shrink: 0; }
 
 /* Profile button (header legacy + bottom nav) */
 .hdr-profile-btn {
@@ -235,17 +238,6 @@ body.modal-open { overflow: hidden; }
 }
 .hdr-profile-btn svg { color: var(--muted); flex-shrink: 0; }
 
-/* Bottom nav profile button */
-.bottom-profile-btn {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px 8px 10px; border-radius: 99px;
-  border: none; background: transparent; cursor: pointer;
-  transition: background var(--t); min-height: 44px; flex-shrink: 0;
-}
-.bottom-profile-btn:active { background: var(--tint); }
-.bottom-profile-btn .hdr-avatar { width: 34px; height: 34px; font-size: 14px; }
-.bottom-profile-btn .hdr-profile-name { font-size: 15px; }
-.bottom-profile-btn svg { color: var(--muted); flex-shrink: 0; }
 
 /* Month navigation */
 .month-display { text-align: center; }
@@ -318,6 +310,19 @@ body.modal-open { overflow: hidden; }
 
 /* Horizontal rule inside summary card */
 .sc-rule { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* Month selector row inside summary card */
+.sc-month-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sc-month-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  color: var(--muted);
+}
+.sc-month-nav .month-display span {
+  font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
+}
 
 /* Stats row */
 .sc-stats { display: flex; align-items: stretch; padding-bottom: 2px; }
@@ -776,17 +781,27 @@ body.modal-open { overflow: hidden; }
   position: fixed; bottom: 0; left: 0; right: 0;
   max-width: 480px; margin: 0 auto;
   height: var(--nav-height); background: var(--surface);
-  border-top: 1px solid var(--border); display: flex; align-items: center;
-  padding: 0 8px; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 20;
+  border-top: 1px solid var(--border); display: flex; align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 20;
 }
 .nav-btn {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   padding: 8px 0; border: none; background: transparent; cursor: pointer;
   color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px;
-  font-weight: 600; transition: color var(--t);
+  font-weight: 600; transition: color var(--t); min-height: 44px;
 }
-.nav-btn.active { color: var(--ink); }
+.nav-btn.active { color: var(--accent); }
 .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Profile tab in bottom nav */
+.nav-profile-tab { gap: 4px; }
+.nav-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 11px; font-weight: 800; font-family: 'Figtree', sans-serif;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.nav-profile-tab span { font-size: 11px; font-weight: 600; color: inherit; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ─── Modal Backdrop ───────────────────────────────────── */
 .modal-backdrop {
