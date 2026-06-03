@@ -178,8 +178,6 @@
 
       <!-- Card actions dropdown -->
       <div class="card-menu hidden" id="cardMenu"></div>
-      <!-- Category context menu -->
-      <div class="card-menu hidden" id="catCtxMenu"></div>
 
       <!-- Budget list -->
       <section class="view-section" id="listView">
@@ -426,6 +424,31 @@
   </div>
 
   <!-- ── Item Options Sheet ── -->
+  <!-- ── Category Options Sheet ── -->
+  <div class="modal-backdrop hidden" id="catOptionsSheet">
+    <div class="modal item-options-modal">
+      <div class="modal-handle"></div>
+      <div class="item-options-desc" id="catOptionsTitle"></div>
+      <button class="option-row-btn" id="cosAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        <span id="cosAddLabel">Add to category</span>
+      </button>
+      <button class="option-row-btn" id="cosRename">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Rename
+      </button>
+      <button class="option-row-btn hidden" id="cosMoveUp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Move up
+      </button>
+      <button class="option-row-btn hidden" id="cosMoveDown">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Move down
+      </button>
+      <button class="cancel-btn" id="catOptionsCancel" style="width:100%;margin-top:4px;">Cancel</button>
+    </div>
+  </div>
+
   <div class="modal-backdrop hidden" id="itemOptionsModal">
     <div class="modal item-options-modal">
       <div class="modal-handle"></div>
@@ -522,6 +545,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=101"></script>
+  <script src="app.js?v=102"></script>
 </body>
 </html>

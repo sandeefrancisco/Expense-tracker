@@ -1306,42 +1306,45 @@ async function moveTileInOrder(dragId, direction) {
 }
 
 function openCatCtxMenu(btn, catId) {
-  const menu  = document.getElementById('catCtxMenu');
-  const cat   = getCat(catId);
-  const tile  = btn.closest('[data-drag-id]');
-  const cont  = document.getElementById('expenseList');
-  const tiles = [...cont.querySelectorAll(':scope > .list-tile')];
-  const idx   = tile ? tiles.indexOf(tile) : -1;
+  const cat    = getCat(catId);
+  const tile   = btn.closest('[data-drag-id]');
+  const cont   = document.getElementById('expenseList');
+  const tiles  = [...cont.querySelectorAll(':scope > .list-tile')];
+  const idx    = tile ? tiles.indexOf(tile) : -1;
   const dragId = tile?.dataset.dragId;
   const canUp   = idx > 0;
   const canDown = idx !== -1 && idx < tiles.length - 1;
 
-  menu.innerHTML = `
-    <button class="card-menu-item" id="ccmAdd">+ Add to ${escHtml(cat?.name ?? 'category')}</button>
-    <button class="card-menu-item" id="ccmRename">Rename</button>
-    ${canUp   ? `<button class="card-menu-item" id="ccmUp">↑ Move up</button>`   : ''}
-    ${canDown ? `<button class="card-menu-item" id="ccmDown">↓ Move down</button>` : ''}`;
-  const rect = btn.getBoundingClientRect();
-  menu.style.top   = `${rect.bottom + 6}px`;
-  menu.style.right = `${window.innerWidth - rect.right}px`;
-  menu.classList.remove('hidden');
+  document.getElementById('catOptionsTitle').textContent = cat?.name ?? '';
+  document.getElementById('cosAddLabel').textContent = `Add to ${cat?.name ?? 'category'}`;
+  document.getElementById('cosMoveUp').classList.toggle('hidden', !canUp);
+  document.getElementById('cosMoveDown').classList.toggle('hidden', !canDown);
 
-  menu.querySelector('#ccmAdd').addEventListener('click', () => {
-    menu.classList.add('hidden');
-    openAddModal();
-    selectCategory(catId);
+  // Swap listeners by cloning to clear old ones
+  ['cosAdd','cosRename','cosMoveUp','cosMoveDown'].forEach(id => {
+    const el = document.getElementById(id);
+    const clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
   });
-  menu.querySelector('#ccmRename').addEventListener('click', () => {
-    menu.classList.add('hidden');
-    const current = getCat(catId)?.name ?? '';
+
+  document.getElementById('cosAdd').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); openAddModal(); selectCategory(catId);
+  });
+  document.getElementById('cosRename').addEventListener('click', () => {
+    closeModal('catOptionsSheet');
+    const current = cat?.name ?? '';
     const next = prompt('Rename category:', current);
     if (next && next.trim() && next.trim() !== current) handleRenameCategory(catId, next.trim());
   });
-  if (canUp)   menu.querySelector('#ccmUp').addEventListener('click',   () => { menu.classList.add('hidden'); moveTileInOrder(dragId, 'up');   });
-  if (canDown) menu.querySelector('#ccmDown').addEventListener('click', () => { menu.classList.add('hidden'); moveTileInOrder(dragId, 'down'); });
-}
+  document.getElementById('cosMoveUp').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); moveTileInOrder(dragId, 'up');
+  });
+  document.getElementById('cosMoveDown').addEventListener('click', () => {
+    closeModal('catOptionsSheet'); moveTileInOrder(dragId, 'down');
+  });
 
-document.addEventListener('click', () => document.getElementById('catCtxMenu')?.classList.add('hidden'));
+  openModal('catOptionsSheet');
+}
 
 function buildItem(e) {
   const cat = getCat(e.category);
@@ -1987,7 +1990,7 @@ async function handleCurrencySelect(code, symbol) {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -2089,6 +2092,7 @@ function bindEvents() {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
   });
   document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
+  document.getElementById('catOptionsCancel').addEventListener('click', () => closeModal('catOptionsSheet'));
 
   // Installment modal
   document.getElementById('installmentSave').addEventListener('click', handleInstallmentSave);
@@ -2147,7 +2151,7 @@ function bindEvents() {
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
