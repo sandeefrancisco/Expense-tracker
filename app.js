@@ -1040,14 +1040,17 @@ function renderDetailView() {
       <span class="detail-stat-sub">left · ${paid.length}/${items.length} paid</span>`;
   }
 
-  // Items
+  // Items — wrapped in a rounded card matching the list view
   const body = document.getElementById('detailBody');
   body.innerHTML = '';
   if (items.length === 0) {
     body.innerHTML = `<div class="empty-state"><p>No allocations</p><span>Tap + to add one</span></div>`;
     return;
   }
-  renderItemsBody(items, body);
+  const card = document.createElement('div');
+  card.className = 'list-tile';
+  body.appendChild(card);
+  renderItemsBody(items, card);
 }
 
 function renderListView() {
@@ -1131,7 +1134,6 @@ function renderListView() {
     const tile = document.createElement('div');
 
     if (item.type === 'group') {
-      const isExpanded = expandedListGroups.has(item.prefix);
       tile.className = 'list-tile list-tile-grp';
       tile.dataset.dragId = `grp__${item.prefix}`;
       tile.dataset.catIds = JSON.stringify(item.catIds);
@@ -1162,7 +1164,7 @@ function renderListView() {
           ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
-          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span></div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1176,18 +1178,9 @@ function renderListView() {
       tile.appendChild(hdr);
 
       const grpBody = document.createElement('div');
-      grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
+      grpBody.className = 'cat-group-body';
       tile.appendChild(grpBody);
 
-      hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
-        const nowExpanded = expandedListGroups.has(item.prefix);
-        if (nowExpanded) expandedListGroups.delete(item.prefix);
-        else expandedListGroups.add(item.prefix);
-        grpBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-        saveExpandState();
-      });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
 
       const sortedSubs = item.catIds
