@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=102" />
+  <link rel="stylesheet" href="style.css?v=103" />
 </head>
 <body>
 
@@ -188,6 +188,24 @@
       </section>
 
     </main>
+
+    <!-- ── Category Detail Screen ── -->
+    <div class="detail-screen" id="categoryDetailView">
+      <header class="header">
+        <button class="icon-btn" id="detailBackBtn" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="detail-hdr-center">
+          <div class="detail-hdr-icon" id="detailCatIcon"></div>
+          <span class="detail-hdr-name" id="detailCatName"></span>
+        </div>
+        <button class="cat-opts-btn" id="detailCatOptsBtn" aria-label="Options">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
+        </button>
+      </header>
+      <div class="detail-stat-bar" id="detailStatBar"></div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
 
   </div>
 
@@ -545,6 +563,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=102"></script>
+  <script src="app.js?v=103"></script>
 </body>
 </html>

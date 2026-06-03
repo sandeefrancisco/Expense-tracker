@@ -63,6 +63,7 @@ let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
 let pendingInstallmentCatId  = null;
+let currentDetailCatId       = null;
 let selectedCategory  = null;
 let selectedBank      = null;
 let selectedCatShared   = false;
@@ -555,6 +556,7 @@ function renderAll() {
   renderProfileBar();
   renderSummary();
   renderListView();
+  if (currentDetailCatId) renderDetailView();
   syncSettingsUI();
 }
 
@@ -988,6 +990,54 @@ function renderItemsBody(items, container) {
   }
 }
 
+/* ─── Category Detail Screen ─────────────────────────────── */
+function showCategoryDetail(catId) {
+  currentDetailCatId = catId;
+  renderDetailView();
+  document.getElementById('categoryDetailView').classList.add('open');
+}
+
+function hideCategoryDetail() {
+  document.getElementById('categoryDetailView').classList.remove('open');
+  currentDetailCatId = null;
+}
+
+function renderDetailView() {
+  if (!currentDetailCatId) return;
+  const catId = currentDetailCatId;
+  const cat   = getCat(catId);
+  const items = getMonthExpenses().filter(e => e.category === catId);
+
+  // Header
+  const iconEl = document.getElementById('detailCatIcon');
+  iconEl.textContent   = cat?.name?.charAt(0)?.toUpperCase() ?? '?';
+  iconEl.style.background = cat?.color ?? 'var(--accent)';
+  document.getElementById('detailCatName').textContent = cat?.name ?? '';
+
+  // Stat bar
+  const unpaid    = items.filter(e => !e.checked);
+  const paid      = items.filter(e =>  e.checked);
+  const leftAmt   = unpaid.reduce((s, e) => s + effectiveAmount(e), 0);
+  const grandAmt  = items.reduce((s, e) => s + effectiveAmount(e), 0);
+  const bar = document.getElementById('detailStatBar');
+  if (paid.length === items.length && items.length > 0) {
+    bar.innerHTML = `<span class="detail-stat-amt" style="color:#16a34a">✓ All paid</span>
+      <span class="detail-stat-sub">${fmtCat(grandAmt, catId)} total</span>`;
+  } else {
+    bar.innerHTML = `<span class="detail-stat-amt">${fmtCat(leftAmt, catId)}</span>
+      <span class="detail-stat-sub">left · ${paid.length}/${items.length} paid</span>`;
+  }
+
+  // Items
+  const body = document.getElementById('detailBody');
+  body.innerHTML = '';
+  if (items.length === 0) {
+    body.innerHTML = `<div class="empty-state"><p>No allocations</p><span>Tap + to add one</span></div>`;
+    return;
+  }
+  renderItemsBody(items, body);
+}
+
 function renderListView() {
   const container = document.getElementById('expenseList');
   const list = getMonthExpenses();
@@ -1136,7 +1186,6 @@ function renderListView() {
         const cat = getCat(catId);
         const { items, total, paidTotal } = byCat[catId];
         const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
-        const isCatExp = expandedListCats.has(catId);
 
         const subTile = document.createElement('div');
         subTile.className = 'list-sub-tile';
@@ -1152,35 +1201,22 @@ function renderListView() {
         sh.innerHTML = `
           <div class="list-sub-dot" style="background:${cat.color}"></div>
           <div class="list-tile-main">
-            <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+            <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span></div>
             <div class="list-sub-count">${subPaid}/${items.length}</div>
           </div>
           <div class="list-sub-right">
             <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
             ${subLeftHtml}
-          </div>`;
+          </div>
+          <svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;
         subTile.appendChild(sh);
 
-        const itemsBody = document.createElement('div');
-        itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
-        subTile.appendChild(itemsBody);
-
-        sh.addEventListener('click', () => {
-          const nowExpanded = expandedListCats.has(catId);
-          if (nowExpanded) expandedListCats.delete(catId);
-          else expandedListCats.add(catId);
-          itemsBody.classList.toggle('collapsed', nowExpanded);
-          sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-          saveExpandState();
-        });
-
-        renderItemsBody(items, itemsBody);
+        sh.addEventListener('click', () => showCategoryDetail(catId));
       });
 
     } else {
       const cat = getCat(item.catId);
       const { items, total, paidTotal } = byCat[item.catId];
-      const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
@@ -1201,7 +1237,7 @@ function renderListView() {
           ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
-          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1214,22 +1250,11 @@ function renderListView() {
         </button>`;
       tile.appendChild(hdr);
 
-      const itemsBody = document.createElement('div');
-      itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
-      tile.appendChild(itemsBody);
-
       hdr.addEventListener('click', ev => {
         if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
-        const nowExpanded = expandedListCats.has(item.catId);
-        if (nowExpanded) expandedListCats.delete(item.catId);
-        else expandedListCats.add(item.catId);
-        itemsBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-        saveExpandState();
+        showCategoryDetail(item.catId);
       });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
-
-      renderItemsBody(items, itemsBody);
     }
 
     container.appendChild(tile);
@@ -2025,9 +2050,16 @@ function bindEvents() {
     saveViewMonth(); renderAll();
   });
 
+  // Detail screen
+  document.getElementById('detailBackBtn').addEventListener('click', hideCategoryDetail);
+  document.getElementById('detailCatOptsBtn').addEventListener('click', ev => {
+    if (currentDetailCatId) openCatCtxMenu(ev.currentTarget, currentDetailCatId);
+  });
+
   // Allocation form
   document.getElementById('openAdd').addEventListener('click', () => {
     openAddModal();
+    if (currentDetailCatId) selectCategory(currentDetailCatId);
     document.getElementById('amountInput').focus();
   });
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
