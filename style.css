@@ -312,17 +312,19 @@ body.modal-open { overflow: hidden; }
 /* Horizontal rule inside summary card */
 .sc-rule { height: 1px; background: var(--border); margin: 14px 0; }
 
-/* Month selector row inside summary card */
-.sc-month-nav {
+/* Sticky month selector bar */
+.month-bar {
+  position: sticky; top: var(--header-height); z-index: 19;
+  background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 14px;
+  padding: 0 8px; height: 48px; flex-shrink: 0;
+  max-width: 480px; width: 100%; margin: 0 auto;
+}
+.month-bar .month-display span {
+  font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
 }
 .sc-month-btn {
-  width: 36px; height: 36px; border-radius: 10px;
-  color: var(--muted);
-}
-.sc-month-nav .month-display span {
-  font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
+  width: 36px; height: 36px; border-radius: 10px; color: var(--muted);
 }
 
 /* Stats row */
