@@ -63,9 +63,6 @@ let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
 let pendingInstallmentCatId  = null;
-let currentDetailCatId       = null;
-let currentDetailGroupPrefix = null;
-let currentDetailGroupCatIds = [];
 let selectedCategory  = null;
 let selectedBank      = null;
 let selectedCatShared   = false;
@@ -558,34 +555,19 @@ function renderAll() {
   renderProfileBar();
   renderSummary();
   renderListView();
-  if (currentDetailGroupPrefix) renderGroupDetailView();
-  if (currentDetailCatId) renderDetailView();
   syncSettingsUI();
 }
 
 /* ─── Profiles ──────────────────────────────────────────── */
 function renderProfileBar() {
-  // Segmented tabs in bottom nav
-  const tabs = document.getElementById('profileTabs');
-  if (tabs) {
-    tabs.innerHTML = '';
-    profiles.forEach(p => {
-      const btn = document.createElement('button');
-      btn.className = 'profile-tab' + (p.id === currentProfileId ? ' active' : '');
-      btn.textContent = p.name;
-      btn.addEventListener('click', () => {
-        if (currentProfileId === p.id) return;
-        currentProfileId = p.id;
-        localStorage.setItem('activeProfileId', p.id);
-        hideCategoryDetail();
-        hideGroupDetail();
-        renderAll();
-      });
-      tabs.appendChild(btn);
-    });
-  }
+  // Update header trigger label
+  const prof = profiles.find(p => p.id === currentProfileId);
+  const lbl  = document.getElementById('profileTriggerLabel');
+  if (lbl) lbl.textContent = prof?.name ?? 'Me';
+  const av = document.getElementById('profileAvatarEl');
+  if (av) av.textContent = (prof?.name ?? 'M').charAt(0).toUpperCase();
 
-  // Keep sheet list in sync (used by Settings → manage people)
+  // Populate profile sheet list
   const sheetList = document.getElementById('profileSheetList');
   if (!sheetList) return;
   sheetList.innerHTML = '';
@@ -1006,138 +988,6 @@ function renderItemsBody(items, container) {
   }
 }
 
-/* ─── Group Detail Screen ────────────────────────────────── */
-function showGroupDetail(prefix, catIds) {
-  currentDetailGroupPrefix = prefix;
-  currentDetailGroupCatIds = [...catIds];
-  renderGroupDetailView();
-  document.getElementById('groupDetailView').classList.add('open');
-}
-
-function hideGroupDetail() {
-  document.getElementById('groupDetailView').classList.remove('open');
-  currentDetailGroupPrefix = null;
-  currentDetailGroupCatIds = [];
-}
-
-function renderGroupDetailView() {
-  if (!currentDetailGroupPrefix) return;
-  document.getElementById('groupDetailName').textContent = currentDetailGroupPrefix;
-  const body = document.getElementById('groupDetailBody');
-  body.innerHTML = '';
-  const monthExpenses = getMonthExpenses();
-  const primaryCode   = settings.currency.code;
-  const primarySym    = settings.currency.symbol;
-  const chevHTML = (exp) =>
-    `<svg class="cat-chevron${exp ? '' : ' collapsed'}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>`;
-
-  currentDetailGroupCatIds.forEach(catId => {
-    const cat = getCat(catId);
-    if (!cat) return;
-    const items     = monthExpenses.filter(e => e.category === catId);
-    const total     = items.filter(e => !e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
-    const paidTotal = items.filter(e =>  e.checked).reduce((s, e) => s + effectiveAmount(e), 0);
-    const paidCount = items.filter(e =>  e.checked).length;
-    const grandTotal = total + paidTotal;
-    const sublabel   = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
-    const leftHtml   = total > 0
-      ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
-      : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
-    const { code: catCode } = getCatCurrency(catId);
-    const baseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
-    const convHtml  = baseTotal != null ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(baseTotal)}</div>` : '';
-
-    const isExp = expandedListCats.has(catId);
-    const tile  = document.createElement('div');
-    tile.className = 'list-tile';
-
-    const hdr = document.createElement('div');
-    hdr.className = 'list-tile-hdr';
-    hdr.innerHTML = `
-      <div class="cat-icon-box" style="background:${cat.color}">
-        <span class="cat-icon-letter">${escHtml(sublabel.charAt(0).toUpperCase())}</span>
-      </div>
-      <div class="list-tile-main">
-        <div class="list-hdr-name">
-          <span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>
-          ${chevHTML(isExp)}
-        </div>
-        <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
-      </div>
-      <div class="list-hdr-right">
-        <div class="list-hdr-total">${fmtCat(grandTotal, catId)}</div>
-        ${leftHtml}${convHtml}
-      </div>`;
-    tile.appendChild(hdr);
-
-    const itemsBody = document.createElement('div');
-    itemsBody.className = 'cat-items-body' + (isExp ? '' : ' collapsed');
-    tile.appendChild(itemsBody);
-
-    hdr.addEventListener('click', () => {
-      const nowExp = expandedListCats.has(catId);
-      if (nowExp) expandedListCats.delete(catId);
-      else expandedListCats.add(catId);
-      itemsBody.classList.toggle('collapsed', nowExp);
-      hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExp);
-    });
-
-    renderItemsBody(items, itemsBody);
-    body.appendChild(tile);
-  });
-}
-
-/* ─── Category Detail Screen ─────────────────────────────── */
-function showCategoryDetail(catId) {
-  currentDetailCatId = catId;
-  renderDetailView();
-  document.getElementById('categoryDetailView').classList.add('open');
-}
-
-function hideCategoryDetail() {
-  document.getElementById('categoryDetailView').classList.remove('open');
-  currentDetailCatId = null;
-}
-
-function renderDetailView() {
-  if (!currentDetailCatId) return;
-  const catId = currentDetailCatId;
-  const cat   = getCat(catId);
-  const items = getMonthExpenses().filter(e => e.category === catId);
-
-  // Header
-  const iconEl = document.getElementById('detailCatIcon');
-  iconEl.textContent   = cat?.name?.charAt(0)?.toUpperCase() ?? '?';
-  iconEl.style.background = cat?.color ?? 'var(--accent)';
-  document.getElementById('detailCatName').textContent = cat?.name ?? '';
-
-  // Stat bar
-  const unpaid    = items.filter(e => !e.checked);
-  const paid      = items.filter(e =>  e.checked);
-  const leftAmt   = unpaid.reduce((s, e) => s + effectiveAmount(e), 0);
-  const grandAmt  = items.reduce((s, e) => s + effectiveAmount(e), 0);
-  const bar = document.getElementById('detailStatBar');
-  if (paid.length === items.length && items.length > 0) {
-    bar.innerHTML = `<span class="detail-stat-amt" style="color:#16a34a">✓ All paid</span>
-      <span class="detail-stat-sub">${fmtCat(grandAmt, catId)} total</span>`;
-  } else {
-    bar.innerHTML = `<span class="detail-stat-amt">${fmtCat(leftAmt, catId)}</span>
-      <span class="detail-stat-sub">left · ${paid.length}/${items.length} paid</span>`;
-  }
-
-  // Items — wrapped in a rounded card matching the list view
-  const body = document.getElementById('detailBody');
-  body.innerHTML = '';
-  if (items.length === 0) {
-    body.innerHTML = `<div class="empty-state"><p>No allocations</p><span>Tap + to add one</span></div>`;
-    return;
-  }
-  const card = document.createElement('div');
-  card.className = 'list-tile';
-  body.appendChild(card);
-  renderItemsBody(items, card);
-}
-
 function renderListView() {
   const container = document.getElementById('expenseList');
   const list = getMonthExpenses();
@@ -1219,6 +1069,7 @@ function renderListView() {
     const tile = document.createElement('div');
 
     if (item.type === 'group') {
+      const isExpanded = expandedListGroups.has(item.prefix);
       tile.className = 'list-tile list-tile-grp';
       tile.dataset.dragId = `grp__${item.prefix}`;
       tile.dataset.catIds = JSON.stringify(item.catIds);
@@ -1249,7 +1100,7 @@ function renderListView() {
           ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
-          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1262,15 +1113,74 @@ function renderListView() {
         </button>`;
       tile.appendChild(hdr);
 
+      const grpBody = document.createElement('div');
+      grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
+      tile.appendChild(grpBody);
+
       hdr.addEventListener('click', ev => {
         if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
-        showGroupDetail(item.prefix, item.catIds);
+        const nowExpanded = expandedListGroups.has(item.prefix);
+        if (nowExpanded) expandedListGroups.delete(item.prefix);
+        else expandedListGroups.add(item.prefix);
+        grpBody.classList.toggle('collapsed', nowExpanded);
+        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        saveExpandState();
       });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
+
+      const sortedSubs = item.catIds
+        .filter(id => byCat[id])
+        .sort((a, b) => (getCat(a).sort_order ?? 99999) - (getCat(b).sort_order ?? 99999));
+
+      sortedSubs.forEach(catId => {
+        const cat = getCat(catId);
+        const { items, total, paidTotal } = byCat[catId];
+        const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
+        const isCatExp = expandedListCats.has(catId);
+
+        const subTile = document.createElement('div');
+        subTile.className = 'list-sub-tile';
+        grpBody.appendChild(subTile);
+
+        const subPaid    = items.filter(e => e.checked).length;
+        const subGrand   = total + paidTotal;
+        const subLeftHtml = total > 0
+          ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
+          : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
+        const sh = document.createElement('div');
+        sh.className = 'list-sub-hdr';
+        sh.innerHTML = `
+          <div class="list-sub-dot" style="background:${cat.color}"></div>
+          <div class="list-tile-main">
+            <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
+            <div class="list-sub-count">${subPaid}/${items.length}</div>
+          </div>
+          <div class="list-sub-right">
+            <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
+            ${subLeftHtml}
+          </div>`;
+        subTile.appendChild(sh);
+
+        const itemsBody = document.createElement('div');
+        itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
+        subTile.appendChild(itemsBody);
+
+        sh.addEventListener('click', () => {
+          const nowExpanded = expandedListCats.has(catId);
+          if (nowExpanded) expandedListCats.delete(catId);
+          else expandedListCats.add(catId);
+          itemsBody.classList.toggle('collapsed', nowExpanded);
+          sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+          saveExpandState();
+        });
+
+        renderItemsBody(items, itemsBody);
+      });
 
     } else {
       const cat = getCat(item.catId);
       const { items, total, paidTotal } = byCat[item.catId];
+      const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
       tile.dataset.dragId = item.catId;
 
@@ -1291,7 +1201,7 @@ function renderListView() {
           ${DND_HANDLE}
         </div>
         <div class="list-tile-main">
-          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span><svg class="sub-nav-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
           <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
         </div>
         <div class="list-hdr-right">
@@ -1304,11 +1214,22 @@ function renderListView() {
         </button>`;
       tile.appendChild(hdr);
 
+      const itemsBody = document.createElement('div');
+      itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
+      tile.appendChild(itemsBody);
+
       hdr.addEventListener('click', ev => {
         if (ev.target.closest('.drag-handle') || ev.target.closest('.cat-opts-btn')) return;
-        showCategoryDetail(item.catId);
+        const nowExpanded = expandedListCats.has(item.catId);
+        if (nowExpanded) expandedListCats.delete(item.catId);
+        else expandedListCats.add(item.catId);
+        itemsBody.classList.toggle('collapsed', nowExpanded);
+        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
+        saveExpandState();
       });
       hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
+
+      renderItemsBody(items, itemsBody);
     }
 
     container.appendChild(tile);
@@ -2104,17 +2025,9 @@ function bindEvents() {
     saveViewMonth(); renderAll();
   });
 
-  // Detail screen
-  document.getElementById('groupDetailBackBtn').addEventListener('click', hideGroupDetail);
-  document.getElementById('detailBackBtn').addEventListener('click', hideCategoryDetail);
-  document.getElementById('detailCatOptsBtn').addEventListener('click', ev => {
-    if (currentDetailCatId) openCatCtxMenu(ev.currentTarget, currentDetailCatId);
-  });
-
   // Allocation form
   document.getElementById('openAdd').addEventListener('click', () => {
     openAddModal();
-    if (currentDetailCatId) selectCategory(currentDetailCatId);
     document.getElementById('amountInput').focus();
   });
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
@@ -2193,7 +2106,7 @@ function bindEvents() {
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
   // Profile trigger + sheet
-  // profileSheet is still used by Settings → manage people (profileSheetAdd/Cancel)
+  document.getElementById('profileTrigger').addEventListener('click', () => { renderProfileBar(); openModal('profileSheet'); });
   document.getElementById('profileSheetCancel').addEventListener('click', () => closeModal('profileSheet'));
   document.getElementById('profileSheetAdd').addEventListener('click', () => { closeModal('profileSheet'); openAddProfileModal(); });
 
