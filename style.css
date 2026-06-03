@@ -1135,8 +1135,15 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .hdr-spacer { width: 40px; flex-shrink: 0; }
 
 /* ─── Slide-in detail screens ──────────────────────────── */
+.detail-screen .header {
+  height: auto; min-height: 56px;
+  padding: 0 4px;
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--border);
+  position: relative; top: auto;
+}
 .detail-screen {
-  position: fixed; inset: 0; z-index: 15;
+  position: fixed; inset: 0; z-index: 25;
   background: var(--bg);
   display: flex; flex-direction: column;
   transform: translateX(100%);
@@ -1144,7 +1151,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
   overflow: hidden;
 }
 .detail-screen.open { transform: translateX(0); }
-.detail-screen--top { z-index: 16; }
+.detail-screen--top { z-index: 26; }
 
 .detail-back-btn {
   all: unset; box-sizing: border-box;
