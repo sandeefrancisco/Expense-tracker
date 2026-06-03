@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=109" />
+  <link rel="stylesheet" href="style.css?v=110" />
 </head>
 <body>
 
@@ -137,7 +137,7 @@
       </button>
     </div>
 
-    <main class="main">
+    <main class="main" id="mainPage">
 
       <!-- Summary Card -->
       <section class="summary-card">
@@ -192,6 +192,69 @@
       </section>
 
     </main>
+
+    <!-- Settings Page -->
+    <div id="settingsPage" class="settings-page hidden">
+      <div class="settings-content">
+        <!-- Account -->
+        <div class="settings-card">
+          <div class="settings-row account-info-row">
+            <div class="account-avatar" id="accountAvatar"></div>
+            <div class="settings-row-main">
+              <div class="settings-row-title" id="accountEmail"></div>
+              <div class="settings-row-sub">Signed in</div>
+            </div>
+          </div>
+          <button class="settings-signout-btn" id="signOutBtn">Sign out</button>
+        </div>
+
+        <!-- People -->
+        <div class="settings-group">
+          <div class="settings-group-label">People</div>
+          <div class="settings-card">
+            <div id="profilesList"></div>
+            <button class="settings-add-row" id="addPersonSettingsBtn">
+              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              Add person
+            </button>
+          </div>
+        </div>
+
+        <!-- Currency -->
+        <div class="settings-group">
+          <div class="settings-group-label">Currency</div>
+          <div class="settings-card settings-card-pad">
+            <select id="currencySelect" class="form-select"></select>
+            <div id="ratesDisplay" class="rates-display" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="settings-group">
+          <div class="settings-group-label">Categories</div>
+          <div class="settings-card">
+            <div id="categoriesList"></div>
+            <button class="settings-add-row" id="addCategorySettingsBtn">
+              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+              New category
+            </button>
+          </div>
+        </div>
+
+        <!-- Data -->
+        <div class="settings-group">
+          <div class="settings-group-label">Data</div>
+          <div class="settings-card">
+            <button class="settings-danger-row" id="clearDataBtn">
+              <div class="settings-row-icon" style="background:#FEE2E2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </div>
+              <span>Clear all my data</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -290,78 +353,6 @@
           <div class="form-error hidden" id="incomeFormError"></div>
           <button type="submit" class="submit-btn">Add Income</button>
         </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Settings Modal ── -->
-  <div class="modal-backdrop hidden" id="settingsModal">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <h2 class="modal-title">Settings</h2>
-        <button class="icon-btn" id="closeSettings" aria-label="Close">
-          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="settings-content">
-        <!-- Account -->
-        <div class="settings-card">
-          <div class="settings-row account-info-row">
-            <div class="account-avatar" id="accountAvatar"></div>
-            <div class="settings-row-main">
-              <div class="settings-row-title" id="accountEmail"></div>
-              <div class="settings-row-sub">Signed in</div>
-            </div>
-          </div>
-          <button class="settings-signout-btn" id="signOutBtn">Sign out</button>
-        </div>
-
-        <!-- People -->
-        <div class="settings-group">
-          <div class="settings-group-label">People</div>
-          <div class="settings-card">
-            <div id="profilesList"></div>
-            <button class="settings-add-row" id="addPersonSettingsBtn">
-              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-              Add person
-            </button>
-          </div>
-        </div>
-
-        <!-- Currency -->
-        <div class="settings-group">
-          <div class="settings-group-label">Currency</div>
-          <div class="settings-card settings-card-pad">
-            <select id="currencySelect" class="form-select"></select>
-            <div id="ratesDisplay" class="rates-display" style="display:none"></div>
-          </div>
-        </div>
-
-        <!-- Categories -->
-        <div class="settings-group">
-          <div class="settings-group-label">Categories</div>
-          <div class="settings-card">
-            <div id="categoriesList"></div>
-            <button class="settings-add-row" id="addCategorySettingsBtn">
-              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-              New category
-            </button>
-          </div>
-        </div>
-
-        <!-- Data -->
-        <div class="settings-group">
-          <div class="settings-group-label">Data</div>
-          <div class="settings-card">
-            <button class="settings-danger-row" id="clearDataBtn">
-              <div class="settings-row-icon" style="background:#FEE2E2">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-              </div>
-              <span>Clear all my data</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -556,6 +547,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=103"></script>
+  <script src="app.js?v=110"></script>
 </body>
 </html>

@@ -1885,8 +1885,23 @@ async function handleCurrencySelect(code, symbol) {
   try { await dbSaveSettings(); } catch {}
 }
 
+/* ─── Page switching ─────────────────────────────────────── */
+function showSettingsPage() {
+  document.getElementById('mainPage').classList.add('hidden');
+  document.getElementById('settingsPage').classList.remove('hidden');
+  document.getElementById('openSettings').classList.add('active');
+  document.getElementById('navHome').classList.remove('active');
+  buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); renderRates();
+}
+function hideSettingsPage() {
+  document.getElementById('settingsPage').classList.add('hidden');
+  document.getElementById('mainPage').classList.remove('hidden');
+  document.getElementById('openSettings').classList.remove('active');
+  document.getElementById('navHome').classList.add('active');
+}
+
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -1995,9 +2010,9 @@ function bindEvents() {
   document.getElementById('installmentClear').addEventListener('click', handleInstallmentClear);
   document.getElementById('installmentCancel').addEventListener('click', () => closeModal('installmentModal'));
 
-  // Settings
-  document.getElementById('openSettings').addEventListener('click', () => { buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); renderRates(); openModal('settingsModal'); });
-  document.getElementById('closeSettings').addEventListener('click', () => closeModal('settingsModal'));
+  // Settings page
+  document.getElementById('openSettings').addEventListener('click', showSettingsPage);
+  document.getElementById('navHome').addEventListener('click', hideSettingsPage);
   document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
@@ -2019,7 +2034,7 @@ function bindEvents() {
   });
 
   document.getElementById('signOutBtn').addEventListener('click', async () => {
-    await sb.auth.signOut(); closeModal('settingsModal');
+    await sb.auth.signOut(); hideSettingsPage();
   });
 
   document.getElementById('clearDataBtn').addEventListener('click', async () => {
@@ -2031,7 +2046,7 @@ function bindEvents() {
         sb.from('completed_months').delete().eq('user_id', currentUser.id),
       ]);
       expenses = []; incomeEntries = []; completedMonths = [];
-      closeModal('settingsModal'); renderAll(); showToast('All data cleared');
+      hideSettingsPage(); renderAll(); showToast('All data cleared');
     } catch (err) { showToast('Error: ' + err.message, true); }
   });
 
@@ -2047,7 +2062,7 @@ function bindEvents() {
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'settingsModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
