@@ -754,10 +754,10 @@ body.modal-open { overflow: hidden; }
 /* ─── List section header ──────────────────────────────── */
 .list-section-hdr {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
+  padding-top: 16px; padding-bottom: 8px;
 }
 .list-section-title {
-  font-size: 20px; font-weight: 800; color: var(--ink); letter-spacing: -0.4px;
+  font-size: 14px; font-weight: 400; color: var(--muted);
 }
 
 /* ─── Floating Add Button (FAB) ────────────────────────── */
