@@ -235,17 +235,25 @@ body.modal-open { overflow: hidden; }
 }
 .hdr-profile-btn svg { color: var(--muted); flex-shrink: 0; }
 
-/* Bottom nav profile button */
-.bottom-profile-btn {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px 8px 10px; border-radius: 99px;
-  border: none; background: transparent; cursor: pointer;
-  transition: background var(--t); min-height: 44px; flex-shrink: 0;
+/* Bottom nav segmented profile tabs */
+.profile-tabs {
+  display: flex; align-items: center;
+  gap: 6px; padding: 0 4px;
+  background: var(--tint); border-radius: 12px;
+  padding: 4px;
 }
-.bottom-profile-btn:active { background: var(--tint); }
-.bottom-profile-btn .hdr-avatar { width: 34px; height: 34px; font-size: 14px; }
-.bottom-profile-btn .hdr-profile-name { font-size: 15px; }
-.bottom-profile-btn svg { color: var(--muted); flex-shrink: 0; }
+.profile-tab {
+  flex: 1; border: none; background: transparent; cursor: pointer;
+  font-family: 'Figtree', sans-serif; font-size: 14px; font-weight: 600;
+  color: var(--muted); border-radius: 9px;
+  padding: 7px 14px; min-height: 36px;
+  transition: background var(--t), color var(--t), box-shadow var(--t);
+  white-space: nowrap;
+}
+.profile-tab.active {
+  background: var(--surface); color: var(--ink);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
 
 /* Month navigation */
 .month-display { text-align: center; }
@@ -789,14 +797,13 @@ body.modal-open { overflow: hidden; }
 .fab:active { transform: scale(0.92); }
 
 /* ─── Bottom Nav ───────────────────────────────────────── */
-
-/* ─── Bottom Nav ───────────────────────────────────────── */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0;
   max-width: 480px; margin: 0 auto;
   height: var(--nav-height); background: var(--surface);
   border-top: 1px solid var(--border); display: flex; align-items: center;
-  padding: 0 8px; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 20;
+  justify-content: center;
+  padding: 0 16px; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 20;
 }
 .nav-btn {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;

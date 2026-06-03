@@ -562,14 +562,26 @@ function renderAll() {
 
 /* ─── Profiles ──────────────────────────────────────────── */
 function renderProfileBar() {
-  // Update header trigger label
-  const prof = profiles.find(p => p.id === currentProfileId);
-  const lbl  = document.getElementById('profileTriggerLabel');
-  if (lbl) lbl.textContent = prof?.name ?? 'Me';
-  const av = document.getElementById('profileAvatarEl');
-  if (av) av.textContent = (prof?.name ?? 'M').charAt(0).toUpperCase();
+  // Segmented tabs in bottom nav
+  const tabs = document.getElementById('profileTabs');
+  if (tabs) {
+    tabs.innerHTML = '';
+    profiles.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'profile-tab' + (p.id === currentProfileId ? ' active' : '');
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => {
+        if (currentProfileId === p.id) return;
+        currentProfileId = p.id;
+        localStorage.setItem('activeProfileId', p.id);
+        hideCategoryDetail();
+        renderAll();
+      });
+      tabs.appendChild(btn);
+    });
+  }
 
-  // Populate profile sheet list
+  // Keep sheet list in sync (used by Settings → manage people)
   const sheetList = document.getElementById('profileSheetList');
   if (!sheetList) return;
   sheetList.innerHTML = '';
@@ -2138,7 +2150,7 @@ function bindEvents() {
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
   // Profile trigger + sheet
-  document.getElementById('profileTrigger').addEventListener('click', () => { renderProfileBar(); openModal('profileSheet'); });
+  // profileSheet is still used by Settings → manage people (profileSheetAdd/Cancel)
   document.getElementById('profileSheetCancel').addEventListener('click', () => closeModal('profileSheet'));
   document.getElementById('profileSheetAdd').addEventListener('click', () => { closeModal('profileSheet'); openAddProfileModal(); });
 
