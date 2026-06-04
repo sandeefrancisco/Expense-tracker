@@ -506,6 +506,37 @@ async function toggleMonthDone() {
   }
 }
 
+const WIN_MESSAGES = [
+  { emoji: '🎉', title: 'All paid!',       sub: "You're crushing it this month"    },
+  { emoji: '🔥', title: 'Zero balance!',   sub: "On fire — every bill settled"     },
+  { emoji: '✨', title: '100% settled!',   sub: "Feels incredible, right?"         },
+  { emoji: '💪', title: 'All clear!',      sub: "Financial boss mode activated"    },
+  { emoji: '🏆', title: 'Perfect month!',  sub: "Every single one paid"            },
+];
+
+function fireConfetti() {
+  const old = document.getElementById('confettiContainer');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'confettiContainer';
+  wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden;';
+  document.body.appendChild(wrap);
+  const colors = ['#2563EB','#059669','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4','#10B981'];
+  for (let i = 0; i < 55; i++) {
+    const el = document.createElement('div');
+    const color    = colors[Math.floor(Math.random() * colors.length)];
+    const circle   = Math.random() > 0.55;
+    const size     = 5 + Math.random() * 9;
+    const x        = Math.random() * 100;
+    const delay    = Math.random() * 1.0;
+    const duration = 1.8 + Math.random() * 1.8;
+    const drift    = (Math.random() - 0.5) * 220;
+    el.style.cssText = `position:absolute;left:${x}%;top:-16px;width:${size}px;height:${circle ? size : size * 0.55}px;background:${color};border-radius:${circle ? '50%' : '2px'};--cfx:${drift}px;animation:confettiFall ${duration}s ${delay}s ease-in forwards;`;
+    wrap.appendChild(el);
+  }
+  setTimeout(() => wrap.remove(), 4500);
+}
+
 function showToast(msg, isError = false, type = null) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -785,6 +816,24 @@ function renderSummary() {
   const statCats  = document.getElementById('scStatCats');
   if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
   if (statCats)  statCats.textContent  = n > 0 ? fmtStat(dueBase)  : '—';
+
+  // Win banner — shown when every item is paid
+  const winBanner = document.getElementById('winBanner');
+  const isAllPaid = pct === 100 && n > 0;
+  if (winBanner) {
+    if (isAllPaid) {
+      const msg = WIN_MESSAGES[(currentMonth - 1 + WIN_MESSAGES.length) % WIN_MESSAGES.length];
+      document.getElementById('winEmoji').textContent = msg.emoji;
+      document.getElementById('winTitle').textContent = msg.title;
+      document.getElementById('winSub').textContent   = msg.sub;
+      if (winBanner.classList.contains('hidden')) {
+        winBanner.classList.remove('hidden');
+        fireConfetti();
+      }
+    } else {
+      winBanner.classList.add('hidden');
+    }
+  }
 
   updateCardMenu(earned, totalAll);
 }

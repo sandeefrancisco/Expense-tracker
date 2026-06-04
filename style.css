@@ -1179,6 +1179,34 @@ body.modal-open { overflow: hidden; }
 }
 .delete-btn:hover { opacity: 0.88; }
 
+/* ─── Win Banner ───────────────────────────────────────── */
+.win-banner {
+  margin: 12px 16px 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
+  overflow: hidden;
+  animation: winPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 20px rgba(5,150,105,0.28);
+}
+.win-banner-inner {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+}
+.win-banner-emoji { font-size: 34px; line-height: 1; flex-shrink: 0; }
+.win-banner-title { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
+.win-banner-sub   { font-size: 13px; color: rgba(255,255,255,0.82); margin-top: 3px; }
+
+@keyframes winPop {
+  from { opacity: 0; transform: scale(0.88) translateY(-10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);     }
+}
+
+/* Confetti pieces */
+@keyframes confettiFall {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg);    opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateY(110vh) translateX(var(--cfx, 0px)) rotate(720deg); opacity: 0; }
+}
+
 /* ─── Toast ────────────────────────────────────────────── */
 .toast {
   position: fixed;

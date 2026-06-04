@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=112" />
+  <link rel="stylesheet" href="style.css?v=113" />
 </head>
 <body>
 
@@ -138,6 +138,17 @@
     </div>
 
     <main class="main" id="mainPage">
+
+      <!-- All-paid win banner -->
+      <div id="winBanner" class="win-banner hidden" aria-live="polite">
+        <div class="win-banner-inner">
+          <span class="win-banner-emoji" id="winEmoji">🎉</span>
+          <div class="win-banner-text">
+            <div class="win-banner-title" id="winTitle">All paid!</div>
+            <div class="win-banner-sub" id="winSub">You're crushing it this month</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Summary Card -->
       <section class="summary-card">
@@ -559,6 +570,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=116"></script>
+  <script src="app.js?v=117"></script>
 </body>
 </html>
