@@ -506,10 +506,13 @@ async function toggleMonthDone() {
   }
 }
 
-function showToast(msg, isError = false) {
+function showToast(msg, isError = false, type = null) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = isError ? 'toast toast-error show' : 'toast show';
+  let cls = 'toast show';
+  if (isError)          cls += ' toast-error';
+  else if (type === 'info') cls += ' toast-info';
+  t.className = cls;
   const delay = isError ? 4500 : 2200;
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => { t.className = 'toast hidden'; }, 300); }, delay);
 }
@@ -623,7 +626,7 @@ async function handleAddProfile(e) {
 async function deleteProfile(id) {
   const prof = profiles.find(p => p.id === id);
   if (!prof) return;
-  if (profiles.length <= 1) { showToast("Can't delete the only person"); return; }
+  if (profiles.length <= 1) { showToast("Can't delete the only person", false, 'info'); return; }
   if (!confirm(`Delete "${prof.name}" and all their allocations? This cannot be undone.`)) return;
   const { error } = await sb.from('profiles').delete().eq('id', id);
   if (error) { showToast('Error: ' + error.message, true); return; }

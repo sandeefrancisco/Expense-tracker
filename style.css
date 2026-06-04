@@ -1180,17 +1180,20 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Toast ────────────────────────────────────────────── */
 .toast {
-  position: fixed; bottom: 96px; left: 50%;
-  transform: translateX(-50%) translateY(8px);
-  background: var(--ink); color: #fff; font-size: 14px; font-weight: 600;
+  position: fixed;
+  top: calc(var(--header-height) + 48px + 12px); /* below brand header + month bar */
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--success); color: #fff; font-size: 14px; font-weight: 600;
   font-family: 'Figtree', sans-serif; padding: 10px 18px;
-  border-radius: 99px; z-index: 100; white-space: nowrap;
+  border-radius: 99px; z-index: 200; white-space: nowrap;
   opacity: 0; transition: opacity 0.2s, transform 0.2s;
   pointer-events: none; box-shadow: var(--shadow-lg);
 }
-.toast.show        { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.hidden      { display: none; }
-.toast.toast-error { background: var(--error); color: #fff; }
+.toast.show         { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.hidden       { display: none; }
+.toast.toast-error  { background: var(--error); }
+.toast.toast-info   { background: var(--accent); }
 
 /* Profile sheet */
 .profile-sheet-title { font-size: 13px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); margin-bottom: 8px; padding: 0 2px; }
