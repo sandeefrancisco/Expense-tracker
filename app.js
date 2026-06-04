@@ -402,7 +402,7 @@ function fmtGroupGrandTotal(catIds, byCat) {
     if (!byCat[id]) return;
     const { code, symbol } = getCatCurrency(id);
     if (!acc[code]) acc[code] = { symbol, total: 0 };
-    acc[code].total += (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+    acc[code].total += (byCat[id].total || 0) + (byCat[id].paidTotal || 0) + (byCat[id].plannedTotal || 0);
   });
   return Object.values(acc).map(({ symbol, total }) => `${symbol}${fmtNum(total)}`).join(' · ');
 }
@@ -971,9 +971,11 @@ function renderListView() {
   // Group expenses by category
   const byCat = {};
   list.forEach(e => {
-    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0, paidTotal: 0 };
+    if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0, paidTotal: 0, plannedTotal: 0 };
     byCat[e.category].items.push(e);
-    if (!e.planned) {
+    if (e.planned) {
+      byCat[e.category].plannedTotal += effectiveAmount(e);
+    } else {
       const amt = effectiveAmount(e);
       if (e.checked) byCat[e.category].paidTotal += amt;
       else byCat[e.category].total += amt;
@@ -1051,7 +1053,7 @@ function renderListView() {
       const grpBaseTotal = item.catIds.reduce((s, id) => {
         if (!byCat[id]) return s;
         const { code } = getCatCurrency(id);
-        const amt = (byCat[id].total || 0) + (byCat[id].paidTotal || 0);
+        const amt = (byCat[id].total || 0) + (byCat[id].paidTotal || 0) + (byCat[id].plannedTotal || 0);
         const b = toBase(amt, code);
         return b != null ? s + b : s;
       }, 0);
@@ -1088,7 +1090,7 @@ function renderListView() {
 
       sortedSubs.forEach(catId => {
         const cat = getCat(catId);
-        const { items, total, paidTotal } = byCat[catId];
+        const { items, total, paidTotal, plannedTotal } = byCat[catId];
         const sublabel = cat.name.split(/\s+/).slice(1).join(' ') || cat.name;
         const isCatExp = expandedListCats.has(catId);
 
@@ -1098,7 +1100,7 @@ function renderListView() {
 
         const subActive  = items.filter(e => !e.planned);
         const subPaid    = subActive.filter(e => e.checked).length;
-        const subGrand   = total + paidTotal;
+        const subGrand   = total + paidTotal + plannedTotal;
         const rawSubLeft = subActive.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
         const subLeftHtml = rawSubLeft > 0
           ? `<div class="list-hdr-left">${fmtCat(rawSubLeft, catId)} left${cat.shared ? `<span class="left-share"> ÷2 ${fmtCat(rawSubLeft / 2, catId)}</span>` : ''}</div>`
@@ -1128,7 +1130,7 @@ function renderListView() {
 
     } else {
       const cat = getCat(item.catId);
-      const { items, total, paidTotal } = byCat[item.catId];
+      const { items, total, paidTotal, plannedTotal } = byCat[item.catId];
       const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
       tile.dataset.dragId  = item.catId;
@@ -1137,7 +1139,7 @@ function renderListView() {
 
       const activeItems = items.filter(e => !e.planned);
       const paidCount  = activeItems.filter(e => e.checked).length;
-      const grandTotal = total + paidTotal;
+      const grandTotal = total + paidTotal + plannedTotal;
       const rawLeft    = activeItems.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
       const catShared  = getCat(item.catId)?.shared;
       const leftHtml   = rawLeft > 0
@@ -1265,8 +1267,14 @@ function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
   document.getElementById('cosDeleteLabel').textContent = isGroup ? 'Delete group' : 'Delete category';
   document.getElementById('cosDelete').classList.remove('hidden');
 
+  // Determine planned state: if all active items in the category are planned → offer "Include all"
+  const catIdsForPlanned = isGroup ? groupCatIds : [catId];
+  const catItems = getMonthExpenses().filter(e => catIdsForPlanned.includes(e.category));
+  const allPlanned = catItems.length > 0 && catItems.every(e => e.planned);
+  document.getElementById('cosPlannedLabel').textContent = allPlanned ? 'Include all in totals' : 'Mark all as reminder';
+
   // Clear old listeners by replacing nodes
-  ['cosAdd','cosRename','cosMoveUp','cosMoveDown','cosDelete'].forEach(id => {
+  ['cosAdd','cosRename','cosMoveUp','cosMoveDown','cosDelete','cosPlanned'].forEach(id => {
     const el = document.getElementById(id);
     const clone = el.cloneNode(true);
     el.parentNode.replaceChild(clone, el);
@@ -1295,12 +1303,37 @@ function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
       deleteCategoryById(catId);
     }
   });
+  document.getElementById('cosPlanned').addEventListener('click', () => {
+    closeModal('catOptionsSheet');
+    toggleCategoryPlanned(catIdsForPlanned, !allPlanned);
+  });
 
   openModal('catOptionsSheet');
 }
 
 function deleteGroupCategories(catIds, prefix) {
   openDeleteGroupConfirm(catIds, prefix);
+}
+
+async function toggleCategoryPlanned(catIds, toPlanned) {
+  const targets = getMonthExpenses().filter(e => catIds.includes(e.category));
+  if (targets.length === 0) return;
+  const prev = targets.map(e => ({ id: e.id, planned: e.planned }));
+  targets.forEach(e => {
+    const idx = expenses.findIndex(x => x.id === e.id);
+    if (idx !== -1) expenses[idx] = { ...expenses[idx], planned: toPlanned };
+  });
+  renderAll();
+  try {
+    await Promise.all(targets.map(e => dbPatchExpense(e.id, { planned: toPlanned })));
+    showToast(toPlanned ? 'Marked as reminder' : 'Included in totals');
+  } catch (err) {
+    prev.forEach(({ id, planned }) => {
+      const idx = expenses.findIndex(x => x.id === id);
+      if (idx !== -1) expenses[idx] = { ...expenses[idx], planned };
+    });
+    renderAll(); showToast('Error: ' + err.message, true);
+  }
 }
 
 function buildItem(e) {
