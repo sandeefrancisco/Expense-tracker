@@ -1853,7 +1853,43 @@ function openItemOptions(id) {
   const e = expenses.find(x => x.id === id); if (!e) return;
   pendingOptionsId = id;
   document.getElementById('itemOptionsDesc').textContent = e.description;
+
+  // Determine position within same category + checked state for move up/down
+  const peers = getMonthExpenses()
+    .filter(x => x.category === e.category && x.checked === e.checked)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const idx = peers.findIndex(x => x.id === id);
+  document.getElementById('itemOptionsMoveUp').classList.toggle('hidden', idx <= 0);
+  document.getElementById('itemOptionsMoveDown').classList.toggle('hidden', idx < 0 || idx >= peers.length - 1);
+
   openModal('itemOptionsModal');
+}
+
+async function moveExpenseInOrder(id, direction) {
+  const e = expenses.find(x => x.id === id); if (!e) return;
+  const peers = getMonthExpenses()
+    .filter(x => x.category === e.category && x.checked === e.checked)
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const idx = peers.findIndex(x => x.id === id);
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= peers.length) return;
+
+  const a = peers[idx], b = peers[swapIdx];
+  const aOrder = a.sort_order ?? idx + 1;
+  const bOrder = b.sort_order ?? swapIdx + 1;
+  a.sort_order = bOrder;
+  b.sort_order = aOrder;
+  renderListView();
+  try {
+    await Promise.all([
+      dbPatchExpense(a.id, { sort_order: a.sort_order }),
+      dbPatchExpense(b.id, { sort_order: b.sort_order }),
+    ]);
+  } catch (err) {
+    a.sort_order = aOrder; b.sort_order = bOrder;
+    renderListView();
+    showToast('Could not reorder — ' + err.message, true);
+  }
 }
 
 async function duplicateExpense(id) {
@@ -2025,6 +2061,12 @@ function bindEvents() {
   });
   document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
+  });
+  document.getElementById('itemOptionsMoveUp').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); moveExpenseInOrder(id, 'up');
+  });
+  document.getElementById('itemOptionsMoveDown').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); moveExpenseInOrder(id, 'down');
   });
   document.getElementById('itemOptionsDelete').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
