@@ -1632,6 +1632,7 @@ async function handleFormSubmit(ev) {
       const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+      renderAll();
     } catch (err) {
       expenses = expenses.filter(e => e.id !== tmp);
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -1963,6 +1964,7 @@ async function duplicateExpense(id) {
     const row = await dbSaveExpense(payload);
     const idx = expenses.findIndex(e => e.id === tmp);
     if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+    renderAll();
   } catch (err) {
     expenses = expenses.filter(e => e.id !== tmp);
     renderAll(); showToast('Could not duplicate — ' + err.message, true);
