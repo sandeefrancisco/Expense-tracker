@@ -746,7 +746,8 @@ function renderSummary() {
     const isCurrentMonth = currentYear === now.getFullYear() && currentMonth === now.getMonth();
     const monthName = new Date(currentYear, currentMonth, 1).toLocaleDateString('en-US', { month: 'long' });
     labelEl.textContent = isOver ? 'Over budget' : (isCurrentMonth ? 'Saved this month' : `Saved · ${monthName}`);
-    heroEl.textContent  = `${primarySym}${fmtNum(Math.abs(saved))}`;
+    heroEl.textContent  = `${isOver ? '-' : ''}${primarySym}${fmtNum(Math.abs(saved))}`;
+    if (isOver) heroEl.style.color = 'var(--error)';
     subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
     heroIsPrimary = true;
   } else if (curEntries.length === 0) {
