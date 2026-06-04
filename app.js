@@ -1048,7 +1048,7 @@ function renderListView() {
         const subGrand   = total + paidTotal;
         const rawSubLeft = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
         const subLeftHtml = rawSubLeft > 0
-          ? `<div class="list-hdr-left">${fmtCat(rawSubLeft, catId)} left</div>`
+          ? `<div class="list-hdr-left">${fmtCat(rawSubLeft, catId)} left${cat.shared ? `<span class="left-share"> ÷2 ${fmtCat(rawSubLeft / 2, catId)}</span>` : ''}</div>`
           : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
@@ -1090,8 +1090,9 @@ function renderListView() {
       const paidCount  = items.filter(e => e.checked).length;
       const grandTotal = total + paidTotal;
       const rawLeft    = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
+      const catShared  = getCat(item.catId)?.shared;
       const leftHtml   = rawLeft > 0
-        ? `<div class="list-hdr-left">${fmtCat(rawLeft, item.catId)} left</div>`
+        ? `<div class="list-hdr-left">${fmtCat(rawLeft, item.catId)} left${catShared ? `<span class="left-share"> ÷2 ${fmtCat(rawLeft / 2, item.catId)}</span>` : ''}</div>`
         : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
       const { code: catCode } = getCatCurrency(item.catId);
       const catBaseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
