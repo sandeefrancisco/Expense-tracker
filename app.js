@@ -1032,6 +1032,8 @@ function renderListView() {
       tile.className = 'list-tile list-tile-grp';
       tile.dataset.dragId = `grp__${item.prefix}`;
       tile.dataset.catIds = JSON.stringify(item.catIds);
+      tile.dataset.tileType   = 'group';
+      tile.dataset.tilePrefix = item.prefix;
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
@@ -1075,16 +1077,7 @@ function renderListView() {
       grpBody.className = 'cat-group-body' + (isExpanded ? '' : ' collapsed');
       tile.appendChild(grpBody);
 
-      hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.cat-opts-btn')) return;
-        const nowExpanded = expandedListGroups.has(item.prefix);
-        if (nowExpanded) expandedListGroups.delete(item.prefix);
-        else expandedListGroups.add(item.prefix);
-        grpBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-        saveExpandState();
-      });
-      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0], item.catIds, item.prefix); });
+      // interactions handled by delegated listener on #expenseList
 
       const sortedSubs = item.catIds
         .filter(id => byCat[id])
@@ -1118,21 +1111,14 @@ function renderListView() {
             <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
             ${subLeftHtml}
           </div>`;
+        sh.dataset.catId = catId;
         subTile.appendChild(sh);
 
         const itemsBody = document.createElement('div');
         itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
         subTile.appendChild(itemsBody);
 
-        sh.addEventListener('click', () => {
-          const nowExpanded = expandedListCats.has(catId);
-          if (nowExpanded) expandedListCats.delete(catId);
-          else expandedListCats.add(catId);
-          itemsBody.classList.toggle('collapsed', nowExpanded);
-          sh.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-          saveExpandState();
-        });
-
+        // expand/collapse handled by delegated listener on #expenseList
         renderItemsBody(items, itemsBody);
       });
 
@@ -1141,7 +1127,9 @@ function renderListView() {
       const { items, total, paidTotal } = byCat[item.catId];
       const isCatExp = expandedListCats.has(item.catId);
       tile.className = 'list-tile';
-      tile.dataset.dragId = item.catId;
+      tile.dataset.dragId  = item.catId;
+      tile.dataset.tileType = 'single';
+      tile.dataset.catId    = item.catId;
 
       const paidCount  = items.filter(e => e.checked).length;
       const grandTotal = total + paidTotal;
@@ -1178,16 +1166,7 @@ function renderListView() {
       itemsBody.className = 'cat-items-body' + (isCatExp ? '' : ' collapsed');
       tile.appendChild(itemsBody);
 
-      hdr.addEventListener('click', ev => {
-        if (ev.target.closest('.cat-opts-btn')) return;
-        const nowExpanded = expandedListCats.has(item.catId);
-        if (nowExpanded) expandedListCats.delete(item.catId);
-        else expandedListCats.add(item.catId);
-        itemsBody.classList.toggle('collapsed', nowExpanded);
-        hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
-        saveExpandState();
-      });
-      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catId); });
+      // interactions handled by delegated listener on #expenseList
 
       renderItemsBody(items, itemsBody);
     }
@@ -1347,12 +1326,6 @@ function buildItem(e) {
     <button class="item-more-btn" aria-label="More options">
       <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
     </button>`;
-  el.addEventListener('click', ev => {
-    if (ev.target.closest('.item-check-btn') || ev.target.closest('.item-more-btn')) return;
-    openEditModal(e.id);
-  });
-  el.querySelector('.item-check-btn').addEventListener('click', ev => { ev.stopPropagation(); toggleCheck(e.id); });
-  el.querySelector('.item-more-btn').addEventListener('click', ev => { ev.stopPropagation(); openItemOptions(e.id); });
   return el;
 }
 
@@ -1831,6 +1804,7 @@ async function handleIncomeSubmit(e) {
     const row = await dbSaveIncome({ user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
     const idx = incomeEntries.findIndex(r => r.id === tmp);
     if (idx !== -1) incomeEntries[idx] = { ...row, amount: parseFloat(row.amount) };
+    renderSummary();
   } catch (err) {
     incomeEntries = incomeEntries.filter(r => r.id !== tmp);
     renderSummary();
@@ -2064,14 +2038,16 @@ function openModal(id) {
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
-  if (MODALS.every(m => document.getElementById(m).classList.contains('hidden'))) {
-    document.body.classList.remove('modal-open');
-  }
+  document.getElementById(id)?.classList.add('hidden');
+  const anyOpen = MODALS.some(m => {
+    const el = document.getElementById(m);
+    return el && !el.classList.contains('hidden');
+  });
+  if (!anyOpen) document.body.classList.remove('modal-open');
 }
 
 function closeAllModals() {
-  MODALS.forEach(m => document.getElementById(m).classList.add('hidden'));
+  MODALS.forEach(m => document.getElementById(m)?.classList.add('hidden'));
   document.body.classList.remove('modal-open');
 }
 
@@ -2089,6 +2065,93 @@ function bindEvents() {
   document.getElementById('nextMonth').addEventListener('click', () => {
     currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     saveViewMonth(); renderAll();
+  });
+
+  // ── Delegated listener for the entire expense list ──────────────────────────
+  // One permanent listener handles all item/tile interactions regardless of
+  // how many times renderListView() rebuilds the DOM.
+  document.getElementById('expenseList').addEventListener('click', e => {
+    // Check button
+    const checkBtn = e.target.closest('.item-check-btn');
+    if (checkBtn) {
+      e.stopPropagation();
+      const item = checkBtn.closest('[data-id]');
+      if (item?.dataset.id) toggleCheck(item.dataset.id);
+      return;
+    }
+    // More/options button
+    const moreBtn = e.target.closest('.item-more-btn');
+    if (moreBtn) {
+      e.stopPropagation();
+      const item = moreBtn.closest('[data-id]');
+      if (item?.dataset.id) openItemOptions(item.dataset.id);
+      return;
+    }
+    // Category options button
+    const catOptsBtn = e.target.closest('.cat-opts-btn');
+    if (catOptsBtn) {
+      e.stopPropagation();
+      const catIdsRaw = catOptsBtn.dataset.catIds;
+      const catId     = catOptsBtn.dataset.catId;
+      if (catIdsRaw) {
+        const catIds = JSON.parse(catIdsRaw);
+        openCatCtxMenu(catOptsBtn, catIds[0], catIds, catOptsBtn.dataset.label || '');
+      } else if (catId) {
+        openCatCtxMenu(catOptsBtn, catId);
+      }
+      return;
+    }
+    // Expense item tap → edit
+    const expItem = e.target.closest('.expense-item[data-id]');
+    if (expItem) {
+      openEditModal(expItem.dataset.id);
+      return;
+    }
+    // Sub-category header (inside group) expand/collapse
+    const subHdr = e.target.closest('.list-sub-hdr[data-cat-id]');
+    if (subHdr) {
+      const catId    = subHdr.dataset.catId;
+      const subTile  = subHdr.parentElement;
+      const body     = subTile?.querySelector('.cat-items-body');
+      const chevron  = subHdr.querySelector('.cat-chevron');
+      if (catId && body) {
+        const nowExp = expandedListCats.has(catId);
+        if (nowExp) expandedListCats.delete(catId); else expandedListCats.add(catId);
+        body.classList.toggle('collapsed', nowExp);
+        chevron?.classList.toggle('collapsed', nowExp);
+        saveExpandState();
+      }
+      return;
+    }
+    // Tile header expand/collapse (group or single)
+    const tileHdr = e.target.closest('.list-tile-hdr');
+    if (tileHdr) {
+      const tile = tileHdr.closest('[data-tile-type]');
+      if (!tile) return;
+      if (tile.dataset.tileType === 'group') {
+        const prefix  = tile.dataset.tilePrefix;
+        const body    = tile.querySelector('.cat-group-body');
+        const chevron = tileHdr.querySelector('.cat-chevron');
+        if (prefix && body) {
+          const nowExp = expandedListGroups.has(prefix);
+          if (nowExp) expandedListGroups.delete(prefix); else expandedListGroups.add(prefix);
+          body.classList.toggle('collapsed', nowExp);
+          chevron?.classList.toggle('collapsed', nowExp);
+          saveExpandState();
+        }
+      } else if (tile.dataset.tileType === 'single') {
+        const catId   = tile.dataset.catId;
+        const body    = tile.querySelector('.cat-items-body');
+        const chevron = tileHdr.querySelector('.cat-chevron');
+        if (catId && body) {
+          const nowExp = expandedListCats.has(catId);
+          if (nowExp) expandedListCats.delete(catId); else expandedListCats.add(catId);
+          body.classList.toggle('collapsed', nowExp);
+          chevron?.classList.toggle('collapsed', nowExp);
+          saveExpandState();
+        }
+      }
+    }
   });
 
   // Allocation form
@@ -2177,8 +2240,8 @@ function bindEvents() {
   document.getElementById('installmentCancel').addEventListener('click', () => closeModal('installmentModal'));
 
   // Settings page
-  document.getElementById('openSettings').addEventListener('click', showSettingsPage);
-  document.getElementById('navHome').addEventListener('click', hideSettingsPage);
+  document.getElementById('openSettings').addEventListener('click', () => { closeAllModals(); showSettingsPage(); });
+  document.getElementById('navHome').addEventListener('click', () => { closeAllModals(); hideSettingsPage(); });
   document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
