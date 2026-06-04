@@ -284,6 +284,12 @@ body.modal-open { overflow: hidden; }
   overflow-y: auto;
 }
 
+/* ─── Profile Heading ──────────────────────────────────── */
+.profile-heading {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  color: var(--muted); padding: 14px 20px 6px;
+}
+
 /* ─── Summary Card ─────────────────────────────────────── */
 .summary-card {
   background: var(--surface); border-radius: var(--r-card);

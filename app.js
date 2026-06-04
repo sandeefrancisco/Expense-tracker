@@ -598,10 +598,13 @@ function renderAll() {
 function renderProfileBar() {
   // Update header trigger label
   const prof = profiles.find(p => p.id === currentProfileId);
+  const name = prof?.name ?? 'Me';
   const lbl  = document.getElementById('profileTriggerLabel');
-  if (lbl) lbl.textContent = prof?.name ?? 'Me';
+  if (lbl) lbl.textContent = name;
   const av = document.getElementById('profileAvatarEl');
-  if (av) av.textContent = (prof?.name ?? 'M').charAt(0).toUpperCase();
+  if (av) av.textContent = name.charAt(0).toUpperCase();
+  const heading = document.getElementById('profileHeading');
+  if (heading) heading.textContent = `${name}’s expenses`;
 
   // Populate profile sheet list
   const sheetList = document.getElementById('profileSheetList');
