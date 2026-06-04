@@ -2170,7 +2170,7 @@ function showSettingsPage() {
   document.getElementById('settingsPage').classList.remove('hidden');
   document.getElementById('openSettings').classList.add('active');
   document.getElementById('navHome').classList.remove('active');
-  document.querySelector('.month-bar').classList.add('hidden');
+  document.getElementById('pageTop').classList.add('hidden');
   buildCurrencySelect(); renderCategorySettings(); renderRates();
 }
 function hideSettingsPage() {
@@ -2178,7 +2178,7 @@ function hideSettingsPage() {
   document.getElementById('mainPage').classList.remove('hidden');
   document.getElementById('openSettings').classList.remove('active');
   document.getElementById('navHome').classList.add('active');
-  document.querySelector('.month-bar').classList.remove('hidden');
+  document.getElementById('pageTop').classList.remove('hidden');
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */

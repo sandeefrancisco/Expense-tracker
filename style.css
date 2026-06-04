@@ -284,10 +284,17 @@ body.modal-open { overflow: hidden; }
   overflow-y: auto;
 }
 
+/* ─── Sticky page top (heading + month picker) ─────────── */
+.page-top {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--bg); max-width: 480px; width: 100%; margin: 0 auto;
+}
+.page-top.hidden { display: none; }
+
 /* ─── Profile Heading ──────────────────────────────────── */
 .profile-heading {
   font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
-  color: var(--ink); padding: 16px 0 8px;
+  color: var(--ink); padding: 16px 16px 4px;
 }
 
 /* ─── Summary Card ─────────────────────────────────────── */
@@ -318,13 +325,10 @@ body.modal-open { overflow: hidden; }
 /* Horizontal rule inside summary card */
 .sc-rule { height: 1px; background: var(--border); margin: 14px 0; }
 
-/* Sticky month selector bar */
+/* Month selector bar — inside sticky .page-top */
 .month-bar {
-  position: sticky; top: var(--header-height); z-index: 19;
-  background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 8px; height: 48px; flex-shrink: 0;
-  max-width: 480px; width: 100%; margin: 0 auto;
+  padding: 4px 8px 12px; height: 48px; flex-shrink: 0;
 }
 .month-bar .month-display span {
   font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
@@ -1230,7 +1234,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Toast ────────────────────────────────────────────── */
 .toast {
   position: fixed;
-  top: calc(var(--header-height) + 48px + 12px); /* below brand header + month bar */
+  top: calc(100px + 12px); /* below sticky page-top */
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
   background: var(--success); color: #fff; font-size: 14px; font-weight: 600;
