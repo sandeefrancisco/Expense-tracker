@@ -2143,13 +2143,15 @@ function showSettingsPage() {
   document.getElementById('settingsPage').classList.remove('hidden');
   document.getElementById('openSettings').classList.add('active');
   document.getElementById('navHome').classList.remove('active');
-  buildCurrencySelect(); renderProfilesList(); renderCategorySettings(); renderRates();
+  document.querySelector('.month-bar').classList.add('hidden');
+  buildCurrencySelect(); renderCategorySettings(); renderRates();
 }
 function hideSettingsPage() {
   document.getElementById('settingsPage').classList.add('hidden');
   document.getElementById('mainPage').classList.remove('hidden');
   document.getElementById('openSettings').classList.remove('active');
   document.getElementById('navHome').classList.add('active');
+  document.querySelector('.month-bar').classList.remove('hidden');
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
@@ -2368,7 +2370,6 @@ function bindEvents() {
   // Settings page
   document.getElementById('openSettings').addEventListener('click', () => { closeAllModals(); showSettingsPage(); });
   document.getElementById('navHome').addEventListener('click', () => { closeAllModals(); hideSettingsPage(); });
-  document.getElementById('addPersonSettingsBtn').addEventListener('click', openAddProfileModal);
   document.getElementById('addCategorySettingsBtn').addEventListener('click', openAddCategoryModal);
 
   // Profile trigger + sheet

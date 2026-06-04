@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=120" />
+  <link rel="stylesheet" href="style.css?v=121" />
 </head>
 <body>
 
@@ -209,6 +209,7 @@
 
     <!-- Settings Page -->
     <div id="settingsPage" class="settings-page hidden">
+      <div class="settings-heading">Settings</div>
       <div class="settings-content">
         <!-- Account -->
         <div class="settings-card">
@@ -220,18 +221,6 @@
             </div>
           </div>
           <button class="settings-signout-btn" id="signOutBtn">Sign out</button>
-        </div>
-
-        <!-- People -->
-        <div class="settings-group">
-          <div class="settings-group-label">People</div>
-          <div class="settings-card">
-            <div id="profilesList"></div>
-            <button class="settings-add-row" id="addPersonSettingsBtn">
-              <div class="settings-add-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-              Add person
-            </button>
-          </div>
         </div>
 
         <!-- Currency -->
@@ -588,6 +577,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=129"></script>
+  <script src="app.js?v=130"></script>
 </body>
 </html>
