@@ -63,6 +63,7 @@ let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
 let editingProfileId         = null;
+let pendingDeleteProfileId   = null;
 let pendingDeleteCatId       = null;
 let pendingDeleteGroupIds    = null;
 let pendingDeleteGroupPrefix = null;
@@ -628,15 +629,26 @@ function renderProfileBar() {
     const editBtn = document.createElement('button');
     editBtn.className = 'profile-edit-btn';
     editBtn.setAttribute('aria-label', 'Rename');
-    editBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
-    editBtn.addEventListener('click', e => {
-      e.stopPropagation();
+    editBtn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+    editBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
       closeModal('profileSheet');
       openRenameProfileModal(p.id);
     });
 
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'profile-delete-btn';
+    deleteBtn.setAttribute('aria-label', 'Delete');
+    deleteBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    deleteBtn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      closeModal('profileSheet');
+      openDeleteProfileConfirm(p.id);
+    });
+
     row.appendChild(btn);
     row.appendChild(editBtn);
+    row.appendChild(deleteBtn);
     sheetList.appendChild(row);
   });
 }
@@ -1973,6 +1985,13 @@ function openDeleteCategoryConfirm(id) {
   openModal('deleteModal');
 }
 
+function openDeleteProfileConfirm(id) {
+  const p = profiles.find(x => x.id === id); if (!p) return;
+  pendingDeleteProfileId = id;
+  setDeleteModalContent(`Delete "${p.name}"?`, 'All their expenses and income will be permanently removed.', 'Delete');
+  openModal('deleteModal');
+}
+
 function openDeleteGroupConfirm(catIds, prefix) {
   pendingDeleteGroupIds = catIds; pendingDeleteGroupPrefix = prefix;
   pendingDeleteCatId = null;
@@ -2073,6 +2092,14 @@ async function duplicateExpense(id) {
 
 async function handleConfirmDelete() {
   if (pendingDeleteMonth) { await handleDeleteMonth(); return; }
+
+  if (pendingDeleteProfileId) {
+    const id = pendingDeleteProfileId;
+    pendingDeleteProfileId = null;
+    closeModal('deleteModal');
+    await deleteProfile(id);
+    return;
+  }
 
   if (pendingDeleteGroupIds) {
     const ids    = pendingDeleteGroupIds;
@@ -2333,7 +2360,7 @@ function bindEvents() {
     closeModal('deleteModal');
     pendingDeleteId = null; pendingDeleteCatId = null;
     pendingDeleteGroupIds = null; pendingDeleteGroupPrefix = null;
-    pendingDeleteMonth = false;
+    pendingDeleteMonth = false; pendingDeleteProfileId = null;
   });
   document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
 
