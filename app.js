@@ -1366,11 +1366,11 @@ async function toggleCheck(id) {
   if (idx === -1) return;
   const newVal = !expenses[idx].checked;
   expenses[idx] = { ...expenses[idx], checked: newVal };
-  renderListView();
+  renderSummary(); renderListView();
   try { await dbPatchExpense(id, { checked: newVal }); }
   catch (err) {
     expenses[idx] = { ...expenses[idx], checked: !newVal };
-    renderListView(); showToast('Error: ' + err.message, true);
+    renderSummary(); renderListView(); showToast('Error: ' + err.message, true);
   }
 }
 
