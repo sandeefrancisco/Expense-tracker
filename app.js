@@ -1025,7 +1025,7 @@ function renderListView() {
         hdr.querySelector('.cat-chevron').classList.toggle('collapsed', nowExpanded);
         saveExpandState();
       });
-      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0]); });
+      hdr.querySelector('.cat-opts-btn').addEventListener('click', ev => { ev.stopPropagation(); openCatCtxMenu(ev.currentTarget, item.catIds[0], item.catIds, item.prefix); });
 
       const sortedSubs = item.catIds
         .filter(id => byCat[id])
@@ -1201,23 +1201,26 @@ async function moveTileInOrder(dragId, direction) {
   await saveCategoryOrder(newOrder);
 }
 
-function openCatCtxMenu(btn, catId) {
-  const cat    = getCat(catId);
-  const tile   = btn.closest('[data-drag-id]');
-  const cont   = document.getElementById('expenseList');
-  const tiles  = [...cont.querySelectorAll(':scope > .list-tile')];
-  const idx    = tile ? tiles.indexOf(tile) : -1;
-  const dragId = tile?.dataset.dragId;
+function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
+  const isGroup = groupCatIds && groupCatIds.length > 1;
+  const cat     = getCat(catId);
+  const tile    = btn.closest('[data-drag-id]');
+  const cont    = document.getElementById('expenseList');
+  const tiles   = [...cont.querySelectorAll(':scope > .list-tile')];
+  const idx     = tile ? tiles.indexOf(tile) : -1;
+  const dragId  = tile?.dataset.dragId;
   const canUp   = idx > 0;
   const canDown = idx !== -1 && idx < tiles.length - 1;
 
-  document.getElementById('catOptionsTitle').textContent = cat?.name ?? '';
-  document.getElementById('cosAddLabel').textContent = `Add to ${cat?.name ?? 'category'}`;
+  document.getElementById('catOptionsTitle').textContent = isGroup ? groupPrefix : (cat?.name ?? '');
+  document.getElementById('cosAddLabel').textContent = `Add to ${isGroup ? groupPrefix : (cat?.name ?? 'category')}`;
   document.getElementById('cosMoveUp').classList.toggle('hidden', !canUp);
   document.getElementById('cosMoveDown').classList.toggle('hidden', !canDown);
+  document.getElementById('cosDeleteLabel').textContent = isGroup ? 'Delete group' : 'Delete category';
+  document.getElementById('cosDelete').classList.remove('hidden');
 
-  // Swap listeners by cloning to clear old ones
-  ['cosAdd','cosRename','cosMoveUp','cosMoveDown'].forEach(id => {
+  // Clear old listeners by replacing nodes
+  ['cosAdd','cosRename','cosMoveUp','cosMoveDown','cosDelete'].forEach(id => {
     const el = document.getElementById(id);
     const clone = el.cloneNode(true);
     el.parentNode.replaceChild(clone, el);
@@ -1238,8 +1241,29 @@ function openCatCtxMenu(btn, catId) {
   document.getElementById('cosMoveDown').addEventListener('click', () => {
     closeModal('catOptionsSheet'); moveTileInOrder(dragId, 'down');
   });
+  document.getElementById('cosDelete').addEventListener('click', () => {
+    closeModal('catOptionsSheet');
+    if (isGroup) {
+      deleteGroupCategories(groupCatIds, groupPrefix);
+    } else {
+      deleteCategoryById(catId);
+    }
+  });
 
   openModal('catOptionsSheet');
+}
+
+async function deleteGroupCategories(catIds, prefix) {
+  const names = catIds.map(id => getCat(id)?.name).filter(Boolean).join(', ');
+  if (!confirm(`Delete group "${prefix}" and all its categories (${names})?\n\nExisting items will show as Other.`)) return;
+  try {
+    await Promise.all(catIds.map(id => sb.from('categories').delete().eq('id', id)));
+    categories = categories.filter(c => !catIds.includes(c.id));
+    renderAll();
+    showToast(`"${prefix}" group deleted`);
+  } catch (err) {
+    showToast('Error: ' + err.message, true);
+  }
 }
 
 function buildItem(e) {
