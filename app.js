@@ -62,6 +62,9 @@ let settings          = { currency: { symbol: '€', code: 'EUR' } };
 let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
+let pendingDeleteCatId       = null;
+let pendingDeleteGroupIds    = null;
+let pendingDeleteGroupPrefix = null;
 let pendingInstallmentCatId  = null;
 let selectedCategory  = null;
 let selectedBank      = null;
@@ -1312,17 +1315,8 @@ function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
   openModal('catOptionsSheet');
 }
 
-async function deleteGroupCategories(catIds, prefix) {
-  const names = catIds.map(id => getCat(id)?.name).filter(Boolean).join(', ');
-  if (!confirm(`Delete group "${prefix}" and all its categories (${names})?\n\nExisting items will show as Other.`)) return;
-  try {
-    await Promise.all(catIds.map(id => sb.from('categories').delete().eq('id', id)));
-    categories = categories.filter(c => !catIds.includes(c.id));
-    renderAll();
-    showToast(`"${prefix}" group deleted`);
-  } catch (err) {
-    showToast('Error: ' + err.message, true);
-  }
+function deleteGroupCategories(catIds, prefix) {
+  openDeleteGroupConfirm(catIds, prefix);
 }
 
 function buildItem(e) {
@@ -1456,15 +1450,8 @@ async function handleAddCategory(e) {
   }
 }
 
-async function deleteCategoryById(id) {
-  const cat = categories.find(c => c.id === id);
-  if (!cat) return;
-  if (!confirm(`Delete "${cat.name}"? Existing items will show as Other.`)) return;
-  const { error } = await sb.from('categories').delete().eq('id', id);
-  if (error) { showToast('Error: ' + error.message, true); return; }
-  categories = categories.filter(c => c.id !== id);
-  renderCategorySettings(); renderAll();
-  showToast(`${cat.name} deleted`);
+function deleteCategoryById(id) {
+  openDeleteCategoryConfirm(id);
 }
 
 function renderCategorySettings() {
@@ -1884,6 +1871,22 @@ function openDeleteMonthConfirm() {
   openModal('deleteModal');
 }
 
+function openDeleteCategoryConfirm(id) {
+  const cat = getCat(id); if (!cat) return;
+  pendingDeleteCatId = id;
+  pendingDeleteGroupIds = null; pendingDeleteGroupPrefix = null;
+  setDeleteModalContent(`Delete "${cat.name}"?`, 'Existing items in this category will show as Other.', 'Delete');
+  openModal('deleteModal');
+}
+
+function openDeleteGroupConfirm(catIds, prefix) {
+  pendingDeleteGroupIds = catIds; pendingDeleteGroupPrefix = prefix;
+  pendingDeleteCatId = null;
+  const names = catIds.map(id => getCat(id)?.name).filter(Boolean).join(', ');
+  setDeleteModalContent(`Delete group "${prefix}"?`, `Removes ${names}. Existing items will show as Other.`, 'Delete group');
+  openModal('deleteModal');
+}
+
 async function handleDeleteMonth() {
   const toDelete = getMonthExpenses();
   if (toDelete.length === 0) return;
@@ -1973,6 +1976,36 @@ async function duplicateExpense(id) {
 
 async function handleConfirmDelete() {
   if (pendingDeleteMonth) { await handleDeleteMonth(); return; }
+
+  if (pendingDeleteGroupIds) {
+    const ids    = pendingDeleteGroupIds;
+    const prefix = pendingDeleteGroupPrefix;
+    pendingDeleteGroupIds = null; pendingDeleteGroupPrefix = null;
+    closeModal('deleteModal');
+    try {
+      await Promise.all(ids.map(id => sb.from('categories').delete().eq('id', id)));
+      categories = categories.filter(c => !ids.includes(c.id));
+      renderCategorySettings(); renderAll();
+      showToast(`"${prefix}" group deleted`);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+    return;
+  }
+
+  if (pendingDeleteCatId) {
+    const id  = pendingDeleteCatId;
+    const cat = getCat(id);
+    pendingDeleteCatId = null;
+    closeModal('deleteModal');
+    try {
+      const { error } = await sb.from('categories').delete().eq('id', id);
+      if (error) throw error;
+      categories = categories.filter(c => c.id !== id);
+      renderCategorySettings(); renderAll();
+      showToast(`${cat?.name ?? 'Category'} deleted`);
+    } catch (err) { showToast('Error: ' + err.message, true); }
+    return;
+  }
+
   if (!pendingDeleteId) return;
   const id      = pendingDeleteId;
   const deleted = expenses.find(e => e.id === id);
@@ -2108,7 +2141,12 @@ function bindEvents() {
   });
 
   // Delete
-  document.getElementById('cancelDelete').addEventListener('click',  () => closeModal('deleteModal'));
+  document.getElementById('cancelDelete').addEventListener('click',  () => {
+    closeModal('deleteModal');
+    pendingDeleteId = null; pendingDeleteCatId = null;
+    pendingDeleteGroupIds = null; pendingDeleteGroupPrefix = null;
+    pendingDeleteMonth = false;
+  });
   document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
 
   // Item options sheet
