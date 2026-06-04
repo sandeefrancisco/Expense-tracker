@@ -1353,7 +1353,10 @@ function buildItem(e) {
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
     <div class="expense-info">
-      <div class="expense-desc">${escHtml(e.description)}${e.planned ? '<span class="planned-badge">Reminder</span>' : ''}</div>
+      <div class="expense-name-row">
+        <div class="expense-desc">${escHtml(e.description)}</div>
+        ${e.planned ? '<span class="planned-badge">Reminder</span>' : ''}
+      </div>
       ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
