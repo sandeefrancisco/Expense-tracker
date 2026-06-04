@@ -1437,6 +1437,7 @@ async function handleAddCategory(e) {
   selectedCategory = tmp;
   closeModal('categoryModal');
   buildCategoryGrid(); selectCategory(tmp);
+  renderCategorySettings();
   showToast(`${name} added`);
 
   try {
@@ -1451,7 +1452,7 @@ async function handleAddCategory(e) {
   } catch (err) {
     categories = categories.filter(c => c.id !== tmp);
     if (selectedCategory === tmp) selectedCategory = categories[0]?.id || null;
-    buildCategoryGrid(); showToast('Could not save — ' + err.message, true);
+    buildCategoryGrid(); renderCategorySettings(); showToast('Could not save — ' + err.message, true);
   }
 }
 
