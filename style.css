@@ -294,7 +294,7 @@ body.modal-open { overflow: hidden; }
 /* ─── Profile Heading ──────────────────────────────────── */
 .profile-heading {
   font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
-  color: var(--ink); padding: 16px 16px 4px;
+  color: var(--ink); padding: 16px 16px 14px;
 }
 
 /* ─── Summary Card ─────────────────────────────────────── */
