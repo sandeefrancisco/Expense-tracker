@@ -768,12 +768,15 @@ function renderSummary() {
   }
 
   // Stats — paid vs due amounts in primary currency
+  // paidBase uses effectiveAmount (halved for shared); dueBase uses raw amount
   let paidBase = 0, dueBase = 0;
   list.forEach(e => {
-    const cur = getCatCurrency(e.category);
-    const amt = effectiveAmount(e);
-    const b   = toBase(amt, cur.code) ?? (cur.code === primaryCode ? amt : 0);
-    if (e.checked) paidBase += b; else dueBase += b;
+    const cur     = getCatCurrency(e.category);
+    const effAmt  = effectiveAmount(e);
+    const rawAmt  = e.amount;
+    const paidB   = toBase(effAmt, cur.code) ?? (cur.code === primaryCode ? effAmt : 0);
+    const dueB    = toBase(rawAmt, cur.code) ?? (cur.code === primaryCode ? rawAmt : 0);
+    if (e.checked) paidBase += paidB; else dueBase += dueB;
   });
   const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 100000
     ? `${primarySym}${(v / 1000).toFixed(0)}k`
