@@ -1243,6 +1243,16 @@ body.modal-open { overflow: hidden; }
 /* Profile sheet */
 .profile-sheet-title { font-size: 13px; font-weight: 700; letter-spacing: 0.2px; color: var(--muted); margin-bottom: 8px; padding: 0 2px; }
 .profile-option-active { background: var(--accent-tint) !important; color: var(--accent) !important; }
+.profile-sheet-row { display: flex; align-items: center; gap: 4px; }
+.profile-sheet-row .profile-sheet-name { flex: 1; }
+.profile-edit-btn {
+  flex-shrink: 0; width: 40px; height: 44px;
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); border-radius: 10px;
+  transition: color var(--t);
+}
+.profile-edit-btn:active { color: var(--ink); }
 
 /* ─── Utils ────────────────────────────────────────────── */
 .hidden { display: none !important; }

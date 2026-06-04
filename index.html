@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=119" />
+  <link rel="stylesheet" href="style.css?v=120" />
 </head>
 <body>
 
@@ -391,12 +391,12 @@
     </div>
   </div>
 
-  <!-- ── Add Person Modal ── -->
+  <!-- ── Add / Rename Person Modal ── -->
   <div class="modal-backdrop hidden" id="profileModal">
     <div class="modal confirm-modal">
       <div class="confirm-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-      <h3 class="confirm-title">Add person</h3>
-      <p class="confirm-desc">Give them a name to track their budget separately.</p>
+      <h3 class="confirm-title" id="profileModalTitle">Add person</h3>
+      <p class="confirm-desc" id="profileModalDesc">Give them a name to track their budget separately.</p>
       <form id="profileForm" novalidate style="width:100%;margin-top:4px;">
         <div class="form-group">
           <input type="text" id="profileNameInput" class="form-input" placeholder="e.g. Wife, Kids, Shared…" maxlength="30" />
@@ -588,6 +588,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=128"></script>
+  <script src="app.js?v=129"></script>
 </body>
 </html>
