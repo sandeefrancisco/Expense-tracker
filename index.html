@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=113" />
+  <link rel="stylesheet" href="style.css?v=114" />
 </head>
 <body>
 
@@ -309,6 +309,13 @@
               <span class="toggle-track"></span>
             </label>
           </div>
+          <div class="installment-toggle-row">
+            <span class="installment-toggle-label">Reminder only</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="plannedToggleBtn">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
           <div class="installment-inline hidden" id="installmentInline">
             <div class="installment-inline-grid">
               <div class="form-group">
@@ -475,6 +482,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
         Installments…
       </button>
+      <button class="option-row-btn" id="itemOptionsPlanned">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="itemOptionsPlannedLabel">Mark as reminder</span>
+      </button>
       <button class="option-row-btn hidden" id="itemOptionsMoveUp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         Move up
@@ -570,6 +581,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=124"></script>
+  <script src="app.js?v=125"></script>
 </body>
 </html>

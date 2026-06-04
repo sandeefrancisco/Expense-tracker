@@ -704,7 +704,8 @@ function renderHeader() {
 }
 
 function renderSummary() {
-  const list   = getMonthExpenses();
+  const rawList = getMonthExpenses();
+  const list    = rawList.filter(e => !e.planned);
   const income = getEffectiveIncome();
   const earned = income.reduce((s, r) => s + r.amount, 0);
 
@@ -972,9 +973,11 @@ function renderListView() {
   list.forEach(e => {
     if (!byCat[e.category]) byCat[e.category] = { items: [], total: 0, paidTotal: 0 };
     byCat[e.category].items.push(e);
-    const amt = effectiveAmount(e);
-    if (e.checked) byCat[e.category].paidTotal += amt;
-    else byCat[e.category].total += amt;
+    if (!e.planned) {
+      const amt = effectiveAmount(e);
+      if (e.checked) byCat[e.category].paidTotal += amt;
+      else byCat[e.category].total += amt;
+    }
   });
 
   const catIds = Object.keys(byCat);
@@ -1039,8 +1042,8 @@ function renderListView() {
       hdr.className = 'list-tile-hdr';
       const grpFirstCat = getCat(item.catIds[0]);
       const grpColor = grpFirstCat?.color || 'var(--accent)';
-      const grpPaid      = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked).length || 0), 0);
-      const grpTotal     = item.catIds.reduce((s, id) => s + (byCat[id]?.items.length || 0), 0);
+      const grpPaid      = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked && !e.planned).length || 0), 0);
+      const grpTotal     = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => !e.planned).length || 0), 0);
       const grpUnpaidAmt = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
       const grpLeftHtml  = grpUnpaidAmt > 0
         ? `<div class="list-hdr-left">${fmtGroupTotal(item.catIds, byCat)} left</div>`
@@ -1093,9 +1096,10 @@ function renderListView() {
         subTile.className = 'list-sub-tile';
         grpBody.appendChild(subTile);
 
-        const subPaid    = items.filter(e => e.checked).length;
+        const subActive  = items.filter(e => !e.planned);
+        const subPaid    = subActive.filter(e => e.checked).length;
         const subGrand   = total + paidTotal;
-        const rawSubLeft = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
+        const rawSubLeft = subActive.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
         const subLeftHtml = rawSubLeft > 0
           ? `<div class="list-hdr-left">${fmtCat(rawSubLeft, catId)} left${cat.shared ? `<span class="left-share"> ÷2 ${fmtCat(rawSubLeft / 2, catId)}</span>` : ''}</div>`
           : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
@@ -1105,7 +1109,7 @@ function renderListView() {
           <div class="list-sub-dot" style="background:${cat.color}"></div>
           <div class="list-tile-main">
             <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-            <div class="list-sub-count">${subPaid}/${items.length}</div>
+            <div class="list-sub-count">${subPaid}/${subActive.length}</div>
           </div>
           <div class="list-sub-right">
             <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
@@ -1131,9 +1135,10 @@ function renderListView() {
       tile.dataset.tileType = 'single';
       tile.dataset.catId    = item.catId;
 
-      const paidCount  = items.filter(e => e.checked).length;
+      const activeItems = items.filter(e => !e.planned);
+      const paidCount  = activeItems.filter(e => e.checked).length;
       const grandTotal = total + paidTotal;
-      const rawLeft    = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
+      const rawLeft    = activeItems.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
       const catShared  = getCat(item.catId)?.shared;
       const leftHtml   = rawLeft > 0
         ? `<div class="list-hdr-left">${fmtCat(rawLeft, item.catId)} left${catShared ? `<span class="left-share"> ÷2 ${fmtCat(rawLeft / 2, item.catId)}</span>` : ''}</div>`
@@ -1150,7 +1155,7 @@ function renderListView() {
         </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
-          <div class="list-hdr-paid-count">${paidCount}/${items.length} paid</div>
+          <div class="list-hdr-paid-count">${paidCount}/${activeItems.length} paid</div>
         </div>
         <div class="list-hdr-right">
           <div class="list-hdr-total">${fmtCat(grandTotal, item.catId)}</div>
@@ -1301,13 +1306,13 @@ function deleteGroupCategories(catIds, prefix) {
 function buildItem(e) {
   const cat = getCat(e.category);
   const el = document.createElement('div');
-  el.className = 'expense-item' + (e.checked ? ' checked' : '');
+  el.className = 'expense-item' + (e.checked ? ' checked' : '') + (e.planned ? ' planned' : '');
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
   let amtSub = '';
   if (e.checked) {
     amtSub = `<div class="expense-amt-sub expense-amt-paid">${e.installment_complete ? '✓ installment complete' : '✓ paid'}</div>`;
-  } else if (cat.shared) {
+  } else if (cat.shared && !e.planned) {
     amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
   }
   el.innerHTML = `
@@ -1315,7 +1320,7 @@ function buildItem(e) {
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
     <div class="expense-info">
-      <div class="expense-desc">${escHtml(e.description)}</div>
+      <div class="expense-desc">${escHtml(e.description)}${e.planned ? '<span class="planned-badge">Reminder</span>' : ''}</div>
       ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
@@ -1339,6 +1344,19 @@ async function toggleCheck(id) {
   catch (err) {
     expenses[idx] = { ...expenses[idx], checked: !newVal };
     renderSummary(); renderListView(); showToast('Error: ' + err.message, true);
+  }
+}
+
+async function togglePlanned(id) {
+  const idx = expenses.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const newVal = !expenses[idx].planned;
+  expenses[idx] = { ...expenses[idx], planned: newVal };
+  renderAll();
+  try { await dbPatchExpense(id, { planned: newVal }); }
+  catch (err) {
+    expenses[idx] = { ...expenses[idx], planned: !newVal };
+    renderAll(); showToast('Error: ' + err.message, true);
   }
 }
 
@@ -1509,6 +1527,7 @@ function openAddModal() {
   document.getElementById('descInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  document.getElementById('plannedToggleBtn').checked = false;
   clearInstallmentInline();
   clearFormError();
   openModal('expenseModal');
@@ -1535,6 +1554,7 @@ function openEditModal(id) {
     clearInstallmentInline();
   }
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
+  document.getElementById('plannedToggleBtn').checked = e.planned || false;
   clearFormError();
   openModal('expenseModal');
 }
@@ -1565,6 +1585,7 @@ async function handleFormSubmit(ev) {
     installment_due_day: installDue     || null,
     installment_complete: false,
   };
+  const planned = document.getElementById('plannedToggleBtn').checked;
 
   const date = monthStartISO();
   closeModal('expenseModal');
@@ -1572,11 +1593,11 @@ async function handleFormSubmit(ev) {
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields, planned };
     renderAll();
     showToast('Updated');
     try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned });
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -1585,11 +1606,11 @@ async function handleFormSubmit(ev) {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, sort_order: newOrder, ...installFields });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields });
     renderAll();
     showToast('Added');
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
       renderAll();
@@ -1889,6 +1910,9 @@ function openItemOptions(id) {
   pendingOptionsId = id;
   document.getElementById('itemOptionsDesc').textContent = e.description;
 
+  const plannedLabel = document.getElementById('itemOptionsPlannedLabel');
+  if (plannedLabel) plannedLabel.textContent = e.planned ? 'Include in totals' : 'Mark as reminder';
+
   // Determine position within same category + checked state for move up/down
   const peers = getMonthExpenses()
     .filter(x => x.category === e.category && x.checked === e.checked)
@@ -1932,7 +1956,7 @@ async function duplicateExpense(id) {
   const tmp = 'tmp_' + Date.now();
   const catItems = expenses.filter(e => e.category === src.category && !e.checked);
   const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-  const copy = { ...src, id: tmp, checked: false, sort_order: newOrder };
+  const copy = { ...src, id: tmp, checked: false, planned: false, sort_order: newOrder };
   expenses.unshift(copy);
   renderAll();
   showToast('Duplicated');
@@ -2221,6 +2245,9 @@ function bindEvents() {
   });
   document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
+  });
+  document.getElementById('itemOptionsPlanned').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); togglePlanned(id);
   });
   document.getElementById('itemOptionsMoveUp').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); moveExpenseInOrder(id, 'up');
