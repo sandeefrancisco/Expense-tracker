@@ -328,8 +328,13 @@ body.modal-open { overflow: hidden; }
 /* Month selector bar — inside sticky .page-top */
 .month-bar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 4px 8px 12px; height: 48px; flex-shrink: 0;
+  margin: 0 16px 12px;
+  background: var(--surface); border-radius: var(--r-card);
+  border: 1px solid var(--border); box-shadow: var(--shadow-card);
+  height: 52px; flex-shrink: 0;
+  transition: background var(--t);
 }
+.month-bar:active { background: var(--tint); }
 .month-bar .month-display span {
   font-size: 15px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px;
 }
