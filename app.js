@@ -1046,8 +1046,9 @@ function renderListView() {
 
         const subPaid    = items.filter(e => e.checked).length;
         const subGrand   = total + paidTotal;
-        const subLeftHtml = total > 0
-          ? `<div class="list-hdr-left">${fmtCat(total, catId)} left</div>`
+        const rawSubLeft = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
+        const subLeftHtml = rawSubLeft > 0
+          ? `<div class="list-hdr-left">${fmtCat(rawSubLeft, catId)} left</div>`
           : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
@@ -1088,8 +1089,9 @@ function renderListView() {
 
       const paidCount  = items.filter(e => e.checked).length;
       const grandTotal = total + paidTotal;
-      const leftHtml   = total > 0
-        ? `<div class="list-hdr-left">${fmtCat(total, item.catId)} left</div>`
+      const rawLeft    = items.filter(e => !e.checked).reduce((s, e) => s + e.amount, 0);
+      const leftHtml   = rawLeft > 0
+        ? `<div class="list-hdr-left">${fmtCat(rawLeft, item.catId)} left</div>`
         : paidTotal > 0 ? `<div class="list-hdr-left list-hdr-left--done">✓ all paid</div>` : '';
       const { code: catCode } = getCatCurrency(item.catId);
       const catBaseTotal = catCode !== primaryCode ? toBase(grandTotal, catCode) : null;
