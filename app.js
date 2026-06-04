@@ -1436,7 +1436,7 @@ async function handleAddCategory(e) {
   categories.push({ id: tmp, user_id: currentUser.id, name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
   selectedCategory = tmp;
   closeModal('categoryModal');
-  buildCategoryGrid(); selectCategory(tmp);
+  buildCategoryGrid(true); selectCategory(tmp);
   renderCategorySettings();
   showToast(`${name} added`);
 
@@ -1447,12 +1447,12 @@ async function handleAddCategory(e) {
     const idx = categories.findIndex(c => c.id === tmp);
     if (idx !== -1) categories[idx] = row;
     if (selectedCategory === tmp) selectedCategory = row.id;
-    buildCategoryGrid(); selectCategory(selectedCategory);
+    buildCategoryGrid(true); selectCategory(selectedCategory);
     renderCategorySettings();
   } catch (err) {
     categories = categories.filter(c => c.id !== tmp);
     if (selectedCategory === tmp) selectedCategory = categories[0]?.id || null;
-    buildCategoryGrid(); renderCategorySettings(); showToast('Could not save — ' + err.message, true);
+    buildCategoryGrid(true); renderCategorySettings(); showToast('Could not save — ' + err.message, true);
   }
 }
 
@@ -1540,7 +1540,7 @@ function clearInstallmentInline() {
 }
 
 function openAddModal() {
-  buildCategoryGrid();
+  buildCategoryGrid(true);
   selectedBank     = null; buildBankGrid(null);
   selectedCategory = categories[0]?.id || null; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'New Allocation';
@@ -1556,7 +1556,7 @@ function openAddModal() {
 
 function openEditModal(id) {
   const e = expenses.find(x => x.id === id); if (!e) return;
-  buildCategoryGrid();
+  buildCategoryGrid(true);
   selectedCategory = e.category; selectCategory(selectedCategory);
   document.getElementById('modalTitle').textContent = 'Edit Allocation';
   document.getElementById('submitBtn').textContent  = 'Save Changes';
