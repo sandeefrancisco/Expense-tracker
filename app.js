@@ -420,7 +420,12 @@ function fmtGroupDoneTotal(catIds, byCat) {
   return parts.join(' · ');
 }
 function parseAmount(str) { return parseFloat(String(str).replace(',', '.')); }
-function effectiveAmount(e) { const c = getCat(e.category); return c.shared ? e.amount / 2 : e.amount; }
+function effectiveAmount(e) {
+  if (e.split_type === 'equal') return e.amount / 2;
+  if (e.split_type === 'custom' && e.split_percentage != null) return e.amount * e.split_percentage / 100;
+  const c = getCat(e.category);
+  return c.shared ? e.amount / 2 : e.amount;
+}
 
 function ordinal(n) { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] || s[v] || s[0]); }
 function expenseInstallmentHtml(e) {
@@ -1417,12 +1422,23 @@ function buildItem(e) {
   el.className = 'expense-item' + (e.checked ? ' checked' : '') + (e.planned ? ' planned' : '');
   el.dataset.id = e.id;
   el.dataset.dragId = e.id;
+
+  const hasSplit = e.split_type === 'equal' || e.split_type === 'custom';
+  const isShared = !hasSplit && cat.shared;
+
   let amtSub = '';
   if (e.checked) {
     amtSub = `<div class="expense-amt-sub expense-amt-paid">${e.installment_complete ? '✓ installment complete' : '✓ paid'}</div>`;
-  } else if (cat.shared && !e.planned) {
+  } else if ((hasSplit || isShared) && !e.planned) {
     amtSub = `<div class="expense-amt-sub">${fmtCat(effectiveAmount(e), e.category)} your share</div>`;
   }
+
+  const splitBadge = hasSplit
+    ? (e.split_type === 'equal'
+        ? '<span class="split-badge">÷2</span>'
+        : `<span class="split-badge">${e.split_percentage}%</span>`)
+    : (isShared ? '<span class="shared-badge">÷2</span>' : '');
+
   el.innerHTML = `
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
@@ -1436,7 +1452,7 @@ function buildItem(e) {
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
     </div>
     <div class="expense-amt-right">
-      <div class="expense-amount">${fmtCat(e.amount, e.category)}${cat.shared ? '<span class="shared-badge">÷2</span>' : ''}</div>
+      <div class="expense-amount">${fmtCat(e.amount, e.category)}${splitBadge}</div>
       ${amtSub}
     </div>
     <button class="item-more-btn" aria-label="More options">
@@ -1628,6 +1644,15 @@ function clearInstallmentInline() {
   document.getElementById('installmentToggleBtn').checked = false;
 }
 
+function clearSplitInline() {
+  document.getElementById('splitInline').classList.add('hidden');
+  document.getElementById('splitToggleBtn').checked = false;
+  document.getElementById('splitPercentGroup').classList.add('hidden');
+  document.getElementById('splitPercentInput').value = '';
+  document.querySelectorAll('.split-type-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.split === 'equal'));
+}
+
 function openAddModal() {
   buildCategoryGrid(true);
   selectedBank     = null; buildBankGrid(null);
@@ -1640,6 +1665,7 @@ function openAddModal() {
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   document.getElementById('plannedToggleBtn').checked = false;
   clearInstallmentInline();
+  clearSplitInline();
   clearFormError();
   openModal('expenseModal');
 }
@@ -1666,6 +1692,21 @@ function openEditModal(id) {
   }
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   document.getElementById('plannedToggleBtn').checked = e.planned || false;
+  if (e.split_type) {
+    document.getElementById('splitToggleBtn').checked = true;
+    document.getElementById('splitInline').classList.remove('hidden');
+    document.querySelectorAll('.split-type-chip').forEach(c =>
+      c.classList.toggle('active', c.dataset.split === e.split_type));
+    if (e.split_type === 'custom') {
+      document.getElementById('splitPercentGroup').classList.remove('hidden');
+      document.getElementById('splitPercentInput').value = e.split_percentage ?? '';
+    } else {
+      document.getElementById('splitPercentGroup').classList.add('hidden');
+      document.getElementById('splitPercentInput').value = '';
+    }
+  } else {
+    clearSplitInline();
+  }
   clearFormError();
   openModal('expenseModal');
 }
@@ -1698,17 +1739,29 @@ async function handleFormSubmit(ev) {
   };
   const planned = document.getElementById('plannedToggleBtn').checked;
 
+  const splitVisible = !document.getElementById('splitInline').classList.contains('hidden');
+  const splitType = splitVisible
+    ? (document.querySelector('.split-type-chip.active')?.dataset.split || 'equal')
+    : null;
+  const splitPercentage = splitType === 'custom'
+    ? parseFloat(document.getElementById('splitPercentInput').value) || null
+    : null;
+  if (splitType === 'custom' && (!splitPercentage || splitPercentage < 1 || splitPercentage > 99)) {
+    showFormError('Enter your share percentage (1–99).'); return;
+  }
+  const splitFields = { split_type: splitType, split_percentage: splitPercentage };
+
   const date = monthStartISO();
   closeModal('expenseModal');
 
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields, planned };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields };
     renderAll();
     showToast('Updated');
     try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned });
+      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields });
     } catch (err) {
       if (prev && i !== -1) expenses[i] = prev;
       renderAll(); showToast('Could not save — ' + err.message, true);
@@ -1717,11 +1770,11 @@ async function handleFormSubmit(ev) {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields });
+    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields, ...splitFields });
     renderAll();
     showToast('Added');
     try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned });
+      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned, ...splitFields });
       const idx = expenses.findIndex(e => e.id === tmp);
       if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
       renderAll();
@@ -2324,6 +2377,23 @@ function bindEvents() {
       document.getElementById('inlineInstallCurrent').value = '';
       document.getElementById('inlineInstallDue').value     = '';
     }
+  });
+  document.getElementById('splitToggleBtn').addEventListener('change', function() {
+    if (this.checked) {
+      document.getElementById('splitInline').classList.remove('hidden');
+    } else {
+      clearSplitInline();
+    }
+  });
+  document.querySelectorAll('.split-type-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.split-type-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const isCustom = chip.dataset.split === 'custom';
+      const pctGroup = document.getElementById('splitPercentGroup');
+      pctGroup.classList.toggle('hidden', !isCustom);
+      if (isCustom) document.getElementById('splitPercentInput').focus();
+    });
   });
   document.getElementById('amountInput').addEventListener('input', clearFormError);
   document.getElementById('descInput').addEventListener('input', clearFormError);

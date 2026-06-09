@@ -980,6 +980,29 @@ body.modal-open { overflow: hidden; }
   vertical-align: middle; white-space: nowrap;
 }
 
+/* Expense-level split badge */
+.split-badge {
+  font-size: 11px; font-weight: 700;
+  color: #0891b2; background: rgba(8,145,178,0.1); border: 1px solid rgba(8,145,178,0.28);
+  padding: 1px 5px; border-radius: 99px; margin-left: 5px;
+  vertical-align: middle; white-space: nowrap;
+}
+
+/* Split type chips in expense modal */
+.split-type-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+}
+.split-type-chip {
+  padding: 10px 12px; border-radius: 99px; border: 1.5px solid var(--border);
+  background: var(--tint); cursor: pointer; font-family: 'Figtree', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  transition: all var(--t); min-height: 40px;
+}
+.split-type-chip.active {
+  border-color: #0891b2; background: rgba(8,145,178,0.08); color: #0891b2;
+}
+.split-type-chip:active { opacity: 0.7; }
+
 /* Split 50/50 toggle switch */
 .cat-shared-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; min-height: 44px; }
 .toggle-switch { position: relative; display: inline-block; width: 46px; height: 28px; cursor: pointer; flex-shrink: 0; }

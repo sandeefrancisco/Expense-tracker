@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=125" />
+  <link rel="stylesheet" href="style.css?v=126" />
 </head>
 <body>
 
@@ -298,6 +298,23 @@
               <input type="checkbox" id="plannedToggleBtn">
               <span class="toggle-track"></span>
             </label>
+          </div>
+          <div class="installment-toggle-row">
+            <span class="installment-toggle-label">Split expense</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="splitToggleBtn">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="installment-inline hidden" id="splitInline">
+            <div class="split-type-row">
+              <button type="button" class="split-type-chip active" data-split="equal">50 / 50</button>
+              <button type="button" class="split-type-chip" data-split="custom">Custom %</button>
+            </div>
+            <div class="form-group hidden" id="splitPercentGroup">
+              <label class="form-label">Your share (%)</label>
+              <input type="number" id="splitPercentInput" class="form-input" placeholder="e.g. 60" min="1" max="99" inputmode="numeric" />
+            </div>
           </div>
           <div class="installment-inline hidden" id="installmentInline">
             <div class="installment-inline-grid">
