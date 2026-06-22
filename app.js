@@ -806,7 +806,7 @@ function renderHeader() {
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
   const note = document.getElementById('monthSalaryNote');
   if (note) {
-    const prev = new Date(currentYear, currentMonth - 2, 1);
+    const prev = new Date(currentYear, currentMonth - 1, 1);
     note.textContent = prev.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + ' salary';
   }
 }
