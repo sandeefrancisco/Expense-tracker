@@ -1,9 +1,17 @@
 'use strict';
 
+/* Safety net: if anything throws before init() runs, dismiss the skeleton */
+window.addEventListener('error', () => {
+  const ls = document.getElementById('loadingScreen');
+  if (ls && !ls.classList.contains('hidden')) ls.classList.add('hidden');
+});
+
 /* ─── Supabase ──────────────────────────────────────────── */
 const SUPABASE_URL      = 'https://eizhfvieozigsgolckez.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpemhmdmllb3ppZ3Nnb2xja2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTEyMDUsImV4cCI6MjA5NTc2NzIwNX0.v-qAHGR-I63RL4Ue0YH5evTwot9riE-nUuw0ACffaYA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = (typeof supabase !== 'undefined')
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
 
 /* ─── Bank definitions ──────────────────────────────────── */
 const BANKS = ['BDO', 'BPI', 'N26', 'Commerzbank'];
@@ -115,6 +123,8 @@ async function init() {
 
   let session = null;
   try {
+    if (!sb) throw new Error('Supabase library failed to load — check network connection');
+
     bindEvents();
 
     const { data } = await sb.auth.getSession();
