@@ -2201,6 +2201,68 @@ async function moveExpenseInOrder(id, direction) {
   }
 }
 
+function openMoveMonthPicker(id) {
+  const e = expenses.find(x => x.id === id); if (!e) return;
+  const eDate = new Date(e.date + 'T12:00:00');
+  const eYear = eDate.getFullYear(), eMon = eDate.getMonth() + 1;
+
+  const sub = document.getElementById('moveMonthSub');
+  if (sub) sub.textContent = `"${e.description}" will keep its category.`;
+
+  // Build list: 18 months back → 12 months ahead, skip the item's own month
+  const items = [];
+  const base = new Date();
+  for (let delta = -18; delta <= 12; delta++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + delta, 1);
+    const y = d.getFullYear(), m = d.getMonth() + 1;
+    if (y === eYear && m === eMon) continue;
+    items.push({ y, m });
+  }
+
+  const list = document.getElementById('moveMonthList');
+  list.innerHTML = items.map(({ y, m }) => {
+    const isCurrent = y === currentYear && m === currentMonth;
+    return `<button class="move-month-btn${isCurrent ? ' is-current-view' : ''}" data-y="${y}" data-m="${m}">
+      <span class="move-month-label">${getMonthLabel(y, m - 1)}</span>
+      ${isCurrent ? '<span class="move-month-badge">current view</span>' : ''}
+    </button>`;
+  }).join('');
+
+  list.querySelectorAll('.move-month-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      closeModal('moveMonthModal');
+      moveExpenseToMonth(id, +btn.dataset.y, +btn.dataset.m);
+    });
+  });
+
+  // Scroll so current view is visible
+  openModal('moveMonthModal');
+  requestAnimationFrame(() => {
+    const cur = list.querySelector('.is-current-view');
+    if (cur) cur.scrollIntoView({ block: 'center' });
+  });
+}
+
+async function moveExpenseToMonth(id, year, month) {
+  const e = expenses.find(x => x.id === id); if (!e) return;
+  const oldDate = e.date;
+  const day = new Date(oldDate + 'T12:00:00').getDate();
+  const daysInTarget = new Date(year, month, 0).getDate();
+  const newDay = Math.min(day, daysInTarget);
+  const newDate = `${year}-${String(month).padStart(2, '0')}-${String(newDay).padStart(2, '0')}`;
+
+  e.date = newDate;
+  renderAll();
+  showToast(`Moved to ${getMonthLabel(year, month - 1)}`);
+  try {
+    await dbPatchExpense(id, { date: newDate });
+  } catch (err) {
+    e.date = oldDate;
+    renderAll();
+    showToast('Could not move — ' + err.message, true);
+  }
+}
+
 async function duplicateExpense(id) {
   const src = expenses.find(e => e.id === id); if (!src) return;
   const tmp = 'tmp_' + Date.now();
@@ -2314,7 +2376,7 @@ function hideSettingsPage() {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'moveMonthModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -2532,10 +2594,14 @@ function bindEvents() {
   document.getElementById('itemOptionsMoveDown').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); moveExpenseInOrder(id, 'down');
   });
+  document.getElementById('itemOptionsMoveMonth').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openMoveMonthPicker(id);
+  });
   document.getElementById('itemOptionsDelete').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openDeleteConfirm(id);
   });
   document.getElementById('itemOptionsCancel').addEventListener('click', () => closeModal('itemOptionsModal'));
+  document.getElementById('moveMonthCancel').addEventListener('click', () => closeModal('moveMonthModal'));
   document.getElementById('catOptionsCancel').addEventListener('click', () => closeModal('catOptionsSheet'));
 
   // Installment modal
