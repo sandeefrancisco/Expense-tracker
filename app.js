@@ -113,35 +113,47 @@ async function init() {
   currentYear  = !isNaN(savedYear)  ? savedYear  : now.getFullYear();
   currentMonth = !isNaN(savedMonth) ? savedMonth : now.getMonth();
 
-  bindEvents();
+  let session = null;
+  try {
+    bindEvents();
 
-  const { data: { session } } = await sb.auth.getSession();
+    const { data } = await sb.auth.getSession();
+    session = data?.session ?? null;
 
-  if (session?.user) {
-    currentUser = session.user;
-    // Skeleton (loading screen) stays visible during the data fetch
-    await loadUserData();
-    buildCategoryGrid();
-    showApp();
-    hideLoading(); // remove skeleton once the real content is painted
-  } else {
+    if (session?.user) {
+      currentUser = session.user;
+      await loadUserData();
+      buildCategoryGrid();
+      showApp();
+    } else {
+      showAuth();
+    }
+  } catch (err) {
+    console.error('[init] error:', err);
     showAuth();
+  } finally {
     hideLoading();
   }
 
   const bootstrappedUserId = session?.user?.id ?? null;
 
-  sb.auth.onAuthStateChange(async (event, session) => {
+  sb.auth.onAuthStateChange(async (event, newSession) => {
     if (event === 'INITIAL_SESSION') return;
 
-    if (event === 'SIGNED_IN' && session?.user) {
-      if (session.user.id === bootstrappedUserId) return;
-      currentUser = session.user;
-      showSkeleton(); // instantly hide auth form and show skeleton while data loads
-      await loadUserData();
-      buildCategoryGrid();
-      showApp();
-      hideLoading();
+    if (event === 'SIGNED_IN' && newSession?.user) {
+      if (newSession.user.id === bootstrappedUserId) return;
+      currentUser = newSession.user;
+      showSkeleton();
+      try {
+        await loadUserData();
+        buildCategoryGrid();
+        showApp();
+      } catch (err) {
+        console.error('[onAuthStateChange] error:', err);
+        showAuth();
+      } finally {
+        hideLoading();
+      }
     } else if (event === 'SIGNED_OUT') {
       currentUser      = null;
       expenses         = [];
