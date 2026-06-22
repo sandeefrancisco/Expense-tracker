@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=128" />
+  <link rel="stylesheet" href="style.css?v=129" />
 </head>
 <body>
 
@@ -124,7 +124,10 @@
         <button class="icon-btn sc-month-btn" id="prevMonth" aria-label="Previous month">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <div class="month-display"><span id="monthLabel">June 2026</span></div>
+        <div class="month-display">
+          <span id="monthLabel">June 2026</span>
+          <span id="monthSalaryNote" class="month-salary-note"></span>
+        </div>
         <button class="icon-btn sc-month-btn" id="nextMonth" aria-label="Next month">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
@@ -600,6 +603,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=135"></script>
+  <script src="app.js?v=136"></script>
 </body>
 </html>

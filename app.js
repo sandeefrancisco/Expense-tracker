@@ -781,6 +781,11 @@ function renderProfilesList() {
 function renderHeader() {
   const done = isMonthDone(currentYear, currentMonth);
   document.getElementById('monthLabel').textContent = getMonthLabel(currentYear, currentMonth) + (done ? ' ·  done' : '');
+  const note = document.getElementById('monthSalaryNote');
+  if (note) {
+    const prev = new Date(currentYear, currentMonth - 2, 1);
+    note.textContent = prev.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + ' salary';
+  }
 }
 
 function renderSummary() {
