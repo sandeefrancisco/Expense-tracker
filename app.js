@@ -603,15 +603,38 @@ function renderAll() {
 
 /* ─── Profiles ──────────────────────────────────────────── */
 function renderProfileBar() {
-  // Update header trigger label
   const prof = profiles.find(p => p.id === currentProfileId);
-  const name = prof?.name ?? 'Me';
-  const lbl  = document.getElementById('profileTriggerLabel');
-  if (lbl) lbl.textContent = name;
-  const av = document.getElementById('profileAvatarEl');
+  const name = prof?.name ?? ‘Me’;
+
+  // Nav avatar shows the active profile initial
+  const av = document.getElementById(‘profileAvatarEl’);
   if (av) av.textContent = name.charAt(0).toUpperCase();
-  const heading = document.getElementById('profileHeading');
-  if (heading) heading.textContent = `${name}’s expenses`;
+  const lbl = document.getElementById(‘profileTriggerLabel’);
+  if (lbl) lbl.textContent = ‘People’;
+
+  // Build always-visible profile chips in the header
+  const chipsRow = document.getElementById(‘profileChipsRow’);
+  if (chipsRow) {
+    chipsRow.innerHTML = profiles.map(p =>
+      `<button class="profile-chip${p.id === currentProfileId ? ‘ active’ : ‘’}" data-pid="${p.id}">
+        <span class="chip-avatar">${p.name.charAt(0).toUpperCase()}</span>
+        <span class="chip-name">${escHtml(p.name)}</span>
+      </button>`
+    ).join(‘’) +
+    `<button class="chip-add-btn" id="chipAddProfile" aria-label="Add profile">+</button>`;
+
+    chipsRow.querySelectorAll(‘.profile-chip[data-pid]’).forEach(chip => {
+      chip.addEventListener(‘click’, () => {
+        const pid = chip.dataset.pid;
+        if (pid === currentProfileId) return;
+        currentProfileId = pid;
+        localStorage.setItem(‘activeProfileId’, pid);
+        renderAll();
+      });
+    });
+    const addBtn = chipsRow.querySelector(‘#chipAddProfile’);
+    if (addBtn) addBtn.addEventListener(‘click’, openAddProfileModal);
+  }
 
   // Populate profile sheet list
   const sheetList = document.getElementById('profileSheetList');

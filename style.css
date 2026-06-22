@@ -243,7 +243,7 @@ body.modal-open { overflow: hidden; }
 /* Month navigation */
 .month-display { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .month-display span { font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; }
-.month-salary-note { font-size: 11px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.month-salary-note { font-size: 12px; font-weight: 400; color: var(--muted); white-space: nowrap; }
 
 /* ─── Profile Sheet Internals ───────────────────────────── */
 .profile-pill {
@@ -292,11 +292,39 @@ body.modal-open { overflow: hidden; }
 }
 .page-top.hidden { display: none; }
 
-/* ─── Profile Heading ──────────────────────────────────── */
-.profile-heading {
-  font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
-  color: var(--ink); padding: 16px 16px 14px;
+/* ─── Profile Chips Row (replaces heading; always visible) ─ */
+.profile-chips-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 16px 6px; overflow-x: auto; scrollbar-width: none;
 }
+.profile-chips-row::-webkit-scrollbar { display: none; }
+.profile-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px 5px 6px; border-radius: 99px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-family: 'Figtree', sans-serif; font-size: 12px; font-weight: 600;
+  color: var(--muted); cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.profile-chip:active { background: var(--tint); }
+.profile-chip.active {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-tint);
+}
+.chip-avatar {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--tint); color: var(--muted);
+  font-size: 10px; font-weight: 800; font-family: 'Figtree', sans-serif;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-chip.active .chip-avatar { background: var(--accent); color: #fff; }
+.chip-add-btn {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px dashed var(--border); background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1;
+  transition: border-color 0.15s, color 0.15s;
+}
+.chip-add-btn:active { border-color: var(--accent); color: var(--accent); }
 
 /* ─── Summary Card ─────────────────────────────────────── */
 .summary-card {
@@ -802,11 +830,9 @@ body.modal-open { overflow: hidden; }
   font-size: 14px; font-weight: 400; color: var(--muted);
 }
 
-/* ─── Floating Add Button (FAB) ────────────────────────── */
+/* ─── FAB (hidden — replaced by nav Add button) ─────────── */
 .fab {
-  position: fixed;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
-  right: max(16px, calc(50vw - 240px + 16px));
+  display: none !important;
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--accent); border: none; cursor: pointer;
   color: #fff; display: flex; align-items: center; justify-content: center;
@@ -838,6 +864,23 @@ body.modal-open { overflow: hidden; }
 }
 .nav-btn.active { color: var(--accent); }
 .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ─── Nav Add button (embedded, replaces FAB) ───────────── */
+.nav-add-btn {
+  flex: 1; height: var(--nav-height);
+  display: flex; align-items: center; justify-content: center;
+  border: none; background: none; cursor: pointer; padding: 0;
+}
+.nav-add-inner {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(37,99,235,.38);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.nav-add-btn:active .nav-add-inner {
+  transform: scale(0.91); box-shadow: 0 2px 6px rgba(37,99,235,.25);
+}
 
 /* Profile tab in bottom nav */
 .nav-profile-tab { gap: 4px; }
