@@ -902,10 +902,16 @@ function renderSummary() {
   if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
   if (statCats)  statCats.textContent  = n > 0 ? fmtStat(dueBase)  : '—';
 
-  // Salary subtext — shown in June whenever there is income
+  // Salary subtext — "End of [prev month] Salary" whenever there is income
   const salarySubtext = document.getElementById('salarySubtext');
   if (salarySubtext) {
-    salarySubtext.classList.toggle('hidden', !(currentMonth === 5 && earned > 0));
+    if (earned > 0) {
+      const prevMonth = new Date(currentYear, currentMonth - 1, 1).toLocaleDateString('en-US', { month: 'long' });
+      salarySubtext.textContent = `End of ${prevMonth} Salary`;
+      salarySubtext.classList.remove('hidden');
+    } else {
+      salarySubtext.classList.add('hidden');
+    }
   }
 
   // Win banner — shown when every item is paid
