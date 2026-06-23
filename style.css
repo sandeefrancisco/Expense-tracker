@@ -297,7 +297,7 @@ body.modal-open { overflow: hidden; }
   color: var(--ink); padding: 16px 16px 14px;
 }
 
-.salary-subtext { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 6px; }
+.salary-subtext { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .salary-subtext.hidden { display: none; }
 
 /* ─── Summary Card ─────────────────────────────────────── */
