@@ -902,6 +902,14 @@ function renderSummary() {
   if (statItems) statItems.textContent = n > 0 ? fmtStat(paidBase) : '—';
   if (statCats)  statCats.textContent  = n > 0 ? fmtStat(dueBase)  : '—';
 
+  // Salary subtext — shown in June when falling back to May's income
+  const salarySubtext = document.getElementById('salarySubtext');
+  if (salarySubtext) {
+    const isJune = currentMonth === 5;
+    const noCurrentIncome = getMonthIncome().length === 0;
+    salarySubtext.classList.toggle('hidden', !(isJune && noCurrentIncome && income.length > 0));
+  }
+
   // Win banner — shown when every item is paid
   const winBanner = document.getElementById('winBanner');
   const isAllPaid = pct === 100 && n > 0;
