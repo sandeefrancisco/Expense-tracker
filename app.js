@@ -1921,7 +1921,6 @@ function updateMovePickerUI() {
 }
 
 function openMoveItemModal(id) {
-  const e = expenses.find(x => x.id === id); if (!e) return;
   pendingMoveItemId = id;
   moveModalMode = 'moveItem';
   let y = currentYear, m = currentMonth + 1;
@@ -2569,7 +2568,9 @@ function bindEvents() {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); duplicateExpense(id);
   });
   document.getElementById('itemOptionsMoveToMonth').addEventListener('click', () => {
-    const id = pendingOptionsId; closeModal('itemOptionsModal'); openMoveItemModal(id);
+    const id = pendingOptionsId;
+    closeModal('itemOptionsModal');
+    setTimeout(() => openMoveItemModal(id), 50);
   });
   document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
