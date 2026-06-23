@@ -74,7 +74,7 @@ let selectedCatShared   = false;
 let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
-let moveModalMode       = 'move'; // 'move' | 'duplicate'
+let moveModalMode       = 'move'; // 'move' | 'duplicate' | 'moveItem'
 let rateCache           = {}; // { 'PHP': 0.01612 } — fromCode → primary currency multiplier
 const expandedListGroups = new Set(); // prefix keys of expanded group parents in list view
 const expandedListCats   = new Set(); // catIds of expanded categories in list view
@@ -1896,8 +1896,9 @@ function openDuplicateMonthModal() {
 }
 
 function updateMovePickerUI() {
-  const isDup = moveModalMode === 'duplicate';
-  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : 'Move to…';
+  const isDup  = moveModalMode === 'duplicate';
+  const isItem = moveModalMode === 'moveItem';
+  document.getElementById('moveModalTitle').textContent = isDup ? 'Duplicate list to…' : isItem ? 'Move item to…' : 'Move to…';
 
   const sel = document.getElementById('moveMonthSelect');
   sel.innerHTML = '';
@@ -1917,6 +1918,40 @@ function updateMovePickerUI() {
   confirmBtn.disabled      = isSame && !isDup;
   confirmBtn.style.opacity = (isSame && !isDup) ? '0.35' : '';
   confirmBtn.textContent   = isDup ? 'Duplicate' : 'Move';
+}
+
+function openMoveItemModal(id) {
+  const e = expenses.find(x => x.id === id); if (!e) return;
+  pendingMoveItemId = id;
+  moveModalMode = 'moveItem';
+  let y = currentYear, m = currentMonth + 1;
+  if (m > 11) { m = 0; y++; }
+  movePickerYear = y; movePickerMonth = m;
+  updateMovePickerUI();
+  openModal('moveModal');
+}
+
+async function handleMoveItemConfirm() {
+  const id = pendingMoveItemId; if (!id) return;
+  const e = expenses.find(x => x.id === id); if (!e) return;
+
+  const targetYear  = movePickerYear;
+  const targetMonth = movePickerMonth;
+  const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
+  const prevDate    = e.date;
+
+  e.date = targetDate;
+  closeModal('moveModal');
+  renderAll();
+  showToast(`Moved to ${getMonthLabel(targetYear, targetMonth)}`);
+
+  try {
+    await dbPatchExpense(id, { date: targetDate });
+  } catch (err) {
+    e.date = prevDate;
+    renderAll();
+    showToast('Could not move — ' + err.message, true);
+  }
 }
 
 async function handleMoveConfirm() {
@@ -2166,7 +2201,8 @@ async function handleDeleteMonth() {
 }
 
 /* ─── Item Options Sheet ────────────────────────────────── */
-let pendingOptionsId = null;
+let pendingOptionsId  = null;
+let pendingMoveItemId = null;
 function openItemOptions(id) {
   const e = expenses.find(x => x.id === id); if (!e) return;
   pendingOptionsId = id;
@@ -2532,6 +2568,9 @@ function bindEvents() {
   document.getElementById('itemOptionsDuplicate').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); duplicateExpense(id);
   });
+  document.getElementById('itemOptionsMoveToMonth').addEventListener('click', () => {
+    const id = pendingOptionsId; closeModal('itemOptionsModal'); openMoveItemModal(id);
+  });
   document.getElementById('itemOptionsInstallments').addEventListener('click', () => {
     const id = pendingOptionsId; closeModal('itemOptionsModal'); openInstallmentModal(id);
   });
@@ -2601,7 +2640,9 @@ function bindEvents() {
     updateMovePickerUI();
   });
   document.getElementById('confirmMoveBtn').addEventListener('click', () => {
-    moveModalMode === 'duplicate' ? handleDuplicateMonthConfirm() : handleMoveConfirm();
+    if (moveModalMode === 'duplicate') handleDuplicateMonthConfirm();
+    else if (moveModalMode === 'moveItem') handleMoveItemConfirm();
+    else handleMoveConfirm();
   });
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
