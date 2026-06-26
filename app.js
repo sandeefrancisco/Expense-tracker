@@ -1640,14 +1640,8 @@ async function handleScreenshotImport() {
     if (!checked) continue;
     const name = row.querySelector('.ocr-item-name')?.value.trim();
     const amtRaw = row.querySelector('.ocr-item-amt')?.value;
-    const amount = parseAmount(amtRaw);
+    const amount = parseAmount(amtRaw) || 0;
     if (!name) continue;
-    if (!amount || amount <= 0) {
-      const errEl = document.getElementById('screenshotPreviewError');
-      errEl.textContent = `"${name}" needs a valid amount before importing.`;
-      errEl.classList.remove('hidden');
-      return;
-    }
     toImport.push({ name, amount });
   }
 
