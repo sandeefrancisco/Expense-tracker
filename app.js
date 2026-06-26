@@ -1238,6 +1238,9 @@ function renderListView() {
           ${grpLeftHtml}
           ${grpConvHtml}
         </div>
+        <button class="cat-screenshot-btn" data-cat-id="${item.catIds[0]}" aria-label="Upload screenshot">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
         <button class="cat-opts-btn" data-cat-ids='${JSON.stringify(item.catIds)}' data-label="${escHtml(item.prefix)}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
@@ -1281,7 +1284,10 @@ function renderListView() {
           <div class="list-sub-right">
             <div class="list-sub-total">${fmtCat(subGrand, catId)}</div>
             ${subLeftHtml}
-          </div>`;
+          </div>
+          <button class="cat-screenshot-btn" data-cat-id="${catId}" aria-label="Upload screenshot">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>`;
         sh.dataset.catId = catId;
         subTile.appendChild(sh);
 
@@ -1329,6 +1335,9 @@ function renderListView() {
           ${leftHtml}
           ${catConvHtml}
         </div>
+        <button class="cat-screenshot-btn" data-cat-id="${item.catId}" aria-label="Upload screenshot">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
         <button class="cat-opts-btn" data-cat-id="${item.catId}" aria-label="Options">
           <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="5" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="19" r="1.8" fill="currentColor"/></svg>
         </button>`;
@@ -2637,6 +2646,15 @@ function bindEvents() {
       e.stopPropagation();
       const item = moreBtn.closest('[data-id]');
       if (item?.dataset.id) openItemOptions(item.dataset.id);
+      return;
+    }
+    // Screenshot upload button on category header
+    const screenshotBtn = e.target.closest('.cat-screenshot-btn');
+    if (screenshotBtn) {
+      e.stopPropagation();
+      screenshotTargetCatId = screenshotBtn.dataset.catId;
+      document.getElementById('screenshotInput').value = '';
+      document.getElementById('screenshotInput').click();
       return;
     }
     // Category options button

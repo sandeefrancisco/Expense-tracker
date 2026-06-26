@@ -1312,6 +1312,15 @@ body.modal-open { overflow: hidden; }
   stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
 }
 
+/* ─── Category screenshot button ───────────────────────── */
+.cat-screenshot-btn {
+  flex-shrink: 0; width: 32px; height: 32px;
+  border: none; background: none; cursor: pointer;
+  color: var(--muted); display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; transition: color var(--t), background var(--t);
+}
+.cat-screenshot-btn:active { background: var(--border); color: var(--accent); }
+
 /* ─── Screenshot OCR Preview ───────────────────────────── */
 @keyframes ocr-spin {
   to { transform: rotate(360deg); }
