@@ -1555,18 +1555,20 @@ function renderScreenshotPreviewItems(items) {
     row.className = 'ocr-item-row';
     row.dataset.idx = idx;
     row.innerHTML = `
-      <label class="ocr-item-check-wrap">
+      <label class="ocr-item-check-wrap" aria-label="Include item">
         <input type="checkbox" class="ocr-item-check" checked />
         <span class="ocr-check-box"></span>
       </label>
-      <input type="text" class="ocr-item-name form-input" value="${escHtml(item.name)}" placeholder="Item name" maxlength="80" />
+      <input type="text" class="ocr-item-name" value="${escHtml(item.name)}" placeholder="Item name" maxlength="80" />
       <div class="ocr-item-amt-wrap">
         <span class="ocr-item-sym">${escHtml(catCur.symbol)}</span>
-        <input type="text" class="ocr-item-amt form-input" value="${item.amount != null ? parseFloat(item.amount).toFixed(2) : ''}" placeholder="Amount" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" />
+        <input type="text" class="ocr-item-amt" value="${item.amount != null ? parseFloat(item.amount).toFixed(2) : ''}" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" />
       </div>
       <button type="button" class="ocr-item-del" aria-label="Remove">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>`;
+    const cb = row.querySelector('.ocr-item-check');
+    cb.addEventListener('change', () => row.classList.toggle('is-unchecked', !cb.checked));
     row.querySelector('.ocr-item-del').addEventListener('click', () => row.remove());
     list.appendChild(row);
   });
