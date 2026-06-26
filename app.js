@@ -1565,37 +1565,60 @@ function renderScreenshotPreviewItems(items) {
   document.getElementById('screenshotPreviewFooter').classList.remove('hidden');
 }
 
+function parseOcrText(rawText) {
+  const items = [];
+  // Match a number (with optional decimal) at end of line, optionally preceded by currency symbol
+  const amtRe = /(?:[$€£₱¥₹]\s*)?([\d]{1,10}(?:[.,]\d{1,2})?)\s*(?:[$€£₱¥₹])?$/;
+
+  rawText.split(/\r?\n/).forEach(rawLine => {
+    const line = rawLine.trim().replace(/\s+/g, ' ');
+    if (line.length < 2 || line.length > 120) return;
+
+    const m = line.match(amtRe);
+    if (m && m.index > 0) {
+      const amtStr = m[1].replace(',', '.');
+      const amount = parseFloat(amtStr);
+      const name   = line.slice(0, m.index).replace(/[-:•*|/\\]+$/, '').trim();
+      if (name.length >= 2 && amount > 0 && amount < 1_000_000) {
+        items.push({ name: name.slice(0, 80), amount });
+        return;
+      }
+    }
+    // No recognisable amount — add as name only
+    if (line.length >= 2 && line.length <= 80) {
+      items.push({ name: line, amount: null });
+    }
+  });
+
+  return items;
+}
+
 async function processScreenshot(file) {
   openScreenshotPreviewModal();
 
-  const MAX_SIZE = 5 * 1024 * 1024;
+  const MAX_SIZE = 10 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
-    showOcrError('Image is too large (max 5 MB). Please use a smaller screenshot.');
+    showOcrError('Image is too large (max 10 MB). Please use a smaller screenshot.');
     return;
   }
 
   try {
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result;
-        resolve(dataUrl.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+    const loadingP = document.querySelector('#ocrLoading p');
+    if (loadingP) loadingP.textContent = 'Loading OCR engine…';
+
+    const result = await Tesseract.recognize(file, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text' && loadingP) {
+          const pct = Math.round((m.progress || 0) * 100);
+          loadingP.textContent = `Reading text… ${pct}%`;
+        }
+      },
     });
 
-    const mediaType = file.type || 'image/png';
-    const { data, error } = await sb.functions.invoke('ocr-screenshot', {
-      body: { imageBase64: base64, mediaType },
-    });
-
-    if (error) throw new Error(error.message || 'OCR failed');
-    if (data?.error) throw new Error(data.error);
-
-    renderScreenshotPreviewItems(data?.items ?? []);
+    const items = parseOcrText(result.data.text || '');
+    renderScreenshotPreviewItems(items);
   } catch (err) {
-    showOcrError('Could not analyse screenshot: ' + err.message);
+    showOcrError('Could not read screenshot: ' + err.message);
   }
 }
 
