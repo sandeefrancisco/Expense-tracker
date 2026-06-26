@@ -1336,33 +1336,43 @@ body.modal-open { overflow: hidden; }
   border-top-color: var(--accent);
   animation: ocr-spin 0.8s linear infinite;
 }
+.ocr-count {
+  font-size: 13px; color: var(--muted); font-weight: 500;
+  margin-bottom: 12px;
+}
 .ocr-empty {
   font-size: 14px; color: var(--muted);
   text-align: center; padding: 24px 0;
 }
-/* Card row */
-.ocr-item-row {
-  display: flex; align-items: stretch;
-  background: var(--tint); border: 1.5px solid var(--border);
-  border-radius: 14px; margin-bottom: 8px; overflow: hidden;
-  transition: opacity 0.18s;
+/* N26-style grouped list container */
+#screenshotItemsList {
+  border: 1.5px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  background: var(--surface);
 }
-.ocr-item-row.is-unchecked { opacity: 0.4; }
-/* Checkbox — full-height tap target */
+/* Flat list row */
+.ocr-item-row {
+  display: flex; align-items: center;
+  height: 58px; padding: 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity 0.18s; background: var(--surface);
+}
+.ocr-item-row:last-child { border-bottom: none; }
+.ocr-item-row.is-unchecked { opacity: 0.38; }
+/* Circular checkbox — full-height tap zone */
 .ocr-item-check-wrap {
   flex-shrink: 0; position: relative;
-  width: 52px; min-height: 54px;
+  width: 56px; height: 58px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
 }
 .ocr-item-check-wrap input[type="checkbox"] {
   position: absolute; opacity: 0;
-  inset: 0; width: 100%; height: 100%;
-  margin: 0; cursor: pointer;
+  inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer;
 }
 .ocr-check-box {
-  width: 22px; height: 22px; border-radius: 6px;
-  border: 2px solid var(--border); background: var(--surface);
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border); background: transparent;
   transition: background var(--t), border-color var(--t);
   pointer-events: none; position: relative; flex-shrink: 0;
 }
@@ -1371,41 +1381,42 @@ body.modal-open { overflow: hidden; }
 }
 .ocr-item-check:checked + .ocr-check-box::after {
   content: ''; position: absolute;
-  width: 5px; height: 9px; top: 2px; left: 6px;
+  width: 5px; height: 9px; top: 3px; left: 7px;
   border: 2px solid #fff; border-top: none; border-left: none;
   transform: rotate(45deg);
 }
-/* Name field — no border, transparent, fills space */
+/* Name — grows, single line */
 .ocr-item-name {
-  flex: 1; min-width: 0; align-self: center;
+  flex: 1; min-width: 0;
   border: none; background: transparent; outline: none;
   font-size: 15px; font-weight: 500; color: var(--text);
   font-family: inherit; padding: 0; margin: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .ocr-item-name::placeholder { color: var(--muted); font-weight: 400; }
-/* Amount section — separated by left border */
+/* Amount — right side, no border */
 .ocr-item-amt-wrap {
   flex-shrink: 0; display: flex; align-items: center;
-  border-left: 1.5px solid var(--border); width: 96px;
+  gap: 1px; padding-right: 4px;
 }
 .ocr-item-sym {
-  padding: 0 3px 0 10px; font-size: 14px; color: var(--muted); font-weight: 600;
-  flex-shrink: 0;
+  font-size: 13px; color: var(--muted); font-weight: 500;
 }
 .ocr-item-amt {
   border: none; background: transparent; outline: none;
-  padding: 0 6px 0 2px; font-size: 14px; width: 100%;
-  font-family: inherit; color: var(--text); min-height: 54px;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  font-family: inherit; width: 72px; text-align: right;
+  padding: 0;
 }
-/* Delete — full-height tap target with left border */
+.ocr-item-amt::placeholder { color: var(--muted); font-weight: 400; }
+/* Delete — full-height tap target */
 .ocr-item-del {
-  flex-shrink: 0; width: 50px;
-  border: none; border-left: 1.5px solid var(--border);
-  background: none; cursor: pointer;
+  flex-shrink: 0; width: 48px; height: 58px;
+  border: none; background: none; cursor: pointer;
   color: var(--muted); display: flex; align-items: center; justify-content: center;
-  transition: color var(--t), background var(--t);
+  transition: color var(--t);
 }
-.ocr-item-del:active { color: #ef4444; background: #fee2e2; }
+.ocr-item-del:active { color: #ef4444; }
 
 /* ─── Utils ────────────────────────────────────────────── */
 .hidden { display: none !important; }

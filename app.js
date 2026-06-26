@@ -1538,7 +1538,7 @@ function showOcrError(msg) {
 function renderScreenshotPreviewItems(items) {
   document.getElementById('ocrLoading').classList.add('hidden');
   document.getElementById('screenshotPreviewContent').classList.remove('hidden');
-  document.getElementById('screenshotPreviewHint').classList.remove('hidden');
+  document.getElementById('screenshotPreviewHint').classList.add('hidden');
   document.getElementById('screenshotPreviewError').classList.add('hidden');
 
   const list = document.getElementById('screenshotItemsList');
@@ -1548,6 +1548,11 @@ function renderScreenshotPreviewItems(items) {
     list.innerHTML = '<p class="ocr-empty">No list items found in the screenshot. Try a clearer image.</p>';
     return;
   }
+
+  const hint = document.getElementById('screenshotPreviewHint');
+  hint.className = 'ocr-count';
+  hint.textContent = `${items.length} item${items.length !== 1 ? 's' : ''} found`;
+  hint.classList.remove('hidden');
 
   const catCur = getCatCurrency(screenshotTargetCatId);
   items.forEach((item, idx) => {
@@ -1565,7 +1570,7 @@ function renderScreenshotPreviewItems(items) {
         <input type="text" class="ocr-item-amt" value="${item.amount != null ? parseFloat(item.amount).toFixed(2) : ''}" placeholder="0.00" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" />
       </div>
       <button type="button" class="ocr-item-del" aria-label="Remove">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       </button>`;
     const cb = row.querySelector('.ocr-item-check');
     cb.addEventListener('change', () => row.classList.toggle('is-unchecked', !cb.checked));
