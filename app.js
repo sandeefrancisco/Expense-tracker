@@ -70,6 +70,7 @@ let pendingDeleteGroupPrefix = null;
 let pendingInstallmentCatId  = null;
 let selectedCategory  = null;
 let selectedBank      = null;
+let screenshotTargetCatId = null;
 let selectedCatShared   = false;
 let authMode            = 'signin';
 let movePickerYear      = null;
@@ -1438,7 +1439,7 @@ function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
   document.getElementById('cosPlannedLabel').textContent = allPlanned ? 'Include all in totals' : 'Mark all as reminder';
 
   // Clear old listeners by replacing nodes
-  ['cosAdd','cosRename','cosMoveUp','cosMoveDown','cosDelete','cosPlanned'].forEach(id => {
+  ['cosAdd','cosUploadScreenshot','cosRename','cosMoveUp','cosMoveDown','cosDelete','cosPlanned'].forEach(id => {
     const el = document.getElementById(id);
     const clone = el.cloneNode(true);
     el.parentNode.replaceChild(clone, el);
@@ -1446,6 +1447,12 @@ function openCatCtxMenu(btn, catId, groupCatIds = null, groupPrefix = null) {
 
   document.getElementById('cosAdd').addEventListener('click', () => {
     closeModal('catOptionsSheet'); openAddModal(); selectCategory(catId);
+  });
+  document.getElementById('cosUploadScreenshot').addEventListener('click', () => {
+    closeModal('catOptionsSheet');
+    screenshotTargetCatId = isGroup ? groupCatIds[0] : catId;
+    document.getElementById('screenshotInput').value = '';
+    document.getElementById('screenshotInput').click();
   });
   document.getElementById('cosRename').addEventListener('click', () => {
     closeModal('catOptionsSheet');
@@ -1497,6 +1504,197 @@ async function toggleCategoryPlanned(catIds, toPlanned) {
       if (idx !== -1) expenses[idx] = { ...expenses[idx], planned };
     });
     renderAll(); showToast('Error: ' + err.message, true);
+  }
+}
+
+/* ─── Screenshot OCR ────────────────────────────────────── */
+function openScreenshotPreviewModal() {
+  document.getElementById('ocrLoading').classList.remove('hidden');
+  document.getElementById('screenshotPreviewContent').classList.add('hidden');
+  document.getElementById('screenshotPreviewFooter').classList.add('hidden');
+  document.getElementById('screenshotItemsList').innerHTML = '';
+  document.getElementById('screenshotPreviewError').classList.add('hidden');
+  openModal('screenshotPreviewModal');
+}
+
+function showOcrError(msg) {
+  document.getElementById('ocrLoading').classList.add('hidden');
+  document.getElementById('screenshotPreviewContent').classList.remove('hidden');
+  document.getElementById('screenshotPreviewHint').classList.add('hidden');
+  const errEl = document.getElementById('screenshotPreviewError');
+  errEl.textContent = msg;
+  errEl.classList.remove('hidden');
+}
+
+function renderScreenshotPreviewItems(items) {
+  document.getElementById('ocrLoading').classList.add('hidden');
+  document.getElementById('screenshotPreviewContent').classList.remove('hidden');
+  document.getElementById('screenshotPreviewHint').classList.remove('hidden');
+  document.getElementById('screenshotPreviewError').classList.add('hidden');
+
+  const list = document.getElementById('screenshotItemsList');
+  list.innerHTML = '';
+
+  if (items.length === 0) {
+    list.innerHTML = '<p class="ocr-empty">No list items found in the screenshot. Try a clearer image.</p>';
+    return;
+  }
+
+  const catCur = getCatCurrency(screenshotTargetCatId);
+  items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'ocr-item-row';
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <label class="ocr-item-check-wrap">
+        <input type="checkbox" class="ocr-item-check" checked />
+        <span class="ocr-check-box"></span>
+      </label>
+      <input type="text" class="ocr-item-name form-input" value="${escHtml(item.name)}" placeholder="Item name" maxlength="80" />
+      <div class="ocr-item-amt-wrap">
+        <span class="ocr-item-sym">${escHtml(catCur.symbol)}</span>
+        <input type="text" class="ocr-item-amt form-input" value="${item.amount != null ? parseFloat(item.amount).toFixed(2) : ''}" placeholder="Amount" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" />
+      </div>
+      <button type="button" class="ocr-item-del" aria-label="Remove">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>`;
+    row.querySelector('.ocr-item-del').addEventListener('click', () => row.remove());
+    list.appendChild(row);
+  });
+
+  document.getElementById('screenshotPreviewFooter').classList.remove('hidden');
+}
+
+async function processScreenshot(file) {
+  openScreenshotPreviewModal();
+
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    showOcrError('Image is too large (max 5 MB). Please use a smaller screenshot.');
+    return;
+  }
+
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        resolve(dataUrl.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    const mediaType = file.type || 'image/png';
+    const { data, error } = await sb.functions.invoke('ocr-screenshot', {
+      body: { imageBase64: base64, mediaType },
+    });
+
+    if (error) throw new Error(error.message || 'OCR failed');
+    if (data?.error) throw new Error(data.error);
+
+    renderScreenshotPreviewItems(data?.items ?? []);
+  } catch (err) {
+    showOcrError('Could not analyse screenshot: ' + err.message);
+  }
+}
+
+async function handleScreenshotImport() {
+  const rows = [...document.querySelectorAll('#screenshotItemsList .ocr-item-row')];
+  const toImport = [];
+
+  for (const row of rows) {
+    const checked = row.querySelector('.ocr-item-check')?.checked;
+    if (!checked) continue;
+    const name = row.querySelector('.ocr-item-name')?.value.trim();
+    const amtRaw = row.querySelector('.ocr-item-amt')?.value;
+    const amount = parseAmount(amtRaw);
+    if (!name) continue;
+    if (!amount || amount <= 0) {
+      const errEl = document.getElementById('screenshotPreviewError');
+      errEl.textContent = `"${name}" needs a valid amount before importing.`;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    toImport.push({ name, amount });
+  }
+
+  if (toImport.length === 0) {
+    const errEl = document.getElementById('screenshotPreviewError');
+    errEl.textContent = 'No items selected to import.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('screenshotImportBtn');
+  btn.disabled = true;
+  btn.textContent = 'Importing…';
+
+  const catId  = screenshotTargetCatId;
+  const date   = monthStartISO();
+  const catItems = expenses.filter(e => e.category === catId && !e.checked);
+  let nextOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
+
+  const tmpRows = toImport.map((item, i) => ({
+    id: 'tmp_ocr_' + Date.now() + '_' + i,
+    user_id: currentUser.id,
+    profile_id: currentProfileId,
+    amount: item.amount,
+    description: item.name,
+    bank: null,
+    category: catId,
+    date,
+    note: null,
+    checked: false,
+    planned: false,
+    sort_order: nextOrder + i,
+    installment_total: null,
+    installment_current: null,
+    installment_due_day: null,
+    installment_complete: false,
+    split_type: null,
+    split_percentage: null,
+  }));
+
+  tmpRows.forEach(r => expenses.unshift(r));
+  closeModal('screenshotPreviewModal');
+  expandedListCats.add(catId);
+  saveExpandState();
+  renderAll();
+  showToast(`${toImport.length} item${toImport.length !== 1 ? 's' : ''} added`);
+
+  try {
+    const payloads = toImport.map((item, i) => ({
+      user_id: currentUser.id,
+      profile_id: currentProfileId,
+      amount: item.amount,
+      description: item.name,
+      bank: null,
+      category: catId,
+      date,
+      note: null,
+      sort_order: nextOrder + i,
+      checked: false,
+      planned: false,
+      installment_total: null,
+      installment_current: null,
+      installment_due_day: null,
+      installment_complete: false,
+      split_type: null,
+      split_percentage: null,
+    }));
+    const { data: rows, error } = await sb.from('expenses').insert(payloads).select();
+    if (error) throw error;
+    tmpRows.forEach(t => { expenses = expenses.filter(e => e.id !== t.id); });
+    rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
+    renderAll();
+  } catch (err) {
+    tmpRows.forEach(t => { expenses = expenses.filter(e => e.id !== t.id); });
+    renderAll();
+    showToast('Could not save — ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Import Selected';
   }
 }
 
@@ -2361,7 +2559,7 @@ function hideSettingsPage() {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'];
+const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'screenshotPreviewModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -2647,8 +2845,16 @@ function bindEvents() {
   });
   document.getElementById('cancelMove').addEventListener('click', () => closeModal('moveModal'));
 
+  // Screenshot OCR
+  document.getElementById('screenshotInput').addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (file) processScreenshot(file);
+  });
+  document.getElementById('closeScreenshotPreview').addEventListener('click', () => closeModal('screenshotPreviewModal'));
+  document.getElementById('screenshotImportBtn').addEventListener('click', handleScreenshotImport);
+
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'screenshotPreviewModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 
