@@ -1,9 +1,92 @@
 'use strict';
 
-/* ─── Supabase ──────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://eizhfvieozigsgolckez.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpemhmdmllb3ppZ3Nnb2xja2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxOTEyMDUsImV4cCI6MjA5NTc2NzIwNX0.v-qAHGR-I63RL4Ue0YH5evTwot9riE-nUuw0ACffaYA';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ─── Local data store (replaces Supabase) ──────────────── */
+const DB_KEY = 'expenseTrackerDB';
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* fall through to empty DB */ }
+  return { profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], user_settings: null };
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+function dbInsert(table, row) {
+  const db = loadDB();
+  const newRow = { id: crypto.randomUUID(), created_at: new Date().toISOString(), ...row };
+  db[table].push(newRow);
+  saveDB(db);
+  return newRow;
+}
+function dbInsertMany(table, rows) {
+  const db = loadDB();
+  const newRows = rows.map(r => ({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...r }));
+  db[table].push(...newRows);
+  saveDB(db);
+  return newRows;
+}
+function dbUpdate(table, id, patch) {
+  const db = loadDB();
+  const idx = db[table].findIndex(r => r.id === id);
+  if (idx !== -1) db[table][idx] = { ...db[table][idx], ...patch };
+  saveDB(db);
+}
+function dbUpdateIn(table, ids, patch) {
+  const db = loadDB();
+  db[table] = db[table].map(r => ids.includes(r.id) ? { ...r, ...patch } : r);
+  saveDB(db);
+}
+function dbDelete(table, id) {
+  const db = loadDB();
+  db[table] = db[table].filter(r => r.id !== id);
+  saveDB(db);
+}
+function dbDeleteIn(table, ids) {
+  const db = loadDB();
+  db[table] = db[table].filter(r => !ids.includes(r.id));
+  saveDB(db);
+}
+function dbDeleteAll(table) {
+  const db = loadDB();
+  db[table] = [];
+  saveDB(db);
+}
+function dbInsertCompletedMonth(row) {
+  const db = loadDB();
+  db.completed_months.push(row);
+  saveDB(db);
+}
+function dbDeleteCompletedMonth(profile_id, year, month) {
+  const db = loadDB();
+  db.completed_months = db.completed_months.filter(c => !(c.profile_id === profile_id && c.year === year && c.month === month));
+  saveDB(db);
+}
+function dbSaveUserSettings(settingsObj) {
+  const db = loadDB();
+  db.user_settings = { ...settingsObj, updated_at: new Date().toISOString() };
+  saveDB(db);
+}
+
+/* Seeds the local DB with previously migrated Supabase data on first run only. */
+async function seedDBIfEmpty() {
+  if (localStorage.getItem(DB_KEY)) return;
+  try {
+    const res = await fetch('seed-data.json');
+    if (!res.ok) throw new Error('no seed file');
+    const seed = await res.json();
+    saveDB({
+      profiles: seed.profiles || [],
+      categories: seed.categories || [],
+      expenses: seed.expenses || [],
+      monthly_income: seed.monthly_income || [],
+      completed_months: seed.completed_months || [],
+      user_settings: seed.user_settings || null,
+    });
+  } catch {
+    saveDB({ profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], user_settings: null });
+  }
+}
 
 /* ─── Bank definitions ──────────────────────────────────── */
 const BANKS = ['BDO', 'BPI', 'N26', 'Commerzbank'];
@@ -59,7 +142,6 @@ let categories        = [];
 let currentProfileId  = null;
 let completedMonths   = [];
 let settings          = { currency: { symbol: '€', code: 'EUR' } };
-let currentUser       = null;
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
 let editingProfileId         = null;
@@ -72,7 +154,6 @@ let selectedCategory  = null;
 let selectedBank      = null;
 let screenshotTargetCatId = null;
 let selectedCatShared   = false;
-let authMode            = 'signin';
 let movePickerYear      = null;
 let movePickerMonth     = null;
 let moveModalMode       = 'move'; // 'move' | 'duplicate' | 'moveItem'
@@ -116,151 +197,41 @@ async function init() {
 
   bindEvents();
 
-  const { data: { session } } = await sb.auth.getSession();
-
-  if (session?.user) {
-    currentUser = session.user;
-    // Skeleton (loading screen) stays visible during the data fetch
-    await loadUserData();
-    buildCategoryGrid();
-    showApp();
-    hideLoading(); // remove skeleton once the real content is painted
-  } else {
-    showAuth();
-    hideLoading();
-  }
-
-  const bootstrappedUserId = session?.user?.id ?? null;
-
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'INITIAL_SESSION') return;
-
-    if (event === 'SIGNED_IN' && session?.user) {
-      if (session.user.id === bootstrappedUserId) return;
-      currentUser = session.user;
-      showSkeleton(); // instantly hide auth form and show skeleton while data loads
-      await loadUserData();
-      buildCategoryGrid();
-      showApp();
-      hideLoading();
-    } else if (event === 'SIGNED_OUT') {
-      currentUser      = null;
-      expenses         = [];
-      incomeEntries    = [];
-      profiles         = [];
-      currentProfileId = null;
-      completedMonths  = [];
-      settings         = { currency: { symbol: '€', code: 'EUR' } };
-      localStorage.removeItem('activeProfileId');
-      showAuth();
-    }
-  });
+  await seedDBIfEmpty();
+  await loadUserData();
+  buildCategoryGrid();
+  showApp();
+  hideLoading(); // remove skeleton once the real content is painted
 }
 
 /* ─── Loading / Skeleton ────────────────────────────────── */
 function hideLoading()  { document.getElementById('loadingScreen').classList.add('hidden'); }
 
-function showSkeleton() {
-  document.getElementById('authScreen').classList.add('hidden');
-  document.getElementById('loadingScreen').classList.remove('hidden');
-}
-
-/* ─── Auth UI ───────────────────────────────────────────── */
-function showAuth() {
-  document.getElementById('authScreen').classList.remove('hidden');
-  document.getElementById('app').classList.add('hidden');
-}
-
 function showApp() {
-  document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  const email = currentUser.email || '';
-  document.getElementById('accountEmail').textContent  = email;
-  document.getElementById('accountAvatar').textContent = email.charAt(0).toUpperCase();
   renderAll();
-}
-
-function setAuthMode(mode) {
-  authMode = mode;
-  const signup = mode === 'signup';
-  document.getElementById('authTitle').textContent      = signup ? 'Create account' : 'Welcome back';
-  document.getElementById('authSub').textContent        = signup ? 'Plan your budget together' : 'Sign in to continue';
-  document.getElementById('authSubmitBtn').textContent  = signup ? 'Sign up' : 'Sign in';
-  document.getElementById('authToggle').innerHTML       = signup
-    ? 'Already have an account? <strong>Sign in</strong>'
-    : "Don't have an account? <strong>Sign up</strong>";
-  document.getElementById('passwordInput').autocomplete = signup ? 'new-password' : 'current-password';
-  document.getElementById('authError').classList.add('hidden');
-}
-
-async function handleAuthSubmit(e) {
-  e.preventDefault();
-  const email    = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value;
-  const btn      = document.getElementById('authSubmitBtn');
-  const errorEl  = document.getElementById('authError');
-  if (!email || !password) return;
-
-  errorEl.classList.add('hidden');
-  btn.disabled    = true;
-  btn.textContent = authMode === 'signin' ? 'Signing in…' : 'Creating account…';
-
-  try {
-    if (authMode === 'signin') {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    } else {
-      const { data, error } = await sb.auth.signUp({ email, password });
-      if (error) throw error;
-      if (!data.session) {
-        errorEl.style.cssText = 'background:#dcfce7;color:#166534;';
-        errorEl.textContent   = 'Account created! Check your email to confirm, then sign in.';
-        errorEl.classList.remove('hidden');
-        btn.disabled = false; btn.textContent = 'Sign up';
-        return;
-      }
-    }
-  } catch (err) {
-    errorEl.style.cssText = '';
-    errorEl.textContent   = err.message;
-    errorEl.classList.remove('hidden');
-    btn.disabled    = false;
-    btn.textContent = authMode === 'signin' ? 'Sign in' : 'Sign up';
-  }
 }
 
 /* ─── Data Loading ──────────────────────────────────────── */
 async function loadUserData() {
-  const [expRes, setRes, incRes, profRes, doneRes, catRes] = await Promise.all([
-    sb.from('expenses').select('*').order('created_at', { ascending: false }),
-    sb.from('user_settings').select('*').eq('user_id', currentUser.id).maybeSingle(),
-    sb.from('monthly_income').select('*').order('created_at', { ascending: true }),
-    sb.from('profiles').select('*').order('created_at', { ascending: true }),
-    sb.from('completed_months').select('profile_id,year,month'),
-    sb.from('categories').select('*').order('created_at', { ascending: true }),
-  ]);
+  const db = loadDB();
 
-  if (!expRes.error && expRes.data)
-    expenses = expRes.data.map(e => ({ ...e, amount: parseFloat(e.amount) }));
+  expenses        = db.expenses.map(e => ({ ...e, amount: parseFloat(e.amount) }));
+  incomeEntries   = db.monthly_income.map(r => ({ ...r, amount: parseFloat(r.amount) }));
+  profiles        = db.profiles;
+  completedMonths = db.completed_months;
+  categories      = db.categories;
 
-  if (!setRes.error && setRes.data)
-    settings = { currency: { code: setRes.data.currency_code, symbol: setRes.data.currency_symbol } };
+  if (db.user_settings)
+    settings = { currency: { code: db.user_settings.currency_code, symbol: db.user_settings.currency_symbol } };
 
-  if (!incRes.error && incRes.data)
-    incomeEntries = incRes.data.map(r => ({ ...r, amount: parseFloat(r.amount) }));
-
-  if (!profRes.error && profRes.data) profiles = profRes.data;
-  if (!doneRes.error && doneRes.data) completedMonths = doneRes.data;
-  if (!catRes.error  && catRes.data)  categories = catRes.data;
-
-  // Auto-create default profile for new users
+  // Auto-create default profile if none exist
   if (profiles.length === 0) {
-    const { data: prof, error } = await sb.from('profiles')
-      .insert({ user_id: currentUser.id, name: 'Me' }).select().single();
-    if (!error && prof) profiles = [prof];
+    const prof = dbInsert('profiles', { name: 'Me' });
+    profiles = [prof];
   }
 
-  // Seed default categories for new users
+  // Seed default categories if none exist
   if (categories.length === 0) {
     const seeds = [
       { name: 'Housing',   color: '#1d4ed8' },
@@ -268,9 +239,7 @@ async function loadUserData() {
       { name: 'Transport', color: '#059669' },
       { name: 'Personal',  color: '#7c3aed' },
     ];
-    const { data: rows, error } = await sb.from('categories')
-      .insert(seeds.map(s => ({ ...s, user_id: currentUser.id }))).select();
-    if (!error && rows) categories = rows;
+    categories = dbInsertMany('categories', seeds);
   }
 
   await loadExchangeRates();
@@ -495,25 +464,11 @@ async function toggleMonthDone() {
   if (done) {
     completedMonths = completedMonths.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
     renderHeader(); renderSummary();
-    try {
-      const { error } = await sb.from('completed_months').delete()
-        .eq('user_id', currentUser.id).eq('profile_id', currentProfileId).eq('year', y).eq('month', m);
-      if (error) throw error;
-    } catch (err) {
-      completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
-      renderHeader(); renderSummary(); showToast('Error: ' + err.message, true);
-    }
+    dbDeleteCompletedMonth(currentProfileId, y, m);
   } else {
     completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
     renderHeader(); renderSummary();
-    try {
-      const { error } = await sb.from('completed_months')
-        .insert({ user_id: currentUser.id, profile_id: currentProfileId, year: y, month: m });
-      if (error) throw error;
-    } catch (err) {
-      completedMonths = completedMonths.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
-      renderHeader(); renderSummary(); showToast('Error: ' + err.message, true);
-    }
+    dbInsertCompletedMonth({ profile_id: currentProfileId, year: y, month: m });
   }
 }
 
@@ -559,37 +514,28 @@ function showToast(msg, isError = false, type = null) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => { t.className = 'toast hidden'; }, 300); }, delay);
 }
 
-/* ─── DB helpers (pure network calls, no state mutation) ── */
+/* ─── DB helpers (local storage, no state mutation) ─────── */
 async function dbSaveExpense(payload) {
-  const { data: row, error } = await sb.from('expenses').insert(payload).select().single();
-  if (error) throw error;
-  return row;
+  return dbInsert('expenses', payload);
 }
 async function dbPatchExpense(id, patch) {
-  const { error } = await sb.from('expenses').update(patch).eq('id', id);
-  if (error) throw error;
+  dbUpdate('expenses', id, patch);
 }
 async function dbRemoveExpense(id) {
-  const { error } = await sb.from('expenses').delete().eq('id', id);
-  if (error) throw error;
+  dbDelete('expenses', id);
 }
 async function dbSaveIncome(payload) {
-  const { data: row, error } = await sb.from('monthly_income').insert(payload).select().single();
-  if (error) throw error;
-  return row;
+  return dbInsert('monthly_income', payload);
 }
 async function dbRemoveIncome(id) {
-  const { error } = await sb.from('monthly_income').delete().eq('id', id);
-  if (error) throw error;
+  dbDelete('monthly_income', id);
 }
 
 /* ─── DB: Settings ──────────────────────────────────────── */
 async function dbSaveSettings() {
-  await sb.from('user_settings').upsert({
-    user_id: currentUser.id,
+  dbSaveUserSettings({
     currency_code: settings.currency.code,
     currency_symbol: settings.currency.symbol,
-    updated_at: new Date().toISOString(),
   });
 }
 
@@ -700,42 +646,22 @@ async function handleAddProfile(e) {
     return;
   }
 
-  const tmp = 'tmp_' + Date.now();
-  profiles.push({ id: tmp, user_id: currentUser.id, name });
-  currentProfileId = tmp;
+  const prof = dbInsert('profiles', { name });
+  profiles.push(prof);
+  currentProfileId = prof.id;
+  localStorage.setItem('activeProfileId', prof.id);
   closeModal('profileModal');
   renderAll();
   showToast(`${name} added`);
-
-  try {
-    const { data: prof, error } = await sb.from('profiles')
-      .insert({ user_id: currentUser.id, name }).select().single();
-    if (error) throw error;
-    const idx = profiles.findIndex(p => p.id === tmp);
-    if (idx !== -1) profiles[idx] = prof;
-    if (currentProfileId === tmp) { currentProfileId = prof.id; localStorage.setItem('activeProfileId', prof.id); }
-    renderProfileBar();
-  } catch (err) {
-    profiles = profiles.filter(p => p.id !== tmp);
-    if (currentProfileId === tmp) { currentProfileId = profiles[0]?.id || null; if (currentProfileId) localStorage.setItem('activeProfileId', currentProfileId); }
-    renderAll(); showToast('Could not save — ' + err.message, true);
-  }
 }
 
 async function handleRenameProfile(id, newName) {
   const idx = profiles.findIndex(p => p.id === id);
   if (idx === -1) return;
-  const old = profiles[idx];
-  profiles[idx] = { ...old, name: newName };
+  profiles[idx] = { ...profiles[idx], name: newName };
+  dbUpdate('profiles', id, { name: newName });
   renderAll();
   showToast('Renamed');
-  try {
-    const { error } = await sb.from('profiles').update({ name: newName }).eq('id', id);
-    if (error) throw error;
-  } catch (err) {
-    profiles[idx] = old;
-    renderAll(); showToast('Could not rename — ' + err.message, true);
-  }
 }
 
 async function deleteProfile(id) {
@@ -743,8 +669,9 @@ async function deleteProfile(id) {
   if (!prof) return;
   if (profiles.length <= 1) { showToast("Can't delete the only person", false, 'info'); return; }
   if (!confirm(`Delete "${prof.name}" and all their allocations? This cannot be undone.`)) return;
-  const { error } = await sb.from('profiles').delete().eq('id', id);
-  if (error) { showToast('Error: ' + error.message, true); return; }
+  dbDelete('profiles', id);
+  dbDeleteIn('expenses', expenses.filter(e => e.profile_id === id).map(e => e.id));
+  dbDeleteIn('monthly_income', incomeEntries.filter(r => r.profile_id === id).map(r => r.id));
   profiles      = profiles.filter(p => p.id !== id);
   expenses      = expenses.filter(e => e.profile_id !== id);
   incomeEntries = incomeEntries.filter(r => r.profile_id !== id);
@@ -1018,7 +945,7 @@ async function saveCategoryOrder(orderedTileIds) {
     }
   }
   try {
-    await Promise.all(updates.map(u => sb.from('categories').update({ sort_order: u.sort_order }).eq('id', u.id)));
+    updates.forEach(u => dbUpdate('categories', u.id, { sort_order: u.sort_order }));
   } catch (err) {
     showToast('Could not save order — ' + err.message, true);
     renderAll();
@@ -1360,16 +1287,9 @@ function renderListView() {
 async function handleRenameCategory(catId, newName) {
   const idx = categories.findIndex(c => c.id === catId);
   if (idx === -1) return;
-  const old = categories[idx];
-  categories[idx] = { ...old, name: newName };
+  categories[idx] = { ...categories[idx], name: newName };
+  dbUpdate('categories', catId, { name: newName });
   renderAll();
-  try {
-    const { error } = await sb.from('categories').update({ name: newName }).eq('id', catId);
-    if (error) throw error;
-  } catch (err) {
-    categories[idx] = old;
-    renderAll(); showToast('Could not rename — ' + err.message, true);
-  }
 }
 
 /* ─── Installment modal (expense-level) ─────────────────── */
@@ -1393,20 +1313,16 @@ async function handleInstallmentSave() {
   if (!total || total < 2)   { errEl.textContent = 'Enter total installments (min 2).'; errEl.classList.remove('hidden'); return; }
   if (!current || current < 1 || current > total) { errEl.textContent = 'Current installment must be between 1 and total.'; errEl.classList.remove('hidden'); return; }
   const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
-  const old = { ...expenses[idx] };
   expenses[idx] = { ...expenses[idx], installment_total: total, installment_current: current, installment_due_day: dueDay };
   closeModal('installmentModal'); renderAll(); showToast('Installments saved');
-  try { await sb.from('expenses').update({ installment_total: total, installment_current: current, installment_due_day: dueDay }).eq('id', id); }
-  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not save — ' + err.message, true); }
+  dbUpdate('expenses', id, { installment_total: total, installment_current: current, installment_due_day: dueDay });
 }
 async function handleInstallmentClear() {
   const id  = pendingInstallmentCatId;
   const idx = expenses.findIndex(e => e.id === id); if (idx === -1) { closeModal('installmentModal'); return; }
-  const old = { ...expenses[idx] };
   expenses[idx] = { ...expenses[idx], installment_total: null, installment_current: null, installment_due_day: null };
   closeModal('installmentModal'); renderAll(); showToast('Installments removed');
-  try { await sb.from('expenses').update({ installment_total: null, installment_current: null, installment_due_day: null }).eq('id', id); }
-  catch (err) { expenses[idx] = old; renderAll(); showToast('Could not remove — ' + err.message, true); }
+  dbUpdate('expenses', id, { installment_total: null, installment_current: null, installment_due_day: null });
 }
 
 /* ─── Category context menu ─────────────────────────────── */
@@ -1670,7 +1586,6 @@ async function handleScreenshotImport() {
 
   const tmpRows = toImport.map((item, i) => ({
     id: 'tmp_ocr_' + Date.now() + '_' + i,
-    user_id: currentUser.id,
     profile_id: currentProfileId,
     amount: item.amount,
     description: item.name,
@@ -1696,39 +1611,30 @@ async function handleScreenshotImport() {
   renderAll();
   showToast(`${toImport.length} item${toImport.length !== 1 ? 's' : ''} added`);
 
-  try {
-    const payloads = toImport.map((item, i) => ({
-      user_id: currentUser.id,
-      profile_id: currentProfileId,
-      amount: item.amount,
-      description: item.name,
-      bank: null,
-      category: catId,
-      date,
-      note: null,
-      sort_order: nextOrder + i,
-      checked: false,
-      planned: false,
-      installment_total: null,
-      installment_current: null,
-      installment_due_day: null,
-      installment_complete: false,
-      split_type: null,
-      split_percentage: null,
-    }));
-    const { data: rows, error } = await sb.from('expenses').insert(payloads).select();
-    if (error) throw error;
-    tmpRows.forEach(t => { expenses = expenses.filter(e => e.id !== t.id); });
-    rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
-    renderAll();
-  } catch (err) {
-    tmpRows.forEach(t => { expenses = expenses.filter(e => e.id !== t.id); });
-    renderAll();
-    showToast('Could not save — ' + err.message, true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Import Selected';
-  }
+  const payloads = toImport.map((item, i) => ({
+    profile_id: currentProfileId,
+    amount: item.amount,
+    description: item.name,
+    bank: null,
+    category: catId,
+    date,
+    note: null,
+    sort_order: nextOrder + i,
+    checked: false,
+    planned: false,
+    installment_total: null,
+    installment_current: null,
+    installment_due_day: null,
+    installment_complete: false,
+    split_type: null,
+    split_percentage: null,
+  }));
+  const savedRows = dbInsertMany('expenses', payloads);
+  tmpRows.forEach(t => { expenses = expenses.filter(e => e.id !== t.id); });
+  savedRows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
+  renderAll();
+  btn.disabled = false;
+  btn.textContent = 'Import Selected';
 }
 
 function buildItem(e) {
@@ -1866,28 +1772,13 @@ async function handleAddCategory(e) {
   const cur_symbol = cur?.symbol || null;
   const color    = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
   const catOrder = categories.length > 0 ? Math.max(...categories.map(c => c.sort_order ?? 0)) + 1 : 1;
-  const tmp = 'tmp_' + Date.now();
-  categories.push({ id: tmp, user_id: currentUser.id, name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
-  selectedCategory = tmp;
+  const row = dbInsert('categories', { name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder });
+  categories.push(row);
+  selectedCategory = row.id;
   closeModal('categoryModal');
-  buildCategoryGrid(true); selectCategory(tmp);
+  buildCategoryGrid(true); selectCategory(row.id);
   renderCategorySettings();
   showToast(`${name} added`);
-
-  try {
-    const { data: row, error } = await sb.from('categories')
-      .insert({ user_id: currentUser.id, name, color, shared, currency_code: cur_code, currency_symbol: cur_symbol, sort_order: catOrder }).select().single();
-    if (error) throw error;
-    const idx = categories.findIndex(c => c.id === tmp);
-    if (idx !== -1) categories[idx] = row;
-    if (selectedCategory === tmp) selectedCategory = row.id;
-    buildCategoryGrid(true); selectCategory(selectedCategory);
-    renderCategorySettings();
-  } catch (err) {
-    categories = categories.filter(c => c.id !== tmp);
-    if (selectedCategory === tmp) selectedCategory = categories[0]?.id || null;
-    buildCategoryGrid(true); renderCategorySettings(); showToast('Could not save — ' + err.message, true);
-  }
 }
 
 function deleteCategoryById(id) {
@@ -1931,13 +1822,7 @@ function renderCategorySettings() {
         const idx = categories.findIndex(c => c.id === cat.id);
         if (idx !== -1) categories[idx] = { ...categories[idx], name: newName };
         renderCategorySettings(); renderAll();
-        try {
-          const { error } = await sb.from('categories').update({ name: newName }).eq('id', cat.id);
-          if (error) throw error;
-        } catch (err) {
-          if (idx !== -1) categories[idx] = cat;
-          renderCategorySettings(); renderAll(); showToast('Could not rename — ' + err.message, true);
-        }
+        dbUpdate('categories', cat.id, { name: newName });
       };
       input.addEventListener('blur', commit);
       input.addEventListener('keydown', e => {
@@ -2082,28 +1967,18 @@ async function handleFormSubmit(ev) {
     if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields };
     renderAll();
     showToast('Updated');
-    try {
-      await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields });
-    } catch (err) {
-      if (prev && i !== -1) expenses[i] = prev;
-      renderAll(); showToast('Could not save — ' + err.message, true);
-    }
+    await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields });
   } else {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields, ...splitFields });
+    expenses.unshift({ id: tmp, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields, ...splitFields });
     renderAll();
     showToast('Added');
-    try {
-      const row = await dbSaveExpense({ user_id: currentUser.id, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned, ...splitFields });
-      const idx = expenses.findIndex(e => e.id === tmp);
-      if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
-      renderAll();
-    } catch (err) {
-      expenses = expenses.filter(e => e.id !== tmp);
-      renderAll(); showToast('Could not save — ' + err.message, true);
-    }
+    const row = await dbSaveExpense({ profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned, ...splitFields });
+    const idx = expenses.findIndex(e => e.id === tmp);
+    if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+    renderAll();
   }
 }
 
@@ -2185,8 +2060,6 @@ async function handleMoveItemConfirm() {
 }
 
 async function handleMoveConfirm() {
-  const srcYear  = currentYear;
-  const srcMonth = currentMonth;
   const list     = getMonthExpenses();
   if (!list.length) { closeModal('moveModal'); return; }
 
@@ -2195,7 +2068,6 @@ async function handleMoveConfirm() {
   const targetDate  = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-01`;
   const ids         = list.map(e => e.id);
 
-  const prevExpenses = expenses.map(e => ({ ...e }));
   expenses = expenses.map(e => ids.includes(e.id) ? { ...e, date: targetDate } : e);
 
   closeModal('moveModal');
@@ -2205,16 +2077,7 @@ async function handleMoveConfirm() {
   renderAll();
   showToast(`Moved to ${getMonthLabel(targetYear, targetMonth)}`);
 
-  try {
-    const { error } = await sb.from('expenses').update({ date: targetDate }).in('id', ids);
-    if (error) throw error;
-  } catch (err) {
-    expenses     = prevExpenses;
-    currentYear  = srcYear;
-    currentMonth = srcMonth;
-    renderAll();
-    showToast('Could not move — ' + err.message, true);
-  }
+  dbUpdateIn('expenses', ids, { date: targetDate });
 }
 
 async function handleDuplicateMonthConfirm() {
@@ -2238,7 +2101,7 @@ async function handleDuplicateMonthConfirm() {
       installCurrent  = Math.min(e.installment_total, next);
     }
     return [{
-      user_id: e.user_id, profile_id: e.profile_id,
+      profile_id: e.profile_id,
       amount: e.amount, description: e.description,
       bank: e.bank, category: e.category,
       date: targetDate, note: e.note,
@@ -2252,7 +2115,6 @@ async function handleDuplicateMonthConfirm() {
 
   const tmpIds = copies.map((_, i) => 'tmp_dup_' + Date.now() + '_' + i);
   const optimistic = copies.map((c, i) => ({ ...c, id: tmpIds[i] }));
-  const prevExpenses = [...expenses];
 
   currentYear  = targetYear;
   currentMonth = targetMonth;
@@ -2261,18 +2123,10 @@ async function handleDuplicateMonthConfirm() {
   renderAll();
   showToast(`Duplicated ${list.length} expense${list.length !== 1 ? 's' : ''} to ${getMonthLabel(targetYear, targetMonth)}`);
 
-  try {
-    const { data: rows, error } = await sb.from('expenses').insert(copies).select();
-    if (error) throw error;
-    tmpIds.forEach(tid => { expenses = expenses.filter(e => e.id !== tid); });
-    rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
-    renderAll();
-  } catch (err) {
-    expenses     = prevExpenses;
-    currentYear  = currentYear; // already navigated
-    renderAll();
-    showToast('Could not duplicate — ' + err.message, true);
-  }
+  const rows = dbInsertMany('expenses', copies);
+  tmpIds.forEach(tid => { expenses = expenses.filter(e => e.id !== tid); });
+  rows.forEach(r => expenses.push({ ...r, amount: parseFloat(r.amount) }));
+  renderAll();
 }
 
 /* ─── Income Modal ──────────────────────────────────────── */
@@ -2336,21 +2190,15 @@ async function handleIncomeSubmit(e) {
     : (activeChip?.dataset.src || 'Salary');
 
   const tmp = 'tmp_' + Date.now();
-  incomeEntries.push({ id: tmp, user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
+  incomeEntries.push({ id: tmp, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
   closeModal('incomeModal');
   renderSummary();
   showToast('Income added');
 
-  try {
-    const row = await dbSaveIncome({ user_id: currentUser.id, profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
-    const idx = incomeEntries.findIndex(r => r.id === tmp);
-    if (idx !== -1) incomeEntries[idx] = { ...row, amount: parseFloat(row.amount) };
-    renderSummary();
-  } catch (err) {
-    incomeEntries = incomeEntries.filter(r => r.id !== tmp);
-    renderSummary();
-    showToast('Could not save — ' + err.message, true);
-  }
+  const row = await dbSaveIncome({ profile_id: currentProfileId, year: currentYear, month: currentMonth, amount, source, note: null });
+  const idx = incomeEntries.findIndex(r => r.id === tmp);
+  if (idx !== -1) incomeEntries[idx] = { ...row, amount: parseFloat(row.amount) };
+  renderSummary();
 }
 
 /* ─── Delete ────────────────────────────────────────────── */
@@ -2488,16 +2336,11 @@ async function duplicateExpense(id) {
   expenses.unshift(copy);
   renderAll();
   showToast('Duplicated');
-  try {
-    const payload = { user_id: src.user_id, profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder, installment_total: src.installment_total || null, installment_current: src.installment_current || null, installment_due_day: src.installment_due_day || null };
-    const row = await dbSaveExpense(payload);
-    const idx = expenses.findIndex(e => e.id === tmp);
-    if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
-    renderAll();
-  } catch (err) {
-    expenses = expenses.filter(e => e.id !== tmp);
-    renderAll(); showToast('Could not duplicate — ' + err.message, true);
-  }
+  const payload = { profile_id: src.profile_id, amount: src.amount, description: src.description, bank: src.bank, category: src.category, date: src.date, note: src.note, sort_order: newOrder, installment_total: src.installment_total || null, installment_current: src.installment_current || null, installment_due_day: src.installment_due_day || null };
+  const row = await dbSaveExpense(payload);
+  const idx = expenses.findIndex(e => e.id === tmp);
+  if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
+  renderAll();
 }
 
 async function handleConfirmDelete() {
@@ -2516,12 +2359,10 @@ async function handleConfirmDelete() {
     const prefix = pendingDeleteGroupPrefix;
     pendingDeleteGroupIds = null; pendingDeleteGroupPrefix = null;
     closeModal('deleteModal');
-    try {
-      await Promise.all(ids.map(id => sb.from('categories').delete().eq('id', id)));
-      categories = categories.filter(c => !ids.includes(c.id));
-      renderCategorySettings(); renderAll();
-      showToast(`"${prefix}" group deleted`);
-    } catch (err) { showToast('Error: ' + err.message, true); }
+    ids.forEach(id => dbDelete('categories', id));
+    categories = categories.filter(c => !ids.includes(c.id));
+    renderCategorySettings(); renderAll();
+    showToast(`"${prefix}" group deleted`);
     return;
   }
 
@@ -2530,13 +2371,10 @@ async function handleConfirmDelete() {
     const cat = getCat(id);
     pendingDeleteCatId = null;
     closeModal('deleteModal');
-    try {
-      const { error } = await sb.from('categories').delete().eq('id', id);
-      if (error) throw error;
-      categories = categories.filter(c => c.id !== id);
-      renderCategorySettings(); renderAll();
-      showToast(`${cat?.name ?? 'Category'} deleted`);
-    } catch (err) { showToast('Error: ' + err.message, true); }
+    dbDelete('categories', id);
+    categories = categories.filter(c => c.id !== id);
+    renderCategorySettings(); renderAll();
+    showToast(`${cat?.name ?? 'Category'} deleted`);
     return;
   }
 
@@ -2615,10 +2453,6 @@ function closeAllModals() {
 
 /* ─── Event Binding ─────────────────────────────────────── */
 function bindEvents() {
-  // Auth
-  document.getElementById('authForm').addEventListener('submit', handleAuthSubmit);
-  document.getElementById('authToggle').addEventListener('click', () => setAuthMode(authMode === 'signin' ? 'signup' : 'signin'));
-
   // Month nav
   document.getElementById('prevMonth').addEventListener('click', () => {
     currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -2857,21 +2691,11 @@ function bindEvents() {
     if (cur) handleCurrencySelect(cur.code, cur.symbol);
   });
 
-  document.getElementById('signOutBtn').addEventListener('click', async () => {
-    await sb.auth.signOut(); hideSettingsPage();
-  });
-
-  document.getElementById('clearDataBtn').addEventListener('click', async () => {
+  document.getElementById('clearDataBtn').addEventListener('click', () => {
     if (!confirm('Delete all your data for every month? This cannot be undone.')) return;
-    try {
-      await Promise.all([
-        sb.from('expenses').delete().eq('user_id', currentUser.id),
-        sb.from('monthly_income').delete().eq('user_id', currentUser.id),
-        sb.from('completed_months').delete().eq('user_id', currentUser.id),
-      ]);
-      expenses = []; incomeEntries = []; completedMonths = [];
-      hideSettingsPage(); renderAll(); showToast('All data cleared');
-    } catch (err) { showToast('Error: ' + err.message, true); }
+    dbDeleteAll('expenses'); dbDeleteAll('monthly_income'); dbDeleteAll('completed_months');
+    expenses = []; incomeEntries = []; completedMonths = [];
+    hideSettingsPage(); renderAll(); showToast('All data cleared');
   });
 
   // Move / Duplicate modal

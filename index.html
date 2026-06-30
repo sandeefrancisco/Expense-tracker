@@ -92,28 +92,6 @@
     </div>
   </div>
 
-  <!-- Auth Screen -->
-  <div id="authScreen" class="auth-screen hidden">
-    <div class="auth-content">
-      <div class="auth-logo-wrap"><img class="auth-logo-icon" src="icon.svg" alt="Expenses" /></div>
-      <h1 class="auth-title" id="authTitle">Welcome back</h1>
-      <p class="auth-sub" id="authSub">Sign in to your account</p>
-      <form id="authForm" novalidate class="auth-form">
-        <div class="form-group">
-          <label class="form-label" for="emailInput">Email</label>
-          <input type="email" id="emailInput" class="form-input" placeholder="you@example.com" autocomplete="email" inputmode="email" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="passwordInput">Password</label>
-          <input type="password" id="passwordInput" class="form-input" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <div class="auth-error hidden" id="authError"></div>
-        <button type="submit" class="submit-btn" id="authSubmitBtn">Sign in</button>
-      </form>
-      <button class="auth-toggle-btn" id="authToggle">Don't have an account? <strong>Sign up</strong></button>
-    </div>
-  </div>
-
   <!-- Main App -->
   <div id="app" class="hidden">
 
@@ -203,18 +181,6 @@
     <div id="settingsPage" class="settings-page hidden">
       <div class="settings-heading">Settings</div>
       <div class="settings-content">
-        <!-- Account -->
-        <div class="settings-card">
-          <div class="settings-row account-info-row">
-            <div class="account-avatar" id="accountAvatar"></div>
-            <div class="settings-row-main">
-              <div class="settings-row-title" id="accountEmail"></div>
-              <div class="settings-row-sub">Signed in</div>
-            </div>
-          </div>
-          <button class="settings-signout-btn" id="signOutBtn">Sign out</button>
-        </div>
-
         <!-- Currency -->
         <div class="settings-group">
           <div class="settings-group-label">Currency</div>
@@ -625,8 +591,7 @@
   <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=139"></script>
+  <script src="app.js?v=140"></script>
 </body>
 </html>
