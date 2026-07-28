@@ -443,7 +443,10 @@ function getMonthIncome() {
 function getEffectiveIncome() {
   const current = getMonthIncome();
   if (current.length > 0) return current;
-  const all = incomeEntries.filter(r => r.profile_id === currentProfileId);
+  const all = incomeEntries.filter(r =>
+    r.profile_id === currentProfileId &&
+    (r.year < currentYear || (r.year === currentYear && r.month <= currentMonth))
+  );
   if (all.length === 0) return [];
   const sorted = [...all].sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month);
   const { year: ly, month: lm } = sorted[0];
@@ -811,16 +814,13 @@ function renderSummary() {
     progPct.style.color  = pct === 100 ? '#16a34a' : pct > 0 ? 'var(--accent)' : 'var(--muted)';
   }
 
-  // Stats — paid vs due amounts in primary currency
-  // paidBase uses effectiveAmount (halved for shared); dueBase uses raw amount
+  // Stats — paid vs due amounts in primary currency (both use effectiveAmount for consistency with totalBase)
   let paidBase = 0, dueBase = 0;
   list.forEach(e => {
     const cur     = getCatCurrency(e.category);
     const effAmt  = effectiveAmount(e);
-    const rawAmt  = e.amount;
-    const paidB   = toBase(effAmt, cur.code) ?? (cur.code === primaryCode ? effAmt : 0);
-    const dueB    = toBase(rawAmt, cur.code) ?? (cur.code === primaryCode ? rawAmt : 0);
-    if (e.checked) paidBase += paidB; else dueBase += dueB;
+    const effB    = toBase(effAmt, cur.code) ?? (cur.code === primaryCode ? effAmt : 0);
+    if (e.checked) paidBase += effB; else dueBase += effB;
   });
   const fmtStat = v => v === 0 ? `${primarySym}0` : v >= 100000
     ? `${primarySym}${(v / 1000).toFixed(0)}k`
