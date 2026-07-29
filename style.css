@@ -735,6 +735,7 @@ body.modal-open { overflow: hidden; }
 .expense-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .expense-desc  { font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 .expense-bank  { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.expense-item-note { font-size: 13px; color: var(--muted); margin-top: 3px; white-space: normal; overflow-wrap: break-word; }
 
 /* Bank picker chips */
 .bank-grid { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -940,6 +941,7 @@ body.modal-open { overflow: hidden; }
 }
 .form-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .form-input::placeholder { color: rgba(92,89,117,.45); }
+textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; }
 .form-select {
   width: 100%; padding: 13px 40px 13px 16px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);

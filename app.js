@@ -1678,6 +1678,7 @@ function buildItem(e) {
       </div>
       ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
+      ${e.note ? `<div class="expense-item-note">${escHtml(e.note)}</div>` : ''}
     </div>
     <div class="expense-amt-right">
       <div class="expense-amount">${fmtCat(e.amount, e.category)}${splitBadge}</div>
@@ -1868,6 +1869,7 @@ function openAddModal() {
   document.getElementById('submitBtn').textContent  = 'Add Allocation';
   document.getElementById('amountInput').value = '';
   document.getElementById('descInput').value   = '';
+  document.getElementById('noteInput').value   = '';
   document.getElementById('editId').value      = '';
   document.getElementById('currencySymbol').textContent = settings.currency.symbol;
   document.getElementById('plannedToggleBtn').checked = false;
@@ -1886,6 +1888,7 @@ function openEditModal(id) {
   selectedBank = e.bank || null; buildBankGrid(selectedBank);
   document.getElementById('amountInput').value = parseFloat(e.amount).toFixed(2);
   document.getElementById('descInput').value   = e.description;
+  document.getElementById('noteInput').value   = e.note || '';
   document.getElementById('editId').value      = e.id;
   // Populate installment fields if present
   if (e.installment_total) {
@@ -1923,6 +1926,7 @@ async function handleFormSubmit(ev) {
   clearFormError();
   const amount = parseAmount(document.getElementById('amountInput').value);
   const desc   = document.getElementById('descInput').value.trim();
+  const note   = document.getElementById('noteInput').value.trim() || null;
   const bank   = selectedBank || null;
   const editId = document.getElementById('editId').value;
   if (!amount || amount <= 0) { showFormError('Enter an amount first.'); return; }
@@ -1964,18 +1968,18 @@ async function handleFormSubmit(ev) {
   if (editId) {
     const i    = expenses.findIndex(e => e.id === editId);
     const prev = i !== -1 ? { ...expenses[i] } : null;
-    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields };
+    if (i !== -1) expenses[i] = { ...expenses[i], amount, description: desc, bank, category: selectedCategory, note, ...installFields, planned, ...splitFields };
     renderAll();
     showToast('Updated');
-    await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, ...installFields, planned, ...splitFields });
+    await dbPatchExpense(editId, { amount, description: desc, bank, category: selectedCategory, note, ...installFields, planned, ...splitFields });
   } else {
     const tmp = 'tmp_' + Date.now();
     const catItems = expenses.filter(e => e.category === selectedCategory && !e.checked);
     const newOrder = catItems.length > 0 ? Math.max(...catItems.map(e => e.sort_order ?? 0)) + 1 : 1;
-    expenses.unshift({ id: tmp, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, checked: false, planned, sort_order: newOrder, ...installFields, ...splitFields });
+    expenses.unshift({ id: tmp, profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note, checked: false, planned, sort_order: newOrder, ...installFields, ...splitFields });
     renderAll();
     showToast('Added');
-    const row = await dbSaveExpense({ profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note: null, sort_order: newOrder, ...installFields, planned, ...splitFields });
+    const row = await dbSaveExpense({ profile_id: currentProfileId, amount, description: desc, bank, category: selectedCategory, date, note, sort_order: newOrder, ...installFields, planned, ...splitFields });
     const idx = expenses.findIndex(e => e.id === tmp);
     if (idx !== -1) expenses[idx] = { ...row, amount: parseFloat(row.amount) };
     renderAll();
