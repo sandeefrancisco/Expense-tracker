@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=127" />
+  <link rel="stylesheet" href="style.css?v=128" />
 </head>
 <body>
 
@@ -146,6 +146,12 @@
         <div class="summary-label" id="summaryLabel">Tracked this month</div>
         <div class="summary-amount" id="summaryHero">—</div>
         <div class="summary-sub" id="summarySub"></div>
+        <button type="button" class="saved-done-btn hidden" id="savedDoneBtn">
+          <span class="saved-done-check" id="savedDoneCheck">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <span id="savedDoneLabel">Mark as transferred to savings</span>
+        </button>
 
         <div class="sc-rule"></div>
 
@@ -596,6 +602,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=140"></script>
+  <script src="app.js?v=141"></script>
 </body>
 </html>

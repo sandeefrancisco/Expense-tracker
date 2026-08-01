@@ -8,7 +8,7 @@ function loadDB() {
     const raw = localStorage.getItem(DB_KEY);
     if (raw) return JSON.parse(raw);
   } catch { /* fall through to empty DB */ }
-  return { profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], user_settings: null };
+  return { profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], savings_done: [], user_settings: null };
 }
 function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
 
@@ -62,6 +62,17 @@ function dbDeleteCompletedMonth(profile_id, year, month) {
   db.completed_months = db.completed_months.filter(c => !(c.profile_id === profile_id && c.year === year && c.month === month));
   saveDB(db);
 }
+function dbInsertSavingsDone(row) {
+  const db = loadDB();
+  db.savings_done = db.savings_done || [];
+  db.savings_done.push(row);
+  saveDB(db);
+}
+function dbDeleteSavingsDone(profile_id, year, month) {
+  const db = loadDB();
+  db.savings_done = (db.savings_done || []).filter(c => !(c.profile_id === profile_id && c.year === year && c.month === month));
+  saveDB(db);
+}
 function dbSaveUserSettings(settingsObj) {
   const db = loadDB();
   db.user_settings = { ...settingsObj, updated_at: new Date().toISOString() };
@@ -81,10 +92,11 @@ async function seedDBIfEmpty() {
       expenses: seed.expenses || [],
       monthly_income: seed.monthly_income || [],
       completed_months: seed.completed_months || [],
+      savings_done: seed.savings_done || [],
       user_settings: seed.user_settings || null,
     });
   } catch {
-    saveDB({ profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], user_settings: null });
+    saveDB({ profiles: [], categories: [], expenses: [], monthly_income: [], completed_months: [], savings_done: [], user_settings: null });
   }
 }
 
@@ -141,6 +153,7 @@ let profiles          = [];
 let categories        = [];
 let currentProfileId  = null;
 let completedMonths   = [];
+let savingsDone       = [];
 let settings          = { currency: { symbol: '€', code: 'EUR' } };
 let currentYear, currentMonth;
 let pendingDeleteId          = null;
@@ -220,6 +233,7 @@ async function loadUserData() {
   incomeEntries   = db.monthly_income.map(r => ({ ...r, amount: parseFloat(r.amount) }));
   profiles        = db.profiles;
   completedMonths = db.completed_months;
+  savingsDone     = db.savings_done || [];
   categories      = db.categories;
 
   if (db.user_settings)
@@ -472,6 +486,24 @@ async function toggleMonthDone() {
     completedMonths.push({ profile_id: currentProfileId, year: y, month: m });
     renderHeader(); renderSummary();
     dbInsertCompletedMonth({ profile_id: currentProfileId, year: y, month: m });
+  }
+}
+
+function isSavingsDone(y, m) {
+  return savingsDone.some(c => c.profile_id === currentProfileId && c.year === y && c.month === m);
+}
+
+async function toggleSavingsDone() {
+  const y = currentYear, m = currentMonth;
+  const done = isSavingsDone(y, m);
+  if (done) {
+    savingsDone = savingsDone.filter(c => !(c.profile_id === currentProfileId && c.year === y && c.month === m));
+    renderSummary();
+    dbDeleteSavingsDone(currentProfileId, y, m);
+  } else {
+    savingsDone.push({ profile_id: currentProfileId, year: y, month: m });
+    renderSummary();
+    dbInsertSavingsDone({ profile_id: currentProfileId, year: y, month: m });
   }
 }
 
@@ -753,6 +785,7 @@ function renderSummary() {
   });
 
   let heroIsPrimary = false;
+  let showSavedDone = false;
 
   if (earned > 0) {
     const saved  = earned - totalBase;
@@ -765,6 +798,7 @@ function renderSummary() {
     if (isOver) heroEl.style.color = 'var(--error)';
     subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
     heroIsPrimary = true;
+    showSavedDone = !isOver && saved > 0;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
@@ -800,6 +834,18 @@ function renderSummary() {
     heroIsPrimary = heroCode === primaryCode;
   }
 
+  // Savings transferred toggle — only relevant when this month shows a positive saved amount
+  const savedDoneBtn = document.getElementById('savedDoneBtn');
+  if (savedDoneBtn) {
+    savedDoneBtn.classList.toggle('hidden', !showSavedDone);
+    if (showSavedDone) {
+      const done = isSavingsDone(currentYear, currentMonth);
+      savedDoneBtn.classList.toggle('done', done);
+      document.getElementById('savedDoneLabel').textContent = done
+        ? 'Transferred to savings'
+        : 'Mark as transferred to savings';
+    }
+  }
 
   // Progress bar
   const paidCount = list.filter(e => e.checked).length;
@@ -2614,6 +2660,8 @@ function bindEvents() {
   });
   document.addEventListener('click', () => document.getElementById('cardMenu')?.classList.add('hidden'));
 
+  document.getElementById('savedDoneBtn').addEventListener('click', toggleSavingsDone);
+
   // Income
   document.getElementById('incomeForm').addEventListener('submit', handleIncomeSubmit);
   document.getElementById('closeIncomeModal').addEventListener('click', () => closeModal('incomeModal'));
@@ -2697,8 +2745,8 @@ function bindEvents() {
 
   document.getElementById('clearDataBtn').addEventListener('click', () => {
     if (!confirm('Delete all your data for every month? This cannot be undone.')) return;
-    dbDeleteAll('expenses'); dbDeleteAll('monthly_income'); dbDeleteAll('completed_months');
-    expenses = []; incomeEntries = []; completedMonths = [];
+    dbDeleteAll('expenses'); dbDeleteAll('monthly_income'); dbDeleteAll('completed_months'); dbDeleteAll('savings_done');
+    expenses = []; incomeEntries = []; completedMonths = []; savingsDone = [];
     hideSettingsPage(); renderAll(); showToast('All data cleared');
   });
 
