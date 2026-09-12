@@ -696,6 +696,7 @@ body.modal-open { overflow: hidden; }
   border: none; background: transparent; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   color: var(--muted); border-radius: 8px; padding: 0;
+  margin-left: -8px;
   transition: color var(--t);
 }
 .item-more-btn:active { color: var(--ink); }
