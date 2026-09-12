@@ -348,8 +348,8 @@ body.modal-open { overflow: hidden; }
 .month-bar {
   display: flex; align-items: center; justify-content: space-between;
   margin: 0 16px 12px;
-  background: var(--surface); border-radius: var(--r-card);
-  border: 1px solid var(--border); box-shadow: var(--shadow-card);
+  background: transparent; border-radius: var(--r-card);
+  border: none; box-shadow: none;
   height: 52px; flex-shrink: 0;
   transition: background var(--t);
 }
