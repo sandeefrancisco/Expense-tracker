@@ -42,7 +42,7 @@ html {
 }
 
 body {
-  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--ink);
   min-height: 100dvh;
@@ -185,7 +185,7 @@ body.modal-open { overflow: hidden; }
 
 .auth-toggle-btn {
   background: none; border: none;
-  font-size: 14px; font-family: 'Figtree', sans-serif;
+  font-size: 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: var(--muted); cursor: pointer; padding: 12px 8px;
   min-height: 44px;
 }
@@ -215,7 +215,7 @@ body.modal-open { overflow: hidden; }
 .brand-icon-img { width: 28px; height: 28px; border-radius: 7px; display: block; }
 .brand-wordmark {
   font-size: 17px; font-weight: 800; color: var(--ink);
-  letter-spacing: -0.4px; font-family: 'Figtree', sans-serif;
+  letter-spacing: -0.4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Profile button (header legacy + bottom nav) */
@@ -229,11 +229,11 @@ body.modal-open { overflow: hidden; }
 .hdr-avatar {
   width: 28px; height: 28px; border-radius: 50%;
   background: var(--accent); color: #fff;
-  font-size: 12px; font-weight: 800; font-family: 'Figtree', sans-serif;
+  font-size: 12px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .hdr-profile-name {
-  font-size: 14px; font-weight: 700; font-family: 'Figtree', sans-serif;
+  font-size: 14px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink); white-space: nowrap; max-width: 120px;
   overflow: hidden; text-overflow: ellipsis;
 }
@@ -250,7 +250,7 @@ body.modal-open { overflow: hidden; }
   padding: 5px 16px; min-height: 44px;
   border-radius: 99px; border: 1.5px solid var(--border);
   background: transparent; font-size: 14px; font-weight: 600;
-  font-family: 'Figtree', sans-serif; color: var(--muted); cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--muted); cursor: pointer;
   transition: all 0.15s;
 }
 .profile-pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
@@ -258,7 +258,7 @@ body.modal-open { overflow: hidden; }
 .profile-add-btn {
   white-space: nowrap; flex-shrink: 0; padding: 5px 14px; min-height: 44px;
   border-radius: 99px; border: 1.5px dashed var(--border); background: transparent;
-  font-size: 14px; font-weight: 500; font-family: 'Figtree', sans-serif;
+  font-size: 14px; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: var(--muted); cursor: pointer; transition: all 0.15s;
 }
 .profile-add-btn:hover { background: var(--tint); }
@@ -307,7 +307,7 @@ body.modal-open { overflow: hidden; }
   height: 36px; padding: 0 14px; border-radius: 99px; gap: 6px;
   background: var(--ink); border: none; cursor: pointer;
   color: #fff; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; font-family: 'Figtree', sans-serif;
+  font-size: 14px; font-weight: 700; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   transition: filter var(--t), transform 0.12s;
 }
 .header-add-btn:hover  { filter: brightness(1.2); }
@@ -425,7 +425,7 @@ body.modal-open { overflow: hidden; }
   margin-top: 12px; padding: 9px 12px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);
   background: var(--tint); color: var(--muted);
-  font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600;
   cursor: pointer; transition: border-color var(--t), background var(--t), color var(--t);
   width: 100%; text-align: left;
 }
@@ -465,7 +465,7 @@ body.modal-open { overflow: hidden; }
   border: none; background: transparent;
   cursor: pointer; font-size: 15px; font-weight: 500;
   color: var(--ink); text-align: left;
-  font-family: 'Figtree', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   transition: background var(--t);
 }
 .card-menu-item:hover { background: var(--bg); }
@@ -479,7 +479,7 @@ body.modal-open { overflow: hidden; }
 .budget-pill {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px; border-radius: 99px; border: none;
-  font-size: 13px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  font-size: 13px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   cursor: pointer; transition: background var(--t), color var(--t);
   margin-bottom: 12px;
 }
@@ -516,7 +516,7 @@ body.modal-open { overflow: hidden; }
   background: rgba(255,255,255,0.1);
   border: 1.5px solid rgba(255,255,255,0.2);
   color: rgba(255,255,255,0.75);
-  font-size: 13px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  font-size: 13px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   padding: 5px 14px; border-radius: 99px; cursor: pointer;
   transition: all 0.15s;
 }
@@ -537,7 +537,7 @@ body.modal-open { overflow: hidden; }
   background: rgba(255,255,255,0.08);
   border: 1.5px solid rgba(255,255,255,0.16);
   color: rgba(255,255,255,0.6);
-  font-size: 13px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  font-size: 13px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   padding: 5px 14px; border-radius: 99px; cursor: pointer;
   transition: all 0.15s; white-space: nowrap;
 }
@@ -555,7 +555,7 @@ body.modal-open { overflow: hidden; }
   flex: 1; padding: 8px 0; border: none; border-radius: 10px;
   background: transparent; font-size: 14px; font-weight: 600;
   color: var(--muted); cursor: pointer; transition: all 0.22s ease;
-  font-family: 'Figtree', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .toggle-btn.active {
   background: var(--surface); color: var(--ink);
@@ -761,7 +761,7 @@ body.modal-open { overflow: hidden; }
   border: 1.5px solid var(--border); background: var(--tint);
   font-size: 14px; font-weight: 600; color: var(--ink);
   cursor: pointer; transition: all 0.15s; white-space: nowrap;
-  font-family: 'Figtree', sans-serif; min-height: 44px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; min-height: 44px;
 }
 .bank-chip.active { background: var(--ink); border-color: var(--ink); color: #fff; }
 
@@ -838,7 +838,7 @@ body.modal-open { overflow: hidden; }
   height: var(--nav-height); /* visible tab area; safe-area padding is below */
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   padding: 0; border: none; background: transparent; cursor: pointer;
-  color: var(--muted); font-family: 'Figtree', sans-serif; font-size: 11px;
+  color: var(--muted); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px;
   font-weight: 600; transition: color var(--t);
 }
 .nav-btn.active { color: var(--accent); }
@@ -849,7 +849,7 @@ body.modal-open { overflow: hidden; }
 .nav-avatar {
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--accent); color: #fff;
-  font-size: 11px; font-weight: 800; font-family: 'Figtree', sans-serif;
+  font-size: 11px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .nav-profile-tab span { font-size: 11px; font-weight: 600; color: inherit; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -936,7 +936,7 @@ body.modal-open { overflow: hidden; }
 .form-input {
   width: 100%; padding: 13px 16px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);
-  font-size: 15px; font-family: 'Figtree', sans-serif; font-weight: 500;
+  font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 500;
   color: var(--ink); background: var(--tint); min-height: 50px;
   transition: border-color var(--t), box-shadow var(--t), background var(--t);
   outline: none; -webkit-appearance: none;
@@ -947,7 +947,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 .form-select {
   width: 100%; padding: 13px 40px 13px 16px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);
-  font-size: 15px; font-family: 'Figtree', sans-serif; font-weight: 500;
+  font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-weight: 500;
   color: var(--ink); background: var(--tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235C5975' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4,6 8,10 12,6'/%3E%3C/svg%3E") no-repeat right 14px center / 16px 16px;
   min-height: 50px; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer;
   transition: border-color var(--t), box-shadow var(--t);
@@ -968,7 +968,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 .amount-input {
   flex: 1; min-width: 0;
   border: none; background: transparent;
-  font-size: 34px; font-weight: 800; font-family: 'Figtree', sans-serif;
+  font-size: 34px; font-weight: 800; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink); outline: none; letter-spacing: -1.5px; -moz-appearance: textfield;
 }
 .amount-input::-webkit-outer-spin-button,
@@ -981,7 +981,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
   display: flex; align-items: center; justify-content: center;
   padding: 13px 16px; border-radius: 99px; border: 1.5px solid var(--border);
   background: var(--tint); cursor: pointer; transition: all var(--t);
-  font-family: 'Figtree', sans-serif; text-align: center; min-height: 44px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; text-align: center; min-height: 44px;
 }
 .category-chip:active { background: var(--border); }
 .category-chip.selected { border-color: var(--ink); background: var(--ink); }
@@ -1014,7 +1014,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 }
 .split-type-chip {
   padding: 10px 12px; border-radius: 99px; border: 1.5px solid var(--border);
-  background: var(--tint); cursor: pointer; font-family: 'Figtree', sans-serif;
+  background: var(--tint); cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   transition: all var(--t); min-height: 40px;
 }
@@ -1053,7 +1053,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 .submit-btn {
   width: 100%; padding: 14px; background: var(--accent); color: #fff;
   border: none; border-radius: var(--r-btn); font-size: 16px; font-weight: 700;
-  font-family: 'Figtree', sans-serif; cursor: pointer; min-height: 50px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; cursor: pointer; min-height: 50px;
   margin-top: 8px; transition: background var(--t), transform 0.1s;
 }
 .submit-btn:hover   { background: var(--accent-hover); }
@@ -1063,7 +1063,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 .secondary-btn {
   width: 100%; padding: 13px; background: transparent; color: var(--ink);
   border: 1.5px solid var(--border); border-radius: var(--r-btn);
-  font-size: 15px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  font-size: 15px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   cursor: pointer; min-height: 50px; transition: background var(--t); text-align: center;
 }
 .secondary-btn:hover { background: var(--tint); }
@@ -1174,7 +1174,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
   font-size: 15px; font-weight: 600; color: var(--error);
   border-top: 1px solid var(--border-subtle);
   cursor: pointer; transition: opacity var(--t);
-  font-family: 'Figtree', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .settings-signout-btn:hover { opacity: 0.7; }
 
@@ -1186,7 +1186,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
   border-top: 1px solid var(--border-subtle);
   font-size: 15px; font-weight: 500; color: var(--accent);
   cursor: pointer; transition: opacity var(--t);
-  font-family: 'Figtree', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .settings-add-row:hover { opacity: 0.7; }
 .settings-add-icon {
@@ -1203,7 +1203,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
   width: 100%; padding: 12px 16px; min-height: 52px;
   font-size: 15px; font-weight: 600; color: var(--error);
   cursor: pointer; transition: opacity var(--t);
-  font-family: 'Figtree', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 .settings-danger-row:hover { opacity: 0.7; }
 
@@ -1240,14 +1240,14 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
 .cancel-btn {
   flex: 1; padding: 13px; border-radius: var(--r-btn); border: 1.5px solid var(--border);
   background: transparent; font-size: 16px; font-weight: 700;
-  font-family: 'Figtree', sans-serif; cursor: pointer; color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; cursor: pointer; color: var(--ink);
   min-height: 50px; transition: background var(--t);
 }
 .cancel-btn:hover { background: var(--tint); }
 .delete-btn {
   flex: 1; padding: 13px; border-radius: var(--r-btn); border: none;
   background: var(--error); color: #fff; font-size: 16px; font-weight: 700;
-  font-family: 'Figtree', sans-serif; cursor: pointer; min-height: 50px; transition: opacity var(--t);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; cursor: pointer; min-height: 50px; transition: opacity var(--t);
 }
 .delete-btn:hover { opacity: 0.88; }
 
@@ -1286,7 +1286,7 @@ textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; 
   left: 50%;
   transform: translateX(-50%) translateY(-8px);
   background: var(--success); color: #fff; font-size: 14px; font-weight: 600;
-  font-family: 'Figtree', sans-serif; padding: 10px 18px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 10px 18px;
   border-radius: 99px; z-index: 200; white-space: nowrap;
   opacity: 0; transition: opacity 0.2s, transform 0.2s;
   pointer-events: none; box-shadow: var(--shadow-lg);
