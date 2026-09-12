@@ -304,13 +304,14 @@ body.modal-open { overflow: hidden; }
 /* ─── Header Add Button ─────────────────────────────────── */
 .header-add-btn {
   flex-shrink: 0;
-  width: 36px; height: 36px; border-radius: 50%;
+  height: 36px; padding: 0 14px; border-radius: 99px; gap: 6px;
   background: var(--accent); border: none; cursor: pointer;
   color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; font-family: 'Figtree', sans-serif;
   transition: background var(--t), transform 0.12s;
 }
 .header-add-btn:hover  { background: var(--accent-hover); }
-.header-add-btn:active { transform: scale(0.92); }
+.header-add-btn:active { transform: scale(0.96); }
 
 .salary-subtext { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .salary-subtext.hidden { display: none; }
