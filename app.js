@@ -1241,7 +1241,6 @@ function renderListView() {
         const sh = document.createElement('div');
         sh.className = 'list-sub-hdr';
         sh.innerHTML = `
-          <div class="list-sub-dot" style="background:${cat.color}"></div>
           <div class="list-tile-main">
             <div class="list-sub-name"><span class="list-hdr-name-text">${escHtml(sublabel)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
             <div class="list-sub-count">${subPaid}/${subActive.length}</div>
