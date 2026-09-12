@@ -118,25 +118,11 @@ const CURRENCIES = [
 ];
 
 function buildBankGrid(current) {
-  const grid = document.getElementById('bankGrid');
-  if (!grid) return;
-  grid.innerHTML = '';
-
-  const none = document.createElement('button');
-  none.type = 'button';
-  none.className = 'bank-chip' + (!current ? ' active' : '');
-  none.textContent = 'None';
-  none.addEventListener('click', () => { selectedBank = null; buildBankGrid(null); });
-  grid.appendChild(none);
-
-  BANKS.forEach(name => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'bank-chip' + (current === name ? ' active' : '');
-    chip.textContent = name;
-    chip.addEventListener('click', () => { selectedBank = name; buildBankGrid(name); });
-    grid.appendChild(chip);
-  });
+  const sel = document.getElementById('bankSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">None</option>' +
+    BANKS.map(name => `<option value="${escHtml(name)}">${escHtml(name)}</option>`).join('');
+  sel.value = current || '';
 }
 
 /* ─── Category colour palette ───────────────────────────── */
@@ -1767,29 +1753,18 @@ async function togglePlanned(id) {
   }
 }
 
-/* ─── Category Grid ─────────────────────────────────────── */
+/* ─── Category Select ────────────────────────────────────── */
 function buildCategoryGrid(showAdd = false) {
-  const grid = document.getElementById('categoryGrid');
-  grid.innerHTML = '';
-  categories.forEach(cat => {
-    const chip = document.createElement('button');
-    chip.type = 'button'; chip.className = 'category-chip'; chip.dataset.id = cat.id;
-    chip.innerHTML = `<span class="chip-label">${escHtml(cat.name)}</span>`;
-    chip.addEventListener('click', () => selectCategory(cat.id));
-    grid.appendChild(chip);
-  });
-  if (showAdd) {
-    const addChip = document.createElement('button');
-    addChip.type = 'button'; addChip.className = 'category-chip cat-add-chip';
-    addChip.innerHTML = `<span class="chip-label">+ New</span>`;
-    addChip.addEventListener('click', openAddCategoryModal);
-    grid.appendChild(addChip);
-  }
+  const sel = document.getElementById('categorySelect');
+  if (!sel) return;
+  sel.innerHTML = categories.map(cat => `<option value="${cat.id}">${escHtml(cat.name)}</option>`).join('')
+    + (showAdd ? '<option value="__new__">+ New category</option>' : '');
 }
 
 function selectCategory(id) {
   selectedCategory = id;
-  document.querySelectorAll('.category-chip').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+  const sel = document.getElementById('categorySelect');
+  if (sel) sel.value = id;
 }
 
 /* ─── Category Management ───────────────────────────────── */
@@ -2612,6 +2587,17 @@ function bindEvents() {
   });
   document.getElementById('expenseForm').addEventListener('submit', handleFormSubmit);
   document.getElementById('closeModal').addEventListener('click', () => closeModal('expenseModal'));
+  document.getElementById('bankSelect').addEventListener('change', e => {
+    selectedBank = e.target.value || null;
+  });
+  document.getElementById('categorySelect').addEventListener('change', e => {
+    if (e.target.value === '__new__') {
+      e.target.value = selectedCategory || '';
+      openAddCategoryModal();
+      return;
+    }
+    selectCategory(e.target.value);
+  });
   document.getElementById('installmentToggleBtn').addEventListener('change', function() {
     const inline = document.getElementById('installmentInline');
     if (this.checked) {
