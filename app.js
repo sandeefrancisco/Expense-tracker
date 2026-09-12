@@ -1180,8 +1180,6 @@ function renderListView() {
 
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
-      const grpFirstCat = getCat(item.catIds[0]);
-      const grpColor = grpFirstCat?.color || 'var(--accent)';
       const grpPaid      = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => e.checked && !e.planned).length || 0), 0);
       const grpTotal     = item.catIds.reduce((s, id) => s + (byCat[id]?.items.filter(e => !e.planned).length || 0), 0);
       const grpUnpaidAmt = item.catIds.reduce((s, id) => s + (byCat[id]?.total || 0), 0);
@@ -1199,9 +1197,6 @@ function renderListView() {
       const grpConvHtml = grpHasNonPrimary && grpBaseTotal > 0
         ? `<div class="list-hdr-conv">≈ ${primarySym}${fmtNum(grpBaseTotal)}</div>` : '';
       hdr.innerHTML = `
-        <div class="cat-icon-box" style="background:${grpColor}">
-          <span class="cat-icon-letter">${escHtml(item.prefix.charAt(0).toUpperCase())}</span>
-        </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(item.prefix)}</span>${chevHTML(!isExpanded)}</div>
           <div class="list-hdr-paid-count">${grpPaid}/${grpTotal} paid</div>
@@ -1290,9 +1285,6 @@ function renderListView() {
       const hdr = document.createElement('div');
       hdr.className = 'list-tile-hdr';
       hdr.innerHTML = `
-        <div class="cat-icon-box" style="background:${cat.color}">
-          <span class="cat-icon-letter">${escHtml(cat.name.charAt(0).toUpperCase())}</span>
-        </div>
         <div class="list-tile-main">
           <div class="list-hdr-name"><span class="list-hdr-name-text">${escHtml(cat.name)}${cat.shared ? ' <span class="shared-badge">÷2</span>' : ''}</span>${chevHTML(!isCatExp)}</div>
           <div class="list-hdr-paid-count">${paidCount}/${activeItems.length} paid</div>
