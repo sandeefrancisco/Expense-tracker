@@ -404,6 +404,28 @@ body.modal-open { overflow: hidden; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+.saved-done-btn {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 12px; padding: 9px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--r-input);
+  background: var(--tint); color: var(--muted);
+  font-family: 'Figtree', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: border-color var(--t), background var(--t), color var(--t);
+  width: 100%; text-align: left;
+}
+.saved-done-btn.hidden { display: none; }
+.saved-done-btn:hover { border-color: var(--accent); }
+.saved-done-check {
+  flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--t), border-color var(--t);
+}
+.saved-done-check svg { width: 11px; height: 11px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.saved-done-btn.done { border-color: #16a34a; background: rgba(22,163,74,0.08); color: #16a34a; }
+.saved-done-btn.done .saved-done-check { background: #16a34a; border-color: #16a34a; }
+.saved-done-btn.done .saved-done-check svg { opacity: 1; }
+
 .card-menu-btn {
   flex-shrink: 0;
   width: 40px; height: 40px; border-radius: 10px;
@@ -735,6 +757,7 @@ body.modal-open { overflow: hidden; }
 .expense-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .expense-desc  { font-size: 16px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 .expense-bank  { font-size: 13px; color: var(--muted); font-weight: 500; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.expense-item-note { font-size: 13px; color: var(--muted); margin-top: 3px; white-space: normal; overflow-wrap: break-word; }
 
 /* Bank picker chips */
 .bank-grid { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -940,6 +963,7 @@ body.modal-open { overflow: hidden; }
 }
 .form-input:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
 .form-input::placeholder { color: rgba(92,89,117,.45); }
+textarea.form-input { resize: vertical; min-height: 60px; font-family: inherit; }
 .form-select {
   width: 100%; padding: 13px 40px 13px 16px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);
