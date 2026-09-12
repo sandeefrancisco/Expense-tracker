@@ -613,7 +613,7 @@ body.modal-open { overflow: hidden; }
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; cursor: pointer; color: var(--muted);
-  transition: background var(--t); margin-right: -2px;
+  transition: background var(--t); margin-left: -8px; margin-right: -2px;
 }
 .cat-opts-btn:active { background: var(--border); color: var(--ink); }
 
