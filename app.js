@@ -1015,74 +1015,104 @@ function renderItemsBody(items, container) {
   if (unchecked.length > 1) initItemDrag(container);
 }
 
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_MOVE_TOLERANCE = 10;
+
 function initItemDrag(container) {
   if (container.dataset.dragInit) return;
   container.dataset.dragInit = '1';
 
   container.addEventListener('pointerdown', ev => {
-    if (!ev.target.closest('.drag-handle')) return;
+    if (ev.target.closest('.item-check-btn, .item-more-btn')) return;
     const item = ev.target.closest('.expense-item');
-    if (!item || item.classList.contains('checked')) return;
-    ev.preventDefault();
+    if (!item || item.classList.contains('checked') || item.classList.contains('planned')) return;
 
-    const rect = item.getBoundingClientRect();
-    const fingerOffsetY = ev.clientY - rect.top;
-    item.classList.add('dragging');
+    const startX = ev.clientX, startY = ev.clientY;
+    let dragStarted = false;
 
-    const ghost = item.cloneNode(true);
-    Object.assign(ghost.style, {
-      position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
-      width: rect.width + 'px', zIndex: '1000', pointerEvents: 'none',
-      boxShadow: '0 8px 24px rgba(0,0,0,.14)', background: 'var(--surface)',
-      borderRadius: '14px', transition: 'none',
-    });
-    document.body.appendChild(ghost);
-    try { navigator.vibrate(20); } catch (_) {}
+    function beginDrag() {
+      dragStarted = true;
+      const rect = item.getBoundingClientRect();
+      const fingerOffsetY = ev.clientY - rect.top;
+      item.classList.add('dragging');
 
-    function draggable() {
-      return [...container.querySelectorAll('.expense-item:not(.checked)')];
-    }
+      const ghost = item.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
+        width: rect.width + 'px', zIndex: '1000', pointerEvents: 'none',
+        boxShadow: '0 8px 24px rgba(0,0,0,.14)', background: 'var(--surface)',
+        borderRadius: '14px', transition: 'none',
+      });
+      document.body.appendChild(ghost);
+      try { navigator.vibrate(20); } catch (_) {}
 
-    function onMove(me) {
-      me.preventDefault();
-      ghost.style.top = (me.clientY - fingerOffsetY) + 'px';
+      function draggable() {
+        return [...container.querySelectorAll('.expense-item:not(.checked)')];
+      }
 
-      const items = draggable();
-      const srcIdx = items.indexOf(item);
-      for (let i = 0; i < items.length; i++) {
-        if (i === srcIdx) continue;
-        const r = items[i].getBoundingClientRect();
-        if (i < srcIdx && me.clientY < r.top + r.height / 2) {
-          container.insertBefore(item, items[i]); break;
-        } else if (i > srcIdx && me.clientY > r.top + r.height / 2) {
-          items[i].after(item); break;
+      function onMove(me) {
+        me.preventDefault();
+        ghost.style.top = (me.clientY - fingerOffsetY) + 'px';
+
+        const items = draggable();
+        const srcIdx = items.indexOf(item);
+        for (let i = 0; i < items.length; i++) {
+          if (i === srcIdx) continue;
+          const r = items[i].getBoundingClientRect();
+          if (i < srcIdx && me.clientY < r.top + r.height / 2) {
+            container.insertBefore(item, items[i]); break;
+          } else if (i > srcIdx && me.clientY > r.top + r.height / 2) {
+            items[i].after(item); break;
+          }
         }
       }
+
+      async function onEnd() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onEnd);
+        document.removeEventListener('pointercancel', onEnd);
+        ghost.remove();
+        item.classList.remove('dragging');
+
+        const ids = draggable().map(el => el.dataset.id);
+        ids.forEach((id, idx) => {
+          const e = expenses.find(x => x.id === id);
+          if (e) e.sort_order = idx + 1;
+        });
+        try {
+          await Promise.all(ids.map((id, idx) => dbPatchExpense(id, { sort_order: idx + 1 })));
+        } catch (err) {
+          showToast('Could not save order', true);
+          renderListView();
+        }
+      }
+
+      document.addEventListener('pointermove', onMove, { passive: false });
+      document.addEventListener('pointerup', onEnd);
+      document.addEventListener('pointercancel', onEnd);
     }
 
-    async function onEnd() {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onEnd);
-      document.removeEventListener('pointercancel', onEnd);
-      ghost.remove();
-      item.classList.remove('dragging');
+    const timer = setTimeout(beginDrag, LONG_PRESS_MS);
 
-      const ids = draggable().map(el => el.dataset.id);
-      ids.forEach((id, idx) => {
-        const e = expenses.find(x => x.id === id);
-        if (e) e.sort_order = idx + 1;
-      });
-      try {
-        await Promise.all(ids.map((id, idx) => dbPatchExpense(id, { sort_order: idx + 1 })));
-      } catch (err) {
-        showToast('Could not save order', true);
-        renderListView();
+    function cancelPending() {
+      clearTimeout(timer);
+      document.removeEventListener('pointermove', onPreMove);
+      document.removeEventListener('pointerup', onPreUp);
+      document.removeEventListener('pointercancel', onPreUp);
+    }
+    function onPreMove(me) {
+      if (dragStarted) return;
+      if (Math.abs(me.clientX - startX) > LONG_PRESS_MOVE_TOLERANCE ||
+          Math.abs(me.clientY - startY) > LONG_PRESS_MOVE_TOLERANCE) {
+        cancelPending();
       }
     }
-
-    document.addEventListener('pointermove', onMove, { passive: false });
-    document.addEventListener('pointerup', onEnd);
-    document.addEventListener('pointercancel', onEnd);
+    function onPreUp() {
+      if (!dragStarted) cancelPending();
+    }
+    document.addEventListener('pointermove', onPreMove, { passive: true });
+    document.addEventListener('pointerup', onPreUp);
+    document.addEventListener('pointercancel', onPreUp);
   });
 }
 
@@ -1689,13 +1719,6 @@ function buildItem(e) {
     : (isShared ? '<span class="shared-badge">÷2</span>' : '');
 
   el.innerHTML = `
-    <button class="drag-handle" aria-label="Drag to reorder" tabindex="-1">
-      <svg viewBox="0 0 12 18" width="12" height="18" fill="currentColor">
-        <circle cx="3.5" cy="3"  r="1.5"/><circle cx="8.5" cy="3"  r="1.5"/>
-        <circle cx="3.5" cy="9"  r="1.5"/><circle cx="8.5" cy="9"  r="1.5"/>
-        <circle cx="3.5" cy="15" r="1.5"/><circle cx="8.5" cy="15" r="1.5"/>
-      </svg>
-    </button>
     <button class="item-check-btn${e.checked ? ' checked' : ''}" data-id="${e.id}" aria-label="${e.checked ? 'Uncheck' : 'Check'}">
       ${e.checked ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
     </button>
