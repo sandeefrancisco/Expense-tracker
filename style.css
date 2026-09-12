@@ -292,10 +292,25 @@ body.modal-open { overflow: hidden; }
 .page-top.hidden { display: none; }
 
 /* ─── Profile Heading ──────────────────────────────────── */
+.page-top-hdr {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 16px 14px;
+}
 .profile-heading {
   font-size: 22px; font-weight: 800; letter-spacing: -0.3px;
-  color: var(--ink); padding: 16px 16px 14px;
+  color: var(--ink);
 }
+
+/* ─── Header Add Button ─────────────────────────────────── */
+.header-add-btn {
+  flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent); border: none; cursor: pointer;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  transition: background var(--t), transform 0.12s;
+}
+.header-add-btn:hover  { background: var(--accent-hover); }
+.header-add-btn:active { transform: scale(0.92); }
 
 .salary-subtext { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .salary-subtext.hidden { display: none; }
@@ -826,21 +841,6 @@ body.modal-open { overflow: hidden; }
 .list-section-title {
   font-size: 14px; font-weight: 400; color: var(--muted);
 }
-
-/* ─── Floating Add Button (FAB) ────────────────────────── */
-.fab {
-  position: fixed;
-  bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
-  right: max(16px, calc(50vw - 240px + 16px));
-  width: 56px; height: 56px; border-radius: 50%;
-  background: var(--accent); border: none; cursor: pointer;
-  color: #fff; display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(37,99,235,.40);
-  z-index: 31;
-  transition: background var(--t), transform 0.12s, box-shadow 0.12s;
-}
-.fab:hover  { background: var(--accent-hover); box-shadow: 0 6px 20px rgba(37,99,235,.50); }
-.fab:active { transform: scale(0.92); }
 
 /* ─── Bottom Nav ───────────────────────────────────────── */
 .bottom-nav {
