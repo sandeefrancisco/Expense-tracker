@@ -704,10 +704,11 @@ body.modal-open { overflow: hidden; }
 .expense-item.planned .expense-desc    { opacity: 0.55; }
 .expense-item.planned .expense-amount  { opacity: 0.55; }
 .expense-item.planned .item-check-btn  { opacity: 0.2; pointer-events: none; }
+.planned-badge-row { margin-top: 3px; }
 .planned-badge {
   display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
   color: #2563eb; background: rgba(37,99,235,0.1); border: 1px solid rgba(37,99,235,0.22);
-  padding: 1px 6px; border-radius: 99px; margin-left: 6px; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 99px; text-transform: uppercase;
   vertical-align: middle; line-height: 1.6;
 }
 

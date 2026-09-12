@@ -1725,8 +1725,8 @@ function buildItem(e) {
     <div class="expense-info">
       <div class="expense-name-row">
         <div class="expense-desc">${escHtml(e.description)}</div>
-        ${e.planned ? '<span class="planned-badge">Reminder</span>' : ''}
       </div>
+      ${e.planned ? '<div class="planned-badge-row"><span class="planned-badge">Reminder</span></div>' : ''}
       ${expenseInstallmentHtml(e)}
       ${e.bank ? `<div class="expense-bank">${escHtml(e.bank)}</div>` : ''}
       ${e.note ? `<div class="expense-item-note">${escHtml(e.note)}</div>` : ''}
