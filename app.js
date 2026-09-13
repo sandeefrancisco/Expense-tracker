@@ -772,6 +772,7 @@ function renderSummary() {
 
   let heroIsPrimary = false;
   let showSavedDone = false;
+  let showEarnedSpent = false;
 
   if (earned > 0) {
     const saved  = earned - totalBase;
@@ -782,9 +783,14 @@ function renderSummary() {
     labelEl.textContent = isOver ? 'Over budget' : (isCurrentMonth ? 'Saved this month' : `Saved · ${monthName}`);
     heroEl.textContent  = `${isOver ? '-' : ''}${primarySym}${fmtNum(Math.abs(saved))}`;
     if (isOver) heroEl.style.color = 'var(--error)';
-    subEl.textContent = `of ${primarySym}${fmtNum(earned)} earned · ${primarySym}${fmtNum(totalBase)} spent`;
+    subEl.textContent = '';
     heroIsPrimary = true;
     showSavedDone = !isOver && saved > 0;
+    showEarnedSpent = true;
+    const earnedEl = document.getElementById('scStatEarned');
+    const spentEl  = document.getElementById('scStatSpent');
+    if (earnedEl) earnedEl.textContent = `${primarySym}${fmtNum(earned)}`;
+    if (spentEl)  spentEl.textContent  = `${primarySym}${fmtNum(totalBase)}`;
   } else if (curEntries.length === 0) {
     labelEl.textContent = 'Tracked this month';
     heroEl.textContent  = `${primarySym}0.00`;
@@ -819,6 +825,11 @@ function renderSummary() {
     subEl.textContent   = rest ? `${rest} · ${itemStr}` : itemStr;
     heroIsPrimary = heroCode === primaryCode;
   }
+
+  // Earned/Spent tiles — only relevant when income is set for the month
+  document.getElementById('scTileEarned')?.classList.toggle('hidden', !showEarnedSpent);
+  document.getElementById('scTileSpent')?.classList.toggle('hidden', !showEarnedSpent);
+  subEl.classList.toggle('hidden', showEarnedSpent);
 
   // Savings transferred toggle — only relevant when this month shows a positive saved amount
   const savedDoneBtn = document.getElementById('savedDoneBtn');
