@@ -428,7 +428,7 @@ body.modal-open { overflow: hidden; }
   display: flex; align-items: center; gap: 8px;
   margin-top: 12px; padding: 9px 12px;
   border: 1.5px solid var(--border); border-radius: var(--r-input);
-  background: var(--tint); color: var(--muted);
+  background: transparent; color: var(--muted);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600;
   cursor: pointer; transition: border-color var(--t), background var(--t), color var(--t);
   width: 100%; text-align: left;
