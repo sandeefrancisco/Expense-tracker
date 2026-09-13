@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="style.css?v=145" />
+  <link rel="stylesheet" href="style.css?v=146" />
 </head>
 <body>
 
@@ -142,28 +142,6 @@
 
         <div class="sc-rule"></div>
 
-        <!-- Stat tiles -->
-        <div class="sc-tiles" id="scTiles">
-          <div class="sc-tile hidden" id="scTileEarned">
-            <div class="sc-tile-n" id="scStatEarned">—</div>
-            <div class="sc-tile-lbl">EARNED</div>
-          </div>
-          <div class="sc-tile hidden" id="scTileSpent">
-            <div class="sc-tile-n" id="scStatSpent">—</div>
-            <div class="sc-tile-lbl">SPENT</div>
-          </div>
-          <div class="sc-tile">
-            <div class="sc-tile-n" id="scStatItems">—</div>
-            <div class="sc-tile-lbl">PAID</div>
-          </div>
-          <div class="sc-tile">
-            <div class="sc-tile-n" id="scStatCats">—</div>
-            <div class="sc-tile-lbl">DUE</div>
-          </div>
-        </div>
-
-        <div class="sc-rule"></div>
-
         <!-- Paid progress + menu btn in same row -->
         <div class="sc-prog-row">
           <span class="sc-prog-text" id="scProgText">0 of 0 paid</span>
@@ -179,6 +157,26 @@
         </div>
 
       </section>
+
+      <!-- Stat tiles -->
+      <div class="sc-tiles" id="scTiles">
+        <div class="sc-tile hidden" id="scTileEarned">
+          <div class="sc-tile-n" id="scStatEarned">—</div>
+          <div class="sc-tile-lbl">EARNED</div>
+        </div>
+        <div class="sc-tile hidden" id="scTileSpent">
+          <div class="sc-tile-n" id="scStatSpent">—</div>
+          <div class="sc-tile-lbl">SPENT</div>
+        </div>
+        <div class="sc-tile">
+          <div class="sc-tile-n" id="scStatItems">—</div>
+          <div class="sc-tile-lbl">PAID</div>
+        </div>
+        <div class="sc-tile">
+          <div class="sc-tile-n" id="scStatCats">—</div>
+          <div class="sc-tile-lbl">DUE</div>
+        </div>
+      </div>
 
       <!-- Card actions dropdown -->
       <div class="card-menu hidden" id="cardMenu"></div>
