@@ -362,12 +362,11 @@ body.modal-open { overflow: hidden; }
 }
 
 /* Stat tiles */
-.sc-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.sc-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 2px; }
 .sc-tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 4px; padding: 14px 8px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: var(--shadow-card);
+  gap: 4px; padding: 12px 8px; background: var(--tint);
+  border: 1px solid var(--border-subtle); border-radius: 14px;
 }
 .sc-tile.hidden { display: none; }
 .sc-tile-n {
