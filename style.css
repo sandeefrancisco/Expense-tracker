@@ -318,10 +318,27 @@ body.modal-open { overflow: hidden; }
 
 /* ─── Summary Card ─────────────────────────────────────── */
 .summary-card {
+  position: relative;
   background: var(--surface); border-radius: var(--r-card);
   border: 1px solid var(--border);
   padding: 16px 16px 12px; color: var(--ink);
 }
+
+.summary-collapse-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 32px; height: 32px; border-radius: 8px;
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: background var(--t);
+}
+.summary-collapse-btn:active { background: var(--tint); }
+
+.summary-card-body {
+  overflow: hidden;
+  transition: max-height 0.22s ease, opacity 0.18s ease;
+  max-height: 9999px; opacity: 1;
+}
+.summary-card-body.collapsed { max-height: 0; opacity: 0; }
 
 /* Paid progress row */
 .sc-prog-row {

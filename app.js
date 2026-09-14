@@ -179,6 +179,23 @@ function loadExpandState() {
 
 
 
+let summaryCollapsed = localStorage.getItem('summaryCollapsed') === '1';
+
+function applySummaryCollapsed() {
+  const body  = document.getElementById('summaryCardBody');
+  const chev  = document.getElementById('summaryCollapseChevron');
+  const btn   = document.getElementById('summaryCollapseBtn');
+  if (body) body.classList.toggle('collapsed', summaryCollapsed);
+  if (chev) chev.classList.toggle('collapsed', summaryCollapsed);
+  if (btn)  btn.setAttribute('aria-label', summaryCollapsed ? 'Expand summary' : 'Collapse summary');
+}
+
+function toggleSummaryCollapsed() {
+  summaryCollapsed = !summaryCollapsed;
+  localStorage.setItem('summaryCollapsed', summaryCollapsed ? '1' : '0');
+  applySummaryCollapsed();
+}
+
 /* ─── Boot ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
 
@@ -195,6 +212,7 @@ async function init() {
   currentMonth = !isNaN(savedMonth) ? savedMonth : now.getMonth();
 
   bindEvents();
+  applySummaryCollapsed();
 
   await seedDBIfEmpty();
   await loadUserData();
@@ -2640,6 +2658,8 @@ function bindEvents() {
   });
   document.getElementById('amountInput').addEventListener('input', clearFormError);
   document.getElementById('descInput').addEventListener('input', clearFormError);
+
+  document.getElementById('summaryCollapseBtn').addEventListener('click', toggleSummaryCollapsed);
 
   // Card actions menu
   document.getElementById('cardMenuBtn').addEventListener('click', e => {

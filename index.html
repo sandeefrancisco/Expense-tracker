@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="style.css?v=147" />
+  <link rel="stylesheet" href="style.css?v=148" />
 </head>
 <body>
 
@@ -128,54 +128,61 @@
       <!-- Summary Card -->
       <section class="summary-card">
 
+        <button class="summary-collapse-btn" id="summaryCollapseBtn" aria-label="Collapse summary">
+          <svg class="cat-chevron" id="summaryCollapseChevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,6 8,10 12,6"/></svg>
+        </button>
+
         <!-- Financial info -->
         <div class="salary-subtext hidden" id="salarySubtext"></div>
         <div class="summary-label" id="summaryLabel">Tracked this month</div>
         <div class="summary-amount" id="summaryHero">—</div>
-        <div class="summary-sub" id="summarySub"></div>
-        <button type="button" class="saved-done-btn hidden" id="savedDoneBtn">
-          <span class="saved-done-check" id="savedDoneCheck">
-            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-          </span>
-          <span id="savedDoneLabel">Mark as transferred to savings</span>
-        </button>
 
-        <div class="sc-rule"></div>
-
-        <!-- Stat tiles -->
-        <div class="sc-tiles" id="scTiles">
-          <div class="sc-tile hidden" id="scTileEarned">
-            <div class="sc-tile-n" id="scStatEarned">—</div>
-            <div class="sc-tile-lbl">EARNED</div>
-          </div>
-          <div class="sc-tile hidden" id="scTileSpent">
-            <div class="sc-tile-n" id="scStatSpent">—</div>
-            <div class="sc-tile-lbl">SPENT</div>
-          </div>
-          <div class="sc-tile">
-            <div class="sc-tile-n" id="scStatItems">—</div>
-            <div class="sc-tile-lbl">PAID</div>
-          </div>
-          <div class="sc-tile">
-            <div class="sc-tile-n" id="scStatCats">—</div>
-            <div class="sc-tile-lbl">DUE</div>
-          </div>
-        </div>
-
-        <div class="sc-rule"></div>
-
-        <!-- Paid progress + menu btn in same row -->
-        <div class="sc-prog-row">
-          <span class="sc-prog-text" id="scProgText">0 of 0 paid</span>
-          <div class="sc-prog-track"><div class="sc-prog-fill" id="scProgFill" style="width:0%"></div></div>
-          <span class="sc-prog-pct" id="scProgPct">0%</span>
-          <button class="card-menu-btn" id="cardMenuBtn" aria-label="Month actions">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <circle cx="12" cy="5"  r="1.8" fill="currentColor"/>
-              <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
-              <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
-            </svg>
+        <div class="summary-card-body" id="summaryCardBody">
+          <div class="summary-sub" id="summarySub"></div>
+          <button type="button" class="saved-done-btn hidden" id="savedDoneBtn">
+            <span class="saved-done-check" id="savedDoneCheck">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <span id="savedDoneLabel">Mark as transferred to savings</span>
           </button>
+
+          <div class="sc-rule"></div>
+
+          <!-- Stat tiles -->
+          <div class="sc-tiles" id="scTiles">
+            <div class="sc-tile hidden" id="scTileEarned">
+              <div class="sc-tile-n" id="scStatEarned">—</div>
+              <div class="sc-tile-lbl">EARNED</div>
+            </div>
+            <div class="sc-tile hidden" id="scTileSpent">
+              <div class="sc-tile-n" id="scStatSpent">—</div>
+              <div class="sc-tile-lbl">SPENT</div>
+            </div>
+            <div class="sc-tile">
+              <div class="sc-tile-n" id="scStatItems">—</div>
+              <div class="sc-tile-lbl">PAID</div>
+            </div>
+            <div class="sc-tile">
+              <div class="sc-tile-n" id="scStatCats">—</div>
+              <div class="sc-tile-lbl">DUE</div>
+            </div>
+          </div>
+
+          <div class="sc-rule"></div>
+
+          <!-- Paid progress + menu btn in same row -->
+          <div class="sc-prog-row">
+            <span class="sc-prog-text" id="scProgText">0 of 0 paid</span>
+            <div class="sc-prog-track"><div class="sc-prog-fill" id="scProgFill" style="width:0%"></div></div>
+            <span class="sc-prog-pct" id="scProgPct">0%</span>
+            <button class="card-menu-btn" id="cardMenuBtn" aria-label="Month actions">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <circle cx="12" cy="5"  r="1.8" fill="currentColor"/>
+                <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+                <circle cx="12" cy="19" r="1.8" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
       </section>
@@ -607,6 +614,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=148"></script>
+  <script src="app.js?v=149"></script>
 </body>
 </html>
