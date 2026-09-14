@@ -472,28 +472,9 @@ body.modal-open { overflow: hidden; }
 }
 .card-menu-btn:active { background: var(--border); color: var(--ink); }
 
-/* Card actions dropdown */
-.card-menu {
-  position: fixed; z-index: 200;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,0.15);
-  min-width: 190px; overflow: hidden;
-}
-.card-menu.hidden { display: none; }
-.card-menu-item {
-  display: flex; align-items: center;
-  width: 100%; padding: 14px 18px;
-  border: none; background: transparent;
-  cursor: pointer; font-size: 15px; font-weight: 500;
-  color: var(--ink); text-align: left;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  transition: background var(--t);
-}
-.card-menu-item:hover { background: var(--bg); }
-.card-menu-item + .card-menu-item { border-top: 1px solid var(--border); }
-.card-menu-item.cm-done { color: #16a34a; }
-.card-menu-item.cm-undone { color: var(--muted); }
-.card-menu-item.cm-danger { color: #EF4444; }
+/* Card actions bottom sheet rows */
+.option-row-btn.cm-done { color: #16a34a; }
+.option-row-btn.cm-undone { color: var(--muted); }
 
 
 /* Budget Pill */

@@ -929,21 +929,27 @@ function updateCardMenu(earned, totalAll) {
   if (!menu) return;
   const done = isMonthDone(currentYear, currentMonth);
   const rows = [];
+  const walletIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>`;
+  const doneIcon   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>`;
+  const moveIcon   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 16l3 3 3-3M12 19v-5"/></svg>`;
+  const dupIcon    = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  const trashIcon  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
   if (earned === 0) {
-    rows.push(`<button class="card-menu-item" id="cmLogIncome">Log income</button>`);
+    rows.push(`<button class="option-row-btn" id="cmLogIncome">${walletIcon}Log income</button>`);
   } else {
-    rows.push(`<button class="card-menu-item" id="cmEditIncome">Edit income</button>`);
+    rows.push(`<button class="option-row-btn" id="cmEditIncome">${walletIcon}Edit income</button>`);
   }
   if (totalAll > 0 || done) {
-    rows.push(`<button class="card-menu-item ${done ? 'cm-undone' : 'cm-done'}" id="cmToggleDone">${done ? 'Undo done' : 'Mark as done'}</button>`);
+    rows.push(`<button class="option-row-btn ${done ? 'cm-undone' : 'cm-done'}" id="cmToggleDone">${doneIcon}${done ? 'Undo done' : 'Mark as done'}</button>`);
   }
   if (totalAll > 0) {
-    rows.push(`<button class="card-menu-item" id="cmMoveTo">Move to…</button>`);
-    rows.push(`<button class="card-menu-item" id="cmDuplicateTo">Duplicate to…</button>`);
-    rows.push(`<button class="card-menu-item cm-danger" id="cmDeleteMonth">Delete month…</button>`);
+    rows.push(`<button class="option-row-btn" id="cmMoveTo">${moveIcon}Move to…</button>`);
+    rows.push(`<button class="option-row-btn" id="cmDuplicateTo">${dupIcon}Duplicate to…</button>`);
+    rows.push(`<button class="option-row-btn option-row-danger" id="cmDeleteMonth">${trashIcon}Delete month…</button>`);
   }
   menu.innerHTML = rows.join('');
-  const close = () => menu.classList.add('hidden');
+  const close = () => closeModal('cardMenuSheet');
   menu.querySelector('#cmLogIncome')?.addEventListener('click',    () => { close(); openIncomeModal(); });
   menu.querySelector('#cmEditIncome')?.addEventListener('click',   () => { close(); openIncomeModal(); });
   menu.querySelector('#cmToggleDone')?.addEventListener('click',   () => { close(); toggleMonthDone(); });
@@ -2489,7 +2495,7 @@ function hideSettingsPage() {
 }
 
 /* ─── Modal Helpers ─────────────────────────────────────── */
-const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'screenshotPreviewModal'];
+const MODALS = ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'cardMenuSheet', 'screenshotPreviewModal'];
 
 function openModal(id) {
   document.getElementById(id).classList.remove('hidden');
@@ -2664,14 +2670,9 @@ function bindEvents() {
   // Card actions menu
   document.getElementById('cardMenuBtn').addEventListener('click', e => {
     e.stopPropagation();
-    const menu = document.getElementById('cardMenu');
-    if (!menu.classList.contains('hidden')) { menu.classList.add('hidden'); return; }
-    const rect = e.currentTarget.getBoundingClientRect();
-    menu.style.top   = `${rect.bottom + 6}px`;
-    menu.style.right = `${window.innerWidth - rect.right}px`;
-    menu.classList.remove('hidden');
+    openModal('cardMenuSheet');
   });
-  document.addEventListener('click', () => document.getElementById('cardMenu')?.classList.add('hidden'));
+  document.getElementById('cardMenuCancel').addEventListener('click', () => closeModal('cardMenuSheet'));
 
   document.getElementById('savedDoneBtn').addEventListener('click', toggleSavingsDone);
 
@@ -2785,7 +2786,7 @@ function bindEvents() {
   document.getElementById('screenshotImportBtn').addEventListener('click', handleScreenshotImport);
 
   // Backdrop clicks
-  ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'screenshotPreviewModal'].forEach(id => {
+  ['expenseModal', 'incomeModal', 'deleteModal', 'profileModal', 'categoryModal', 'itemOptionsModal', 'installmentModal', 'moveModal', 'profileSheet', 'catOptionsSheet', 'cardMenuSheet', 'screenshotPreviewModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(id); });
   });
 

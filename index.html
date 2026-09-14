@@ -14,7 +14,7 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <link rel="stylesheet" href="style.css?v=148" />
+  <link rel="stylesheet" href="style.css?v=149" />
 </head>
 <body>
 
@@ -186,9 +186,6 @@
         </div>
 
       </section>
-
-      <!-- Card actions dropdown -->
-      <div class="card-menu hidden" id="cardMenu"></div>
 
       <!-- Budget list -->
       <section class="view-section" id="listView">
@@ -468,6 +465,16 @@
     </div>
   </div>
 
+  <!-- Month actions bottom sheet -->
+  <div class="modal-backdrop hidden" id="cardMenuSheet">
+    <div class="modal item-options-modal">
+      <div class="modal-handle"></div>
+      <div class="item-options-desc">Month actions</div>
+      <div id="cardMenu"></div>
+      <button class="cancel-btn" id="cardMenuCancel" style="width:100%;margin-top:4px;">Cancel</button>
+    </div>
+  </div>
+
   <div class="modal-backdrop hidden" id="itemOptionsModal">
     <div class="modal item-options-modal">
       <div class="modal-handle"></div>
@@ -614,6 +621,6 @@
   <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=149"></script>
+  <script src="app.js?v=150"></script>
 </body>
 </html>
